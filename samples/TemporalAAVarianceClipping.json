@@ -1,0 +1,134 @@
+{
+    "Shader": {
+        "ver": "0.1",
+        "info": {
+            "id": "MscSD7",
+            "date": "1460454391",
+            "viewed": 948,
+            "name": "Temporal AA + Variance Clipping",
+            "username": "Vil",
+            "description": "A temporal AA implementation using Marco Salvi's Variance Clipping algorithm for temporal antialiasing. Variance Clipping is described here: https://www.dropbox.com/sh/dmye840y307lbpx/AAAQpC0MxMbuOsjm6XmTPgFJa",
+            "likes": 8,
+            "published": 3,
+            "flags": 32,
+            "tags": [
+                "3d"
+            ],
+            "hasliked": 0
+        },
+        "renderpass": [
+            {
+                "inputs": [
+                    {
+                        "id": 258,
+                        "src": "/media/previz/buffer01.png",
+                        "ctype": "buffer",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 37,
+                        "channel": 0
+                    }
+                ],
+                "code": "void mainImage(out vec4 fragColor, in vec2 fragCoord)\n{\n    vec2 fragUV = fragCoord / iResolution.xy;\n    fragColor.rgb = texture(iChannel0, fragUV).rgb;\n    fragColor.a = 1.0;\n}\n",
+                "name": "Image",
+                "description": "",
+                "type": "image"
+            },
+            {
+                "inputs": [
+                    {
+                        "id": 26,
+                        "src": "/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0.png",
+                        "ctype": "cubemap",
+                        "channel": 1,
+                        "sampler": {
+                            "filter": "mipmap",
+                            "wrap": "clamp",
+                            "vflip": "false",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    },
+                    {
+                        "id": 257,
+                        "src": "/media/previz/buffer00.png",
+                        "ctype": "buffer",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "nearest",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 257,
+                        "channel": 0
+                    }
+                ],
+                "code": "// Render the current frame\n\nconst vec3 target = vec3(0.0, 0.5, 0.0);\nconst float epsilon = 1e-5;\nconst float backgroundT = 100.0;\n\n\nfloat hitBox(in vec3 ro, in vec3 rd, in vec3 pos, in vec3 s, out vec3 N)\n{\n    vec3 tLo = (pos - s - ro) / rd;\n    vec3 tHi = (pos + s - ro) / rd;\n    vec3 tNear = min(tLo, tHi);\n    vec3 tFar = max(tLo, tHi);\n    \n    float t0 = max(tNear.x, max(tNear.y, tNear.z));\n    float t1 = min(tFar.x, min(tFar.y, tFar.z));\n    if (t0 > t1) {\n        N = rd;\n        return 1e20;\n    }\n    float t = (t0 >= 0.0) ? t0 : t1;\n    \n    vec3 n = ro + rd * t - pos;\n    float maxN = max(abs(n.x), max(abs(n.y), abs(n.z)));\n    if (abs(n.x) < maxN) n.x = 0.0;\n    if (abs(n.y) < maxN) n.y = 0.0;\n    if (abs(n.z) < maxN) n.z = 0.0;\n\n\tN = normalize(n);\n    return t;\n}\n\n\nfloat hitSphere(in vec3 ro, in vec3 rd, in vec3 pos, in float r, out vec3 N)\n{\n    vec3 op = pos - ro;\n    float eps = 1e-4;\n    float b = dot(op, rd);\n    float det = b * b - dot(op, op) + r * r;\n    float t = 1e20;\n    if (det >= 0.0) {\n        det = sqrt(det);\n        t = b - det;\n        if (t <= eps)\n            t = b + det;\n        if (t <= eps)\n            t = 0.0;\n        N = normalize(ro + rd * t - pos);\n    }\n    return t;\n}\n\n\nfloat hitScene(in vec3 ro, in vec3 rd, out vec3 N)\n{\n    vec3 boxPos = vec3(0.0);\n    vec3 boxHalfWidth = vec3(0.9);\n    vec3 spherePos = vec3(0.0);\n    float sphereRadius = 1.2;\n    \n    vec3 n;\n    float t = hitBox(ro, rd, boxPos, boxHalfWidth, n);    \n    if (t >= backgroundT) {\n        N = n;\n        return t;\n    }\n    \n    // If the point where we hit the box is inside the sphere, \n    // find where we exit the sphere.\n    vec3 hit = ro + rd * t;\n    if (distance(hit, spherePos) <= sphereRadius) {\n        t += hitSphere(hit, rd, spherePos, sphereRadius, n);\n        hit = ro + rd * t;\n        // If the point where we exit the sphere is inside the box, \n        // that's our intersection point.\n        vec3 test = abs(hit - boxPos);\n        if (test.x <= boxHalfWidth.x && test.y <= boxHalfWidth.y && test.z <= boxHalfWidth.z) {\n            N = -n;\n            return t;\n        }\n        \n        // If we get here, we've exited the sphere outside the box\n        N = rd;\n        return backgroundT;\n    }\n    N = n;\n    return t;\n}\n\n\nvec3 camera(float time)\n{\n    return vec3(cos(time) * 2.0, 1.2 + sin(time) * 0.5, 3.0);\n}\n\n\nvoid rayForPixel(in vec2 fragCoord, in float time, out vec3 ro, out vec3 rd)\n{\n    vec3 pos = camera(time);\n\n    vec3 up = vec3(0.0, 1.0, 0.0);\n    vec3 dir = normalize(target - pos);\n    vec3 right = normalize(cross(dir, up));\n    up = normalize(cross(right, dir));\n    \n    float fov = radians(50.0);    \n\n    float imgU = tan(fov) * distance(pos, target);\n    float imgV = imgU * iResolution.y / iResolution.x;\n\n    vec2 uv = fragCoord / iResolution.xy * 2.0 - 1.0;\n    \n    dir = normalize(target + uv.x * imgU * right + uv.y * imgV * up - pos);\n    \n    ro = pos;\n    rd = dir;\n}\n\n\nvec3 light()\n{\n    return vec3(10.0, 10.0, 10.0);\n}\n\n\nvec3 background(in vec3 dir)\n{\n    return texture(iChannel1, dir).rgb;\n}\n\n\nvec4 render(in vec2 fragCoord, in float time)\n{\n    vec3 pos, dir;\n    rayForPixel(fragCoord, time, pos, dir);\n\n    vec3 n = dir;\n    float t = hitScene(pos, dir, n);\n    if (t < backgroundT) {\n        vec3 r = reflect(dir, n);\n        float NdotR = max(0.0, dot(-dir, r));\n        vec3 ambient = background(reflect(dir, n)) * NdotR * 0.3;\n        \n        vec3 p = pos + dir * t;\n        vec3 l = normalize(light() - p);\n        float NdotL = max(0.0, dot(n, l));\n        vec3 direct = vec3(1.0, 0.5, 0.5) * NdotL;\n        \n        return vec4(ambient + direct, t);\n    }\n    \n    return vec4(background(dir), backgroundT);\n}\n\n\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord)\n{\n    if (fragCoord.y < 1.0 && fragCoord.x < 1.0) {\n        float prevTime = (iFrame > 0) ? texture(iChannel0, vec2(0.0)).x : 0.0;\n        fragColor = vec4(iTime, prevTime, 0.0, 0.0);\n        return;\n    }\n    \n    fragColor = render(fragCoord, iTime);\n}",
+                "name": "Buf A",
+                "description": "",
+                "type": "buffer"
+            },
+            {
+                "inputs": [
+                    {
+                        "id": 257,
+                        "src": "/media/previz/buffer00.png",
+                        "ctype": "buffer",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    },
+                    {
+                        "id": 258,
+                        "src": "/media/previz/buffer01.png",
+                        "ctype": "buffer",
+                        "channel": 1,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 258,
+                        "channel": 0
+                    }
+                ],
+                "code": "// Calculate motion vectors for each pixel\n\nconst vec3 target = vec3(0.0, 0.5, 0.0);\nconst float epsilon = 1e-5;\nconst float backgroundT = 100.0;\n\n\nvec3 camera(float time)\n{\n    return vec3(cos(time) * 2.0, 1.2 + sin(time) * 0.5, 3.0);\n}\n\n\nvoid rayForPixel(in vec2 fragCoord, in float time, out vec3 ro, out vec3 rd)\n{\n    vec3 pos = camera(time);\n\n    vec3 up = vec3(0.0, 1.0, 0.0);\n    vec3 dir = normalize(target - pos);\n    vec3 right = normalize(cross(dir, up));\n    up = normalize(cross(right, dir));\n    \n    float fov = radians(50.0);    \n\n    float imgU = tan(fov) * distance(pos, target);\n    float imgV = imgU * iResolution.y / iResolution.x;\n\n    vec2 uv = fragCoord / iResolution.xy * 2.0 - 1.0;\n    \n    dir = normalize(target + uv.x * imgU * right + uv.y * imgV * up - pos);\n    \n    ro = pos;\n    rd = dir;\n}\n\n\nvec2 pixelForPos(in vec3 worldPos, in float time)\n{\n    vec3 pos = camera(time);\n    \n    vec3 up = vec3(0.0, 1.0, 0.0);\n    vec3 dir = normalize(target - pos);\n    vec3 right = normalize(cross(dir, up));\n    up = normalize(cross(right, dir));\n\n    float fov = radians(50.0);\n\n    float imgU = tan(fov) * distance(pos, target);\n    float imgV = imgU * iResolution.y / iResolution.x;\n\n    float dWorld = dot(worldPos - pos, dir);\n    float dProj = distance(pos, target);\n    vec3 projPos = (worldPos - pos) * (dProj / dWorld) + pos - target;\n    \n    vec2 uv = vec2(dot(projPos, right) / imgU,\n                   dot(projPos, up)    / imgV) * 0.5 + 0.5;\n    return uv * iResolution.xy;\n}\n\n\nvec3 rgb2ycocg(in vec3 rgb)\n{\n    float co = rgb.r - rgb.b;\n    float t = rgb.b + co / 2.0;\n    float cg = rgb.g - t;\n    float y = t + cg / 2.0;\n    return vec3(y, co, cg);\n}\n\n\nvec3 ycocg2rgb(in vec3 ycocg)\n{\n    float t = ycocg.r - ycocg.b / 2.0;\n    float g = ycocg.b + t;\n    float b = t - ycocg.g / 2.0;\n    float r = ycocg.g + b;\n    return vec3(r, g, b);\n}\n\n\nvec3 clipToAABB(in vec3 cOld, in vec3 cNew, in vec3 centre, in vec3 halfSize)\n{\n    if (all(lessThanEqual(abs(cOld - centre), halfSize))) {\n        return cOld;\n    }\n    \n    vec3 dir = (cNew - cOld);\n    vec3 near = centre - sign(dir) * halfSize;\n    vec3 tAll = (near - cOld) / dir;\n    float t = 1e20;\n    for (int i = 0; i < 3; i++) {\n        if (tAll[i] >= 0.0 && tAll[i] < t) {\n            t = tAll[i];\n        }\n    }\n    \n    if (t >= 1e20) {\n\t\treturn cOld;\n    }\n    return cOld + dir * t;\n}\n\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec4 val = texture(iChannel0, fragCoord / iResolution.xy);\n    \n    if (iFrame == 0 || all(lessThanEqual(fragCoord, vec2(1.0)))) {\n        fragColor = vec4(val.rgb, 1.0);\n        return;\n    }\n\n#define VARIANCE_CLIPPING 1\n#if VARIANCE_CLIPPING\n    // Find out where the current pixel was in the previous frame and\n    // get the colour at that location.\n    vec2 times = texture(iChannel0, vec2(0.0)).xy; // curr time = x, prev time = y.\n    \n    vec3 currRO, currRD;\n    rayForPixel(fragCoord, times.x, currRO, currRD);\n\n    vec3 worldPos = currRO + val.w * currRD;\n\n    vec2 fcOld = pixelForPos(worldPos, times.y);\n    vec3 colorOld = texture(iChannel1, fcOld / iResolution.xy).rgb;\n    \n    // Look up colours for the immediate neighbourhood of the pixel in\n    // this frame. Calculate the first two moments of their distribution\n    // (i.e. mean and standard deviation).\n \tvec2 fcOffsets[4];\n    fcOffsets[0] = vec2(-1.0,  0.0);\n    fcOffsets[1] = vec2( 1.0,  0.0);\n    fcOffsets[2] = vec2( 0.0, -1.0);\n    fcOffsets[3] = vec2( 0.0,  1.0);\n    \n    vec3 mean = rgb2ycocg(val.rgb);\n    vec3 stddev = mean * mean;\n    for (int i = 0; i < 4; i++) {\n        vec3 c = rgb2ycocg(texture(iChannel0, (fragCoord + fcOffsets[i]) / iResolution.xy).rgb);\n        mean += c;\n        stddev += c * c;\n    }\n    mean /= 5.0;\n    stddev = sqrt(stddev / 5.0 - mean * mean);\n\n    colorOld = ycocg2rgb(clipToAABB(rgb2ycocg(colorOld), rgb2ycocg(val.rgb), mean, stddev));\n#else\n    vec3 colorOld = texture(iChannel1, fragCoord / iResolution.xy).rgb;\n#endif\n    \n    fragColor.rgb = mix(colorOld, val.rgb, 0.1);\n    fragColor.a = 1.0;\n}",
+                "name": "Buf B",
+                "description": "",
+                "type": "buffer"
+            }
+        ]
+    }
+}

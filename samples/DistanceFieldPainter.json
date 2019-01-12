@@ -1,0 +1,79 @@
+{
+	"Shader": {
+		"ver": "0.1",
+		"info": {
+			"id": "MscXDn",
+			"date": "1458674503",
+			"viewed": 644, 
+			"name": "Distance Field Painter",
+			"username": "Vil",
+			"description": "Use the mouse to draw a seed region and watch the distance field grow. Use the rewind button to start over",
+			"likes": 13,
+			"published": 3,
+			"flags":32,
+			"tags": [
+				"2d",
+				"multipass"
+			],
+			"hasliked": 0
+		},
+		"renderpass": [
+			{
+				"inputs": [
+					{
+						"id": 257,
+						"src": "\/media\/previz\/buffer00.png",
+						"ctype": "buffer",
+						"channel": 0,
+						"sampler": {
+							"filter": "linear",
+							"wrap": "clamp",
+							"vflip": "true",
+							"srgb": "false",
+							"internal": "byte"
+						},
+						"published": 1
+					}
+				],
+				"outputs": [
+					{
+						"id": 37,
+						"channel": 0
+					}
+				],
+				"code": "\/*\n * Draw the distance field.\n *\/\n\nvec3 hsv2rgb(vec3 c)\n{\n    vec4 K = vec4(1.0, 2.0 \/ 3.0, 1.0 \/ 3.0, 3.0);\n    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);\n    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);\n}\n\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec2 nearest = texture(iChannel0, fragCoord \/ iResolution.xy).xy;\n    float dist = distance(nearest, fragCoord);\n    float level = clamp(dist \/ 256.0, 0.0, 1.0);\n    \n    vec3 hsv = vec3(level, 1.0 - level, 1.0 - level);\n\n    fragColor.rgb = hsv2rgb(hsv);\n    fragColor.a = 1.0;\n}",
+				"name":"Image",
+				"description":"",
+				"type":"image"
+			},
+			{
+				"inputs":[
+					{
+						"id":257,
+						"src":"\/media\/previz\/buffer00.png",
+						"ctype":"buffer",
+						"channel":0,
+						"sampler": {
+							"filter":"linear",
+							"wrap":"clamp",
+							"vflip":"true",
+							"srgb":"false",
+							"internal":"byte"
+						},
+						"published":1
+					}
+				],
+				"outputs": [
+					{
+						"id":257,
+						"channel":0
+					}
+				],
+				"code": "\/\/ Generate\/update the distance field.\n\n\n\/\/ Radius of the pen in pixels.\n#define PEN_RADIUS 5.0\n\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    \/\/ Initialise on first frame.\n    if (iFrame == 0) {\n        fragColor = vec4(1e20, 1e20, 0.0, 1.0);\n        return;\n    }\n    \n    \/\/ If the mouse button is down and this pixel is covered by the \n    \/\/ pen, then mark this pixel as part of the seed area. Otherwise,\n    \/\/ look in the surrounding 8 pixels for anything nearer to the \n    \/\/ seed area than this pixel currently is.\n    vec2 nearest;\n    if (iMouse.xy != iMouse.zw && distance(iMouse.xy, fragCoord) < PEN_RADIUS) {\n        nearest = fragCoord;\n    }\n    else {\n\t    vec4 texVal = texture(iChannel0, fragCoord \/ iResolution.xy);\n        nearest = texVal.xy;\n        float dist = distance(nearest, fragCoord);\n    \n        vec2 offsets[8];\n        \/\/ x, y = offset in pixels from the current pixel; z = distance covered by that offset.\n        offsets[0] = vec2(-1.0, -1.0);\n        offsets[1] = vec2( 0.0, -1.0);\n        offsets[2] = vec2( 1.0, -1.0);\n        offsets[3] = vec2(-1.0,  0.0);\n        offsets[4] = vec2( 1.0,  0.0);\n        offsets[5] = vec2(-1.0,  1.0);\n        offsets[6] = vec2( 0.0,  1.0);\n        offsets[7] = vec2( 1.0,  1.0);\n\n        for (int i = 0; i < 8; ++i) {\n            vec4 newTexVal = texture(iChannel0, (fragCoord + offsets[i]) \/ iResolution.xy);\n            float newDist = distance(newTexVal.xy, fragCoord);\n            if (newDist < dist) {\n                nearest = newTexVal.xy;\n\t            dist = newDist;\n            }\n        }\n    }\n    \n    fragColor = vec4(nearest, 0.0, 1.0);\n}",
+				"name": "Buf A",
+				"description":"",
+				"type":"buffer"
+			}
+		]
+	}
+}

@@ -1,0 +1,66 @@
+{
+	"Shader": {
+		"ver": "0.1", 
+		"info": {
+			"id": "XdcSDN",
+			"date": "1459286980",
+			"viewed": 476,
+			"name": "Height Field Mark I",
+			"username": "Vil",
+			"description": "Raymarch a height field specified by the texture on channel 0. Background image and diffuse IBL on channels 1 and 2 respectively.",
+			"likes": 6,
+			"published": 3,
+			"flags":0,
+			"tags": [
+				"3d",
+				"raymarch"
+			],
+			"hasliked": 0
+		},
+		"renderpass": [
+			{
+				"inputs": [
+					{
+						"id": 26,
+						"src": "\/media\/a\/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0.png",
+						"ctype": "cubemap",
+						"channel": 1,
+						"sampler": {
+							"filter": "nearest",
+							"wrap": "clamp",
+							"vflip": "false",
+							"srgb": "false",
+							"internal": "byte"
+						},
+						"published": 1
+					},
+					{
+						"id": 47,
+						"src": "\/media\/a\/ad56fba948dfba9ae698198c109e71f118a54d209c0ea50d77ea546abad89c57.png",
+						"ctype": "texture",
+						"channel":0,
+						"sampler": {
+							"filter": "nearest",
+							"wrap": "clamp", 
+							"vflip": "false",
+							"srgb": "false",
+							"internal": "byte"
+						},
+						"published": 1
+					}
+				],
+				"outputs": [
+					{
+						"id": 37,
+						"channel": 0
+					}
+				],
+				"code": "const float MAX_DIST = 10.0;\nconst float MAX_HEIGHT = 0.3;\n\n\nvec3 newHalton(int seq)\n{\n\treturn vec3(0.0, float(seq), float(seq));\t\n}\n\n\nfloat halton(inout vec3 state)\n{\n\tstate.x += 1.0;\n\tif (state.x == state.y) {\n\t\tstate *= vec3(0.0, state.z, 1.0);\n\t}\n\treturn state.x \/ state.y;\n}\n\n\nvec2 rayOffset(inout vec3 state2, inout vec3 state3)\n{\n\treturn vec2(halton(state2), halton(state3)) * 2.0 - 1.0;\n}\n\n\nvec2 pos2uv(in vec3 pos)\n{\n\treturn fract(pos.xz \/ 3.0);\n}\n\n\nfloat height(in vec2 uv)\n{\n\tfloat val = textureLod(iChannel0, uv, 0.0).r;\n\treturn val * MAX_HEIGHT;\n}\n\n\nvec3 normal(in vec2 uv)\n{\n\tvec2 eps = 1.0 \/ iChannelResolution[0].xy;\n\tvec2 du = vec2(1.0, 0.0) * eps;\n\tvec2 dv = vec2(0.0, 1.0) * eps;\n\treturn normalize(vec3(height(uv - du) - height(uv + du),\n\t\t\t\t\t\t  (eps.x + eps.y),\n\t\t\t\t\t\t  height(uv - dv) - height(uv + dv)));\t\n}\n\n\nvec3 material(in vec2 uv)\n{\n    return texture(iChannel0, uv).rrr;\n}\n\n\nfloat castRay(in vec3 pos, in vec3 dir)\n{\n\tconst int NUM_SAMPLES = 256;\n\n\tfloat oldT = 0.0;\n\tfloat oldH = 0.0;\n\tfloat oldY = pos.y;\n\n\tfor (int i = 0; i < NUM_SAMPLES; ++i) {\n\t\tfloat t = float(i) \/ float(NUM_SAMPLES);\n\t\tt *= t * MAX_DIST;\n\t\tvec3 p = pos + dir * t;\n\t\tvec2 uv = pos2uv(p);\n\t\tfloat h = height(uv);\n\t\tif (p.y < h) {\n\t\t\treturn oldT + (t - oldT) * (oldH - oldY) \/ (p.y - oldY - h + oldH);\n\t\t}\n\t\toldT = t;\n\t\toldH = h;\n\t\toldY = p.y;\n\t}\n\treturn 1e20;\n}\n\n\nvec3 background(in vec3 dir)\n{\n    return texture(iChannel1, dir).rgb;\n}\n\n\nvec3 lighting(in vec3 N, in vec3 V, in vec3 reflectance)\n{\n    const float LIGHT_STRENGTH = 1.0;\n    \n    float NdotV = max(0.0, dot(N, V));\n    vec3 diffuse = (texture(iChannel2, N).rgb * LIGHT_STRENGTH) * NdotV;\n    \n    vec3 L = reflect(-V, N);\n    float NdotL = max(0.0, dot(N, L));\n    vec3 specular = background(L) * NdotL;\n    \n    return (specular + diffuse) * reflectance;\n}\n\n\nvoid mainImage(out vec4 fragColor, in vec2 fragCoord)\n{\n\tvec3 state2 = newHalton(2);\n\tvec3 state3 = newHalton(3);\n\tvec3 state5 = newHalton(5);\n\n    vec3 pos = vec3(cos(iTime), 1.2 + sin(iTime) * 0.5, 3.0);\n    \/\/vec3 pos = vec3(0.0, 1.2, 3.0);\n    vec3 target = vec3(0.0, 0.5, 0.0);\n    vec3 up = vec3(0.0, 1.0, 0.0);\n    vec3 dir = normalize(target - pos);\n    vec3 right = normalize(cross(dir, up));\n    up = normalize(cross(right, dir));\n\n    float fov = radians(50.0);\n    float imgU = tan(fov) * distance(pos, target);\n    float imgV = imgU * iResolution.y \/ iResolution.x;\n\n    const int RAYS_PER_PIXEL = 5;\n\n    vec3 color = vec3(0.0);\n    for (int r = 0; r < RAYS_PER_PIXEL; ++r) {\n\t    vec2 rayUV = (fragCoord + rayOffset(state2, state3)) \/ iResolution.xy * 2.0 - 1.0;\n\t    vec3 rayTarget = target + rayUV.x * imgU * right + rayUV.y * imgV * up;\n\t    vec3 rayDir = normalize(rayTarget - pos);\n\t    vec3 rayPos = pos + rayDir * halton(state5) * distance(target, pos) * 0.005;\n\n\t    float t = castRay(rayPos, rayDir);\n\t    if (t <= MAX_DIST) {\n\t    \tvec3 P = pos + rayDir * t;\n\t    \tvec2 UV = pos2uv(P);\n\t    \tvec3 N = normal(UV);\n            vec3 reflectance = material(UV);\n            color += lighting(N, -rayDir, reflectance);\n        }\n        else {\n            color += background(rayDir);\n        }\n    }\n    color.rgb \/= float(RAYS_PER_PIXEL);\n    fragColor = vec4(color, 1.0);\n}",
+				"filename": "HeightFieldMarkI.frag",
+				"name": "Image",
+				"description": "",
+				"type": "image"
+			}
+		]
+	}
+}

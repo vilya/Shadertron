@@ -1,0 +1,35 @@
+{
+	"Shader": {
+		"ver": "0.1",
+		"info": {
+			"id": "llXGDs",
+			"date": "1426130307",
+			"viewed": 130,
+		 	"name": "Training",
+		 	"username": "Vil",
+		 	"description": "Inspired by some similar landscape shaders I've seen here. Trying to make this as small as possible, but 280 chars still seems a long way off!",
+		 	"likes": 3,
+		 	"published": 3,
+		 	"flags": 0,
+		 	"tags": [
+		 		"2d"
+		 	],
+		 	"hasliked": 0
+		}, 
+		"renderpass": [
+		 	{
+		 		"inputs": [],
+		 		"outputs":[
+					{
+						"id": 37,
+						"channel": 0
+					}
+		 		],
+		 		"filename": "Training.frag",
+		 		"name": "Image",
+		 		"description": "",
+		 		"type": "image"
+		 	}
+		]
+	}
+}
