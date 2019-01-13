@@ -1,0 +1,74 @@
+{
+    "Shader": {
+        "ver": "0.1",
+        "info": {
+            "id": "4t3yzj",
+            "date": "1533113650",
+            "viewed": 427,
+            "name": "Lunar Cubemap",
+            "username": "davidar",
+            "description": "Adaptation of [url]https://www.shadertoy.com/view/XsGBDt[/url] to use the new cubemap buffer",
+            "likes": 14,
+            "published": 3,
+            "flags": 0,
+            "tags": [
+                "cubemap",
+                "moon",
+                "crater",
+                "maincubemap"
+            ],
+            "hasliked": 0
+        },
+        "renderpass": [
+            {
+                "inputs": [
+                    {
+                        "id": 41,
+                        "src": "/media/a//media/previz/cubemap00.png",
+                        "ctype": "cubemap",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "mipmap",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 37,
+                        "channel": 0
+                    }
+                ],
+                "code": "#define SCALE 0.95\n#define GAMMA 2.2\n#define rgba(r,g,b,a) vec4(pow(vec3(r,g,b),vec3(GAMMA)),a)\n#define map(p) texture(iChannel0,p).x\n\nvec3 normal(vec3 p) {\n\tvec2 e = vec2(1,0)/1e3;\n    p += 0.01 * vec3(\n        map(p + e.xyy) - map(p - e.xyy),\n        map(p + e.yxy) - map(p - e.yxy),\n        map(p + e.yyx) - map(p - e.yyx))/ (2. * length(e));\n\treturn normalize(p);\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord ) {\n    vec2 p = (2. * fragCoord.xy - iResolution.xy) / iResolution.y;\n    float lat = 15. * sin(0.1 * iTime);\n    float lon = 7.5 * iTime + 100.;\n    if (iMouse.z > 0.) {\n        lat = 90.  - 180. * iMouse.y/iResolution.y;\n        lon = 180. - 360. * iMouse.x/iResolution.x;\n    }\n    vec3 camPos = 10. * vec3(sin(lon*PI/180.) * cos(lat*PI/180.), sin(lat*PI/180.), cos(lon*PI/180.) * cos(lat*PI/180.));\n    vec3 w = normalize(-camPos);\n    vec3 u = normalize(cross(w, vec3(0,1,0)));\n    vec3 v = normalize(cross(u, w));\n    mat3 camera = mat3(u, v, w);\n    \n    vec3 dir = normalize(camera * vec3(p / SCALE, length(camPos)));\n    float dist = iSphere(camPos, dir, vec4(0,0,0,1));\n    fragColor = vec4(0);\n    if (dist > 0.) {\n        vec3 q = camPos + dir * dist;\n        float c = map(q);\n        vec3 n = normal(q);\n        float light = clamp(dot(n, normalize(vec3(-4,1,2))), 0.01, 1.);\n        fragColor = light * mix(rgba(0.82, 0.81, 0.8, 1), rgba(0.22, 0.21, 0.2, 1), smoothstep(0., 3., c));\n    }\n    fragColor.rgb = mix(fragColor.rgb, vec3(0), smoothstep(SCALE - 4./iResolution.y, SCALE + 1./iResolution.y, length(p)));\n    fragColor.rgb = pow(fragColor.rgb, vec3(1./GAMMA));\n}\n\t\n",
+                "name": "Image",
+                "description": "",
+                "type": "image"
+            },
+            {
+                "inputs": [],
+                "outputs": [
+                    {
+                        "id": 41,
+                        "channel": 0
+                    }
+                ],
+                "code": "// procedural craters based on https://www.shadertoy.com/view/MtjGRD\nfloat craters(vec3 x) {\n    vec3 p = floor(x);\n    vec3 f = fract(x);\n    float va = 0.;\n    float wt = 0.;\n    for (int i = -2; i <= 2; i++) for (int j = -2; j <= 2; j++) for (int k = -2; k <= 2; k++) {\n        vec3 g = vec3(i,j,k);\n        vec3 o = 0.8 * hash33(p + g);\n        float d = distance(f - g, o);\n        float w = exp(-4. * d);\n        va += w * sin(2.*PI * sqrt(d));\n        wt += w;\n\t}\n    return abs(va / wt);\n}\n\nvoid mainCubemap( out vec4 fragColor, in vec2 fragCoord, in vec3 rayOri, in vec3 rayDir ) {\n    if (iFrame > 1) discard; // cache\n    vec3 p = 1.5 * rayDir;\n    fragColor.x = 0.;\n    for (float i = 0.; i < 5.; i++) {\n        float c = craters(0.4 * pow(2.2, i) * p);\n        float noise = 0.4 * exp(-3. * c) * FBM(10. * p);\n        float w = clamp(3. * pow(0.4, i), 0., 1.);\n\t\tfragColor.x += w * (c + noise);\n\t}\n    fragColor.x = pow(fragColor.x, 3.);\n}",
+                "name": "Cube A",
+                "description": "",
+                "type": "cubemap"
+            },
+            {
+                "inputs": [],
+                "outputs": [],
+                "code": "#define PI 3.14159265359\n\n// https://www.shadertoy.com/view/XdBGzd\n// The MIT License\n// Copyright © 2014 Inigo Quilez\nfloat iSphere( in vec3 ro, in vec3 rd, in vec4 sph )\n{\n\tvec3 oc = ro - sph.xyz;\n\tfloat b = dot( oc, rd );\n\tfloat c = dot( oc, oc ) - sph.w*sph.w;\n\tfloat h = b*b - c;\n\tif( h<0.0 ) return -1.0;\n\treturn -b - sqrt( h );\n}\n\n\n// Hash without Sine\n// Creative Commons Attribution-ShareAlike 4.0 International Public License\n// Created by David Hoskins.\n\n// https://www.shadertoy.com/view/4djSRW\n// Trying to find a Hash function that is the same on ALL systens\n// and doesn't rely on trigonometry functions that change accuracy \n// depending on GPU. \n// New one on the left, sine function on the right.\n// It appears to be the same speed, but I suppose that depends.\n\n// * Note. It still goes wrong eventually!\n// * Try full-screen paused to see details.\n\n\n#define ITERATIONS 4\n\n\n// *** Change these to suit your range of random numbers..\n\n// *** Use this for integer stepped ranges, ie Value-Noise/Perlin noise functions.\n#define HASHSCALE1 .1031\n#define HASHSCALE3 vec3(.1031, .1030, .0973)\n#define HASHSCALE4 vec4(.1031, .1030, .0973, .1099)\n\n// For smaller input rangers like audio tick or 0-1 UVs use these...\n//#define HASHSCALE1 443.8975\n//#define HASHSCALE3 vec3(443.897, 441.423, 437.195)\n//#define HASHSCALE4 vec3(443.897, 441.423, 437.195, 444.129)\n\n\n\n//----------------------------------------------------------------------------------------\n//  1 out, 1 in...\nfloat hash11(float p)\n{\n        vec3 p3  = fract(vec3(p) * HASHSCALE1);\n    p3 += dot(p3, p3.yzx + 19.19);\n    return fract((p3.x + p3.y) * p3.z);\n}\n\n//----------------------------------------------------------------------------------------\n//  1 out, 2 in...\nfloat hash12(vec2 p)\n{\n        vec3 p3  = fract(vec3(p.xyx) * HASHSCALE1);\n    p3 += dot(p3, p3.yzx + 19.19);\n    return fract((p3.x + p3.y) * p3.z);\n}\n\n//----------------------------------------------------------------------------------------\n//  1 out, 3 in...\nfloat hash13(vec3 p3)\n{\n        p3  = fract(p3 * HASHSCALE1);\n    p3 += dot(p3, p3.yzx + 19.19);\n    return fract((p3.x + p3.y) * p3.z);\n}\n\n//----------------------------------------------------------------------------------------\n//  2 out, 1 in...\nvec2 hash21(float p)\n{\n        vec3 p3 = fract(vec3(p) * HASHSCALE3);\n        p3 += dot(p3, p3.yzx + 19.19);\n    return fract((p3.xx+p3.yz)*p3.zy);\n\n}\n\n//----------------------------------------------------------------------------------------\n///  2 out, 2 in...\nvec2 hash22(vec2 p)\n{\n        vec3 p3 = fract(vec3(p.xyx) * HASHSCALE3);\n    p3 += dot(p3, p3.yzx+19.19);\n    return fract((p3.xx+p3.yz)*p3.zy);\n\n}\n\n//----------------------------------------------------------------------------------------\n///  2 out, 3 in...\nvec2 hash23(vec3 p3)\n{\n        p3 = fract(p3 * HASHSCALE3);\n    p3 += dot(p3, p3.yzx+19.19);\n    return fract((p3.xx+p3.yz)*p3.zy);\n}\n\n//----------------------------------------------------------------------------------------\n//  3 out, 1 in...\nvec3 hash31(float p)\n{\n   vec3 p3 = fract(vec3(p) * HASHSCALE3);\n   p3 += dot(p3, p3.yzx+19.19);\n   return fract((p3.xxy+p3.yzz)*p3.zyx); \n}\n\n\n//----------------------------------------------------------------------------------------\n///  3 out, 2 in...\nvec3 hash32(vec2 p)\n{\n        vec3 p3 = fract(vec3(p.xyx) * HASHSCALE3);\n    p3 += dot(p3, p3.yxz+19.19);\n    return fract((p3.xxy+p3.yzz)*p3.zyx);\n}\n\n//----------------------------------------------------------------------------------------\n///  3 out, 3 in...\nvec3 hash33(vec3 p3)\n{\n        p3 = fract(p3 * HASHSCALE3);\n    p3 += dot(p3, p3.yxz+19.19);\n    return fract((p3.xxy + p3.yxx)*p3.zyx);\n\n}\n\n//----------------------------------------------------------------------------------------\n// 4 out, 1 in...\nvec4 hash41(float p)\n{\n        vec4 p4 = fract(vec4(p) * HASHSCALE4);\n    p4 += dot(p4, p4.wzxy+19.19);\n    return fract((p4.xxyz+p4.yzzw)*p4.zywx);\n    \n}\n\n//----------------------------------------------------------------------------------------\n// 4 out, 2 in...\nvec4 hash42(vec2 p)\n{\n        vec4 p4 = fract(vec4(p.xyxy) * HASHSCALE4);\n    p4 += dot(p4, p4.wzxy+19.19);\n    return fract((p4.xxyz+p4.yzzw)*p4.zywx);\n\n}\n\n//----------------------------------------------------------------------------------------\n// 4 out, 3 in...\nvec4 hash43(vec3 p)\n{\n        vec4 p4 = fract(vec4(p.xyzx)  * HASHSCALE4);\n    p4 += dot(p4, p4.wzxy+19.19);\n    return fract((p4.xxyz+p4.yzzw)*p4.zywx);\n}\n\n//----------------------------------------------------------------------------------------\n// 4 out, 4 in...\nvec4 hash44(vec4 p4)\n{\n        p4 = fract(p4  * HASHSCALE4);\n    p4 += dot(p4, p4.wzxy+19.19);\n    return fract((p4.xxyz+p4.yzzw)*p4.zywx);\n}\n\n\n// By David Hoskins, May 2014. @ https://www.shadertoy.com/view/4dsXWn\n// License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.\n\nfloat Noise(in vec3 p)\n{\n    vec3 i = floor(p);\n        vec3 f = fract(p); \n        f *= f * (3.0-2.0*f);\n\n    return mix(\n                mix(mix(hash13(i + vec3(0.,0.,0.)), hash13(i + vec3(1.,0.,0.)),f.x),\n                        mix(hash13(i + vec3(0.,1.,0.)), hash13(i + vec3(1.,1.,0.)),f.x),\n                        f.y),\n                mix(mix(hash13(i + vec3(0.,0.,1.)), hash13(i + vec3(1.,0.,1.)),f.x),\n                        mix(hash13(i + vec3(0.,1.,1.)), hash13(i + vec3(1.,1.,1.)),f.x),\n                        f.y),\n                f.z);\n}\n\nconst mat3 m = mat3( 0.00,  0.80,  0.60,\n                    -0.80,  0.36, -0.48,\n                    -0.60, -0.48,  0.64 ) * 1.7;\n\nfloat FBM( vec3 p )\n{\n    float f;\n\n        f = 0.5000 * Noise(p); p = m*p;\n        f += 0.2500 * Noise(p); p = m*p;\n        f += 0.1250 * Noise(p); p = m*p;\n        f += 0.0625   * Noise(p); p = m*p;\n        f += 0.03125  * Noise(p); p = m*p;\n        f += 0.015625 * Noise(p);\n    return f;\n}",
+                "name": "Common",
+                "description": "",
+                "type": "common"
+            }
+        ]
+    }
+}
