@@ -20,8 +20,6 @@ uniform SAMPLER_1_TYPE iChannel1;
 uniform SAMPLER_2_TYPE iChannel2;
 uniform SAMPLER_3_TYPE iChannel3;
 
-in vec2 ShaderToolQt_fFragCoord;
-
 layout(location=0) out vec4 ShaderToolQt_oColor;
 
 #macro COMMON_CODE
