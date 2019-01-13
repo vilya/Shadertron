@@ -23,7 +23,7 @@ namespace vh {
   static const QString kRenderPassType_Buffer  = "buffer";
   static const QString kRenderPassType_Image   = "image";
   static const QString kRenderPassType_CubeMap = "cubemap";
-  static const QString kRenderPassType_Audio   = "audio";
+  static const QString kRenderPassType_Sound   = "sound";
 
   static const QString kInputType_Buffer  = "buffer";
   static const QString kInputType_CubeMap = "cubemap";
