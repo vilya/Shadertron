@@ -125,7 +125,7 @@ namespace vh  {
 
   RenderWidget::RenderWidget(QWidget* parent) :
     QOpenGLWidget(parent),
-    _overlayFont("Consolas", 20, QFont::Bold),
+    _overlayFont("Consolas", 16, QFont::Bold),
     _overlayPen()
   {
     setFocusPolicy(Qt::ClickFocus);
