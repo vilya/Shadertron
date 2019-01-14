@@ -21,11 +21,14 @@ namespace vh  {
 
   static const QString kMainFunc_Image =
       "void main() {\n"
-      "  mainImage(ShaderToolQt_oColor, gl_FragCoord.xy);\n"
+      "  vec2 fragCoord = gl_FragCoord.xy;\n"
+      "  vec4 fragColor;\n"
+      "  mainImage(fragColor, fragCoord);\n"
+      "  ShaderToolQt_oColor = fragColor;\n"
       "}\n";
 
 
-  static constexpr int kTexture_PlaceholderImage       = 0;
+  static constexpr int kTexture_PlaceholderImage    = 0;
   static constexpr int kTexture_PlaceholderCubemap  = 1;
 
 
