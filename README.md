@@ -53,8 +53,6 @@ Input sources:
 - Soundcloud input
 Assets:
 - Ship with standard shadertoy assets, if their license will allow it
-Playback:
-- Clear all intermediate textures to black before rendering frame 0.
 
 
 See 
@@ -84,7 +82,12 @@ Other TODO
 - Make it easy to import custom assets
   - Asset library?
 - Allow zooming & panning of the output image
-
+- Save settings between runs
+  - window size & position
+  - Selected render size & zoom
+  - Last directory used to open a file
+  - ...
+  
 
 Blue sky ideas
 --------------
