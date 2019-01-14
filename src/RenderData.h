@@ -17,6 +17,18 @@ namespace vh {
 
 
   //
+  // Enums
+  //
+
+  enum class PassType {
+    eImage,
+    eBuffer,
+    eCubemap,
+    eSound,
+  };
+
+
+  //
   // Structs
   //
 
@@ -30,6 +42,9 @@ namespace vh {
 
 
   struct RenderPass {
+    PassType type;
+    QString name;
+
     QOpenGLShaderProgram* program = nullptr;
     int inputs[kMaxInputs][2]     = {}; // Front and back textures for each input.
     int outputs[2]                = {}; // Front and back output textures.

@@ -94,6 +94,7 @@ namespace vh {
     void setFixedRenderResolution(int w, int h);
     void setRelativeRenderResolution(float wScale, float hScale);
     void setDisplayOptions(bool fitWidth, bool fitHeight, float scale);
+    void setDisplayPassByName(const QString& name);
 
     void doAction(Action action);
 
@@ -146,6 +147,8 @@ namespace vh {
     bool _clearTextures = true;
 
     RenderData _renderData;
+
+    int _displayPass = -1; // Which render pass to display output from.
 
     int _renderWidth            = 640;
     int _renderHeight           = 360;

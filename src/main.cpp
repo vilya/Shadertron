@@ -70,7 +70,7 @@ namespace vh {
   }
 
 
-  QMenu* setupViewDisplayMenu(QMenu* displayMenu, RenderWidget* renderWidget)
+  QMenu* setupViewZoomMenu(QMenu* displayMenu, RenderWidget* renderWidget)
   {
     QActionGroup* group = new QActionGroup(displayMenu);
 
@@ -92,6 +92,30 @@ namespace vh {
     actions.front()->setChecked(true);
 
     return displayMenu;
+  }
+
+
+  QMenu* setupViewPassMenu(QMenu* passMenu, RenderWidget* renderWidget)
+  {
+    QActionGroup* group = new QActionGroup(passMenu);
+
+    QList<QAction*> actions;
+    actions.push_back(passMenu->addAction("&Image", [renderWidget](){ renderWidget->setDisplayPassByName("Image"); }));
+    passMenu->addSeparator();
+    actions.push_back(passMenu->addAction("Buf &A", [renderWidget](){ renderWidget->setDisplayPassByName("Buf A"); }));
+    actions.push_back(passMenu->addAction("Buf &B", [renderWidget](){ renderWidget->setDisplayPassByName("Buf B"); }));
+    actions.push_back(passMenu->addAction("Buf &C", [renderWidget](){ renderWidget->setDisplayPassByName("Buf C"); }));
+    actions.push_back(passMenu->addAction("Buf &D", [renderWidget](){ renderWidget->setDisplayPassByName("Buf D"); }));
+    passMenu->addSeparator();
+    actions.push_back(passMenu->addAction("C&ube A", [renderWidget](){ renderWidget->setDisplayPassByName("Cube A"); }));
+
+    for (QAction* action : actions) {
+      group->addAction(action);
+      action->setCheckable(true);
+    }
+    actions.front()->setChecked(true);
+
+    return passMenu;
   }
 
 } // namespace vh
@@ -159,17 +183,16 @@ int main(int argc, char *argv[])
   playbackMenu->addAction("Back 10 secs",    [renderWidget](){ renderWidget->doAction(Action::eRewind_Large); });
 
   QMenu* viewMenu = menubar->addMenu("&View");
-  QMenu* renderMenu = viewMenu->addMenu("&Render");
-  QMenu* displayMenu = viewMenu->addMenu("&Zoom");
+  QMenu* viewRenderMenu = viewMenu->addMenu("&Render");
+  QMenu* viewZoomMenu = viewMenu->addMenu("&Zoom");
+  viewMenu->addSeparator();
+  QMenu* viewPassMenu = viewMenu->addMenu("&Pass");
   viewMenu->addSeparator();
   viewMenu->addAction("&Overlay on/off", [renderWidget](){ renderWidget->doAction(Action::eToggleOverlay); });
 
-  setupViewRenderMenu(renderMenu, renderWidget);
-  setupViewDisplayMenu(displayMenu, renderWidget);
-//  zoomMenu->addAction("Fit width")->setEnabled(false);
-//  zoomMenu->addAction("Fit height")->setEnabled(false);
-//  zoomMenu->addSeparator();
-//  zoomMenu->addAction("");
+  setupViewRenderMenu(viewRenderMenu, renderWidget);
+  setupViewZoomMenu(viewZoomMenu, renderWidget);
+  setupViewPassMenu(viewPassMenu, renderWidget);
 
   QObject::connect(renderWidget, &RenderWidget::closeRequested, &mainWindow, &QMainWindow::close);
 

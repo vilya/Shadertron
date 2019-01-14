@@ -258,6 +258,33 @@ namespace vh  {
   }
 
 
+  void RenderWidget::setDisplayPassByName(const QString& name)
+  {
+    if (name.isNull()) {
+      return;
+    }
+
+    int newDisplayPass = _displayPass;
+    for (int i = 0; i < _renderData.numRenderpasses; i++) {
+      if (_renderData.renderpasses[i].name == name) {
+        newDisplayPass = i;
+        break;
+      }
+    }
+
+    if (newDisplayPass == _displayPass) {
+      return;
+    }
+
+    _displayPass = newDisplayPass;
+    qDebug("Display pass set to %s", qPrintable(name));
+
+    if (!_playbackTimer.running()) {
+      update();
+    }
+  }
+
+
   void RenderWidget::doAction(Action action)
   {
     switch (action) {
@@ -493,7 +520,7 @@ namespace vh  {
     };
     for (const QString& name : names) {
       int idx = _currentDoc->findRenderPassByName(name);
-      if (idx!= -1) {
+      if (idx != -1) {
         renderPassOrder[numRenderPasses++] = idx;
       }
     }
@@ -508,6 +535,20 @@ namespace vh  {
         assetIDtoRenderpassIndex[passIn.outputs[0].id] = _renderData.numRenderpasses;
       }
       _renderData.numRenderpasses++;
+
+      passOut.name = passIn.name;
+      if (passIn.type == kRenderPassType_Buffer) {
+        passOut.type = PassType::eBuffer;
+      }
+      else if (passIn.type == kRenderPassType_CubeMap) {
+        passOut.type = PassType::eCubemap;
+      }
+      else if (passIn.type == kRenderPassType_Sound) {
+        passOut.type = PassType::eSound;
+      }
+      else {
+        passOut.type = PassType::eImage;
+      }
 
       for (int i = 0; i < 2; i++) {
         Texture& tex = _renderData.textures[_renderData.numTextures];
@@ -641,6 +682,9 @@ namespace vh  {
       passOut.program->setUniformValue(passOut.iChannel3Loc, 3);
       passOut.program->release();
     }
+
+    // Display the "image" pass
+    _displayPass = _renderData.numRenderpasses - 1;
   }
 
 
@@ -787,7 +831,6 @@ namespace vh  {
       _clearTextures = false;
     }
 
-    int lastRenderpass = _renderData.numRenderpasses - 1;
     for (int i = 0; i < _renderData.numRenderpasses; i++) {
       const RenderPass& pass = _renderData.renderpasses[i];
 
@@ -824,15 +867,17 @@ namespace vh  {
       pass.program->release();
     }
 
-    int lastTexIdx = _renderData.renderpasses[lastRenderpass].outputs[_renderData.backBuffer];
-    QOpenGLTexture* texObj = _renderData.textures[lastTexIdx].obj;
-
+    int displayTexIdx = _renderData.renderpasses[_displayPass].outputs[_renderData.backBuffer];
+    QOpenGLTexture* texObj = _renderData.textures[displayTexIdx].obj;
 
     int srcW = texObj->width();
     int srcH = texObj->height();
     int dstX, dstY, dstW, dstH;
     displayRect(dstX, dstY, dstW, dstH);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
+    if (_displayPass != _renderData.numRenderpasses - 1) {
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
+    }
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glClearColor(0.0, 0.0, 0.0, 1.0);
