@@ -139,23 +139,16 @@ int main(int argc, char *argv[])
   app.setAttribute(Qt::AA_UseDesktopOpenGL);
   app.setAttribute(Qt::AA_ShareOpenGLContexts);
 
-  QString filename;
-  if (argc > 1) {
-    filename = QString::fromLocal8Bit(argv[1]);
-  }
-  else {
-    filename = "c:/Users/vilya/Code/ShaderToolQt/CircularPuzzleInteractive.json";
-//    filename = "c:/Users/vilya/Code/ShaderToolQt/TrainingExt.json";
-//    filename = "c:/Users/vilya/Code/ShaderToolQt/DistanceFieldPainter.json";
-  }
-
   ShaderToyDocument* doc = nullptr;
-  try {
-    doc = loadShaderToyJSONFile(filename);
-  }
-  catch (const std::runtime_error& err) {
-    qCritical("JSON parsing error in %s: %s", qPrintable(filename), err.what());
-    doc = nullptr;
+  if (argc > 1) {
+    try {
+      QString filename = QString::fromLocal8Bit(argv[1]);
+      doc = loadShaderToyJSONFile(filename);
+    }
+    catch (const std::runtime_error& err) {
+      qCritical("JSON parsing error in %s: %s", argv[1], err.what());
+      doc = nullptr;
+    }
   }
 
   QMainWindow mainWindow;
