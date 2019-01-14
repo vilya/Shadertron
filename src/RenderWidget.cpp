@@ -449,22 +449,29 @@ namespace vh  {
     QHash<int, int> assetIDtoTextureIndex;
     QHash<int, int> assetIDtoRenderpassIndex;
 
+    // Calculate the order to process render passes in. Ignoring any passes
+    // which aren't present, this should be: Buf A -> Buf B -> Buf C -> Buf D -> Cube A -> Image
+    int renderPassOrder[kMaxRenderpasses];
+    int numRenderPasses = 0;
+    const QString names[] = {
+      QString("Buf A"),
+      QString("Buf B"),
+      QString("Buf C"),
+      QString("Buf D"),
+      QString("Cube A"),
+      QString("Image"),
+    };
+    for (const QString& name : names) {
+      int idx = _currentDoc->findRenderPassByName(name);
+      if (idx!= -1) {
+        renderPassOrder[numRenderPasses++] = idx;
+      }
+    }
+
     // Set up the render passes, allocating output textures for them as needed.
-    int imagePassIdx = -1;
-    for (int passIdx = 0; passIdx < _currentDoc->renderpasses.size(); passIdx++) {
+    for (int passOrderIdx = 0; passOrderIdx < numRenderPasses; passOrderIdx++) {
+      int passIdx = renderPassOrder[passOrderIdx];
       ShaderToyRenderPass& passIn = _currentDoc->renderpasses[passIdx];
-
-      // Skip the common pass, since it's not a real renderpass - it's just a
-      // placeholder for shared source code.
-      if (passIn.type == kRenderPassType_Common) {
-        continue;
-      }
-
-      // Record the index of the final image pass. We'll use this later when
-      // we shuffle it to the end of the list.
-      if (passIn.type == kRenderPassType_Image) {
-        imagePassIdx = passIdx;
-      }
 
       RenderPass& passOut = _renderData.renderpasses[_renderData.numRenderpasses];
       if (passIn.outputs.length() > 0) {
@@ -485,18 +492,9 @@ namespace vh  {
       passOut.sourceFile = passIn.filename;
     }
 
-    // Make sure the final image pass is the last render pass in the list. All
-    // other render passes can be run in any order, but this one has to come
-    // last.
-    int lastPassIdx = _renderData.numRenderpasses - 1;
-    if (imagePassIdx != -1 && imagePassIdx != lastPassIdx) {
-      RenderPass tmp = _renderData.renderpasses[lastPassIdx];
-      _renderData.renderpasses[lastPassIdx] = _renderData.renderpasses[imagePassIdx];
-      _renderData.renderpasses[imagePassIdx] = tmp;
-    }
-
     // Set up all render pass inputs, loading assets as we encounter them.
-    for (int passIdx = 0; passIdx < _currentDoc->renderpasses.size(); passIdx++) {
+    for (int passOrderIdx = 0; passOrderIdx < numRenderPasses; passOrderIdx++) {
+      int passIdx = renderPassOrder[passOrderIdx];
       ShaderToyRenderPass& passIn = _currentDoc->renderpasses[passIdx];
       if (passIn.type == kRenderPassType_Common) {
         continue;
@@ -508,20 +506,31 @@ namespace vh  {
       for (int inputIdx = 0; inputIdx < passIn.inputs.size(); inputIdx++) {
         ShaderToyInput& input = _currentDoc->renderpasses[passIdx].inputs[inputIdx];
 
+        // If this input refers to a renderpass.
+        if (input.ctype == kInputType_Buffer) {
+          int srcPassIndex = assetIDtoRenderpassIndex[input.id];
+          const RenderPass& srcPass = _renderData.renderpasses[srcPassIndex];
+          // We want to read from the output which has been rendered to most
+          // recently, to ensure we have to most up-to-date input values. If
+          // the src pass has already been run in this frame (i.e.
+          // `srcPassIndex < dstPassIndex`) then that will be the back buffer.
+          // Otherwise it will be the front buffer: in this case, the front
+          // buffer will have values calculated at frame N-1 and the back
+          // buffer will have values from frame N-2.
+          //
+          // The minor index we use when looking up an input is the current
+          // front buffer index.
+          int readBackbuffer = (srcPassIndex < dstPassIndex) ? 1 : 0;
+          passOut.inputs[input.channel][0] = srcPass.outputs[readBackbuffer];
+          passOut.inputs[input.channel][1] = srcPass.outputs[readBackbuffer ^ 1];
+          continue;
+        }
+
         // If we've already loaded the asset...
         if (assetIDtoTextureIndex.contains(input.id)) {
           int texIndex = assetIDtoTextureIndex[input.id];
           passOut.inputs[input.channel][0] = texIndex;
           passOut.inputs[input.channel][1] = texIndex;
-          continue;
-        }
-
-        // If this input refers to a renderpass.
-        if (input.ctype == kInputType_Buffer) {
-          int srcPassIndex = assetIDtoRenderpassIndex[input.id];
-          const RenderPass& srcPass = _renderData.renderpasses[srcPassIndex];
-          passOut.inputs[input.channel][0] = srcPass.outputs[1];
-          passOut.inputs[input.channel][1] = srcPass.outputs[0];
           continue;
         }
 
@@ -662,12 +671,13 @@ namespace vh  {
     bool anyChanges = (_pendingDoc != _currentDoc) || _resized;
 
     if (anyChanges) {
-      bool wasPlayingBack = _playbackTimer.running();
-      if (wasPlayingBack) {
-        stopPlayback();
-      }
+//      bool wasPlayingBack = _playbackTimer.running();
+//      if (wasPlayingBack) {
+//        stopPlayback();
+//      }
 
       if (_pendingDoc != _currentDoc) {
+        stopPlayback();
         makePendingDocCurrent();
         startPlayback();
       }
@@ -682,11 +692,12 @@ namespace vh  {
             }
           }
           _resized = false;
+          _clearTextures = true;
         }
 
-        if (wasPlayingBack) {
-          resumePlayback();
-        }
+//        if (wasPlayingBack) {
+//          resumePlayback();
+//        }
       }
     }
 
@@ -696,6 +707,10 @@ namespace vh  {
 
     _renderData.iTime = static_cast<float>(_playbackTimer.elapsedSecs());
     _renderData.iTimeDelta = _renderData.iTime - _prevTime;
+
+    if (_renderData.iFrame == 0) {
+      _clearTextures = true;
+    }
   }
 
 
@@ -719,6 +734,20 @@ namespace vh  {
 
     glViewport(0, 0, renderPassWidth(), renderPassHeight());
     glClearColor(0.0, 1.0, 0.0, 1.0);
+
+    // If we're on frame 0, clear all the output textures to make sure any
+    // render pass which reads from them doesn't get garbage values.
+    if (_clearTextures) {
+      for (int i = 0; i < _renderData.numRenderpasses; i++) {
+        for (int j = 0; j < 2; j++) {
+          int texIndex = _renderData.renderpasses[i].outputs[j];
+          QOpenGLTexture* texObj = _renderData.textures[texIndex].obj;
+          glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
+          glClear(GL_COLOR_BUFFER_BIT);
+        }
+      }
+      _clearTextures = false;
+    }
 
     int lastRenderpass = _renderData.numRenderpasses - 1;
     for (int i = 0; i < _renderData.numRenderpasses; i++) {
@@ -760,6 +789,11 @@ namespace vh  {
     int lastTexIdx = _renderData.renderpasses[lastRenderpass].outputs[_renderData.backBuffer];
     QOpenGLTexture* texObj = _renderData.textures[lastTexIdx].obj;
 
+    int srcX = 0;
+    int srcY = 0;
+    int srcW = texObj->width();
+    int srcH = texObj->height();
+
     int dstX, dstY, dstW, dstH;
     if (_displayFitWidth) {
       dstW = width();
@@ -781,12 +815,12 @@ namespace vh  {
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    glBlitFramebuffer(0, 0, texObj->width(), texObj->height(), dstX, dstY, dstX + dstW, dstY + dstH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBlitFramebuffer(srcX, srcY, srcX + srcW, srcY + srcH, dstX, dstY, dstX + dstW, dstY + dstH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
     glBindVertexArray(0);
 
-    _renderData.frontBuffer = 1 - _renderData.frontBuffer;
-    _renderData.backBuffer = 1 - _renderData.backBuffer;
+    _renderData.frontBuffer ^= 1;
+    _renderData.backBuffer ^= 1;
   }
 
 

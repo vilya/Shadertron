@@ -140,6 +140,8 @@ namespace vh {
     ShaderToyDocument* _pendingDoc = nullptr;
     bool _resized = false;
 
+    bool _clearTextures = true;
+
     RenderData _renderData;
 
     float _renderWidth          = 640;
