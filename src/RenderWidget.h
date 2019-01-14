@@ -122,8 +122,11 @@ namespace vh {
     void loadImageTexture(const QString& filename, bool flip, Texture& tex);
     void loadCubemapTexture(const QString& filename, bool flip, Texture& tex);
 
-    int renderPassWidth() const;
-    int renderPassHeight() const;
+    int renderWidth() const;
+    int renderHeight() const;
+    void displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const;
+
+    void widgetToRenderCoords(int widgetX, int widgetY, float& renderX, float& renderY);
 
   private:
     Timer _runtimeTimer;
@@ -144,8 +147,8 @@ namespace vh {
 
     RenderData _renderData;
 
-    float _renderWidth          = 640;
-    float _renderHeight         = 360;
+    int _renderWidth            = 640;
+    int _renderHeight           = 360;
     float _renderWidthScale     = 0.5f;
     float _renderHeightScale    = 0.5f;
     bool _useRelativeRenderSize = false;

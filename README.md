@@ -22,7 +22,10 @@ Features
 
 - Single-pass and multi-pass image shaders
 - Common source for all passes
-- Mouse input
+- Input sources:
+  - Texture
+  - Cube map
+  - Mouse
 - Uses ShaderToy's JSON format (as returned by their API) as the native file format, with some minor extensions.
   - Supports external file references
 - Playback controls:

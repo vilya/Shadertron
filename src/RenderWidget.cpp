@@ -363,15 +363,19 @@ namespace vh  {
 
   void RenderWidget::mousePressEvent(QMouseEvent* event)
   {
-    _renderData.iMouse[0] = _renderData.iMouse[2] = static_cast<float>(event->x());
-    _renderData.iMouse[1] = _renderData.iMouse[3] = static_cast<float>(height() - event->y());
+    float rx, ry;
+    widgetToRenderCoords(event->x(), event->y(), rx, ry);
+    _renderData.iMouse[0] = _renderData.iMouse[2] = rx;
+    _renderData.iMouse[1] = _renderData.iMouse[3] = ry;
   }
 
 
   void RenderWidget::mouseMoveEvent(QMouseEvent* event)
   {
-    _renderData.iMouse[0] = static_cast<float>(event->x());
-    _renderData.iMouse[1] = static_cast<float>(height() - event->y());
+    float rx, ry;
+    widgetToRenderCoords(event->x(), event->y(), rx, ry);
+    _renderData.iMouse[0] = rx;
+    _renderData.iMouse[1] = ry;
   }
 
 
@@ -701,8 +705,8 @@ namespace vh  {
       }
     }
 
-    _renderData.iResolution[0] = float(renderPassWidth());
-    _renderData.iResolution[1] = float(renderPassHeight());
+    _renderData.iResolution[0] = float(renderWidth());
+    _renderData.iResolution[1] = float(renderHeight());
     _renderData.iResolution[2] = 0.0f;
 
     _renderData.iTime = static_cast<float>(_playbackTimer.elapsedSecs());
@@ -732,7 +736,7 @@ namespace vh  {
     glBindFramebuffer(GL_FRAMEBUFFER, _renderData.defaultFBO);
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-    glViewport(0, 0, renderPassWidth(), renderPassHeight());
+    glViewport(0, 0, renderWidth(), renderHeight());
     glClearColor(0.0, 1.0, 0.0, 1.0);
 
     // If we're on frame 0, clear all the output textures to make sure any
@@ -789,33 +793,17 @@ namespace vh  {
     int lastTexIdx = _renderData.renderpasses[lastRenderpass].outputs[_renderData.backBuffer];
     QOpenGLTexture* texObj = _renderData.textures[lastTexIdx].obj;
 
-    int srcX = 0;
-    int srcY = 0;
+
     int srcW = texObj->width();
     int srcH = texObj->height();
-
     int dstX, dstY, dstW, dstH;
-    if (_displayFitWidth) {
-      dstW = width();
-      dstH = texObj->height() * dstW / texObj->width();
-    }
-    else if (_displayFitHeight) {
-      dstH = height();
-      dstW = texObj->width() * dstH / texObj->height();
-    }
-    else {
-      dstW = int(texObj->width()  * _displayScale);
-      dstH = int(texObj->height() * _displayScale);
-    }
-    dstX = (width() - dstW) / 2;
-    dstY = (height() - dstH) / 2;
-
+    displayRect(dstX, dstY, dstW, dstH);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    glBlitFramebuffer(srcX, srcY, srcX + srcW, srcY + srcH, dstX, dstY, dstX + dstW, dstY + dstH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBlitFramebuffer(0, 0, srcW, srcH, dstX, dstY, dstX + dstW, dstY + dstH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
     glBindVertexArray(0);
 
@@ -826,10 +814,10 @@ namespace vh  {
 
   void RenderWidget::createRenderPassTexture(Texture& tex)
   {
-    qDebug("Creating render pass texture with resolution %dx%d", renderPassWidth(), renderPassHeight());
+    qDebug("Creating render pass texture with resolution %dx%d", renderWidth(), renderHeight());
 
     tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
-    tex.obj->setSize(renderPassWidth(), renderPassHeight());
+    tex.obj->setSize(renderWidth(), renderHeight());
     tex.obj->setFormat(QOpenGLTexture::RGBA32F);
     tex.obj->setAutoMipMapGenerationEnabled(false);
     tex.obj->setMagnificationFilter(QOpenGLTexture::Nearest);
@@ -845,8 +833,8 @@ namespace vh  {
 
   void RenderWidget::resizeRenderPassTexture(Texture& tex)
   {
-    int newW = renderPassWidth();
-    int newH = renderPassHeight();
+    int newW = renderWidth();
+    int newH = renderHeight();
     if (tex.obj->width() == newW && tex.obj->height() == newH) {
       // Texture is already the correct size.
       return;
@@ -934,15 +922,50 @@ namespace vh  {
   }
 
 
-  int RenderWidget::renderPassWidth() const
+  int RenderWidget::renderWidth() const
   {
     return _useRelativeRenderSize ? int(width() * _renderWidthScale) : _renderWidth;
   }
 
 
-  int RenderWidget::renderPassHeight() const
+  int RenderWidget::renderHeight() const
   {
     return _useRelativeRenderSize ? int(height() * _renderHeightScale) : _renderHeight;
+  }
+
+
+  void RenderWidget::displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const
+  {
+    int srcW = renderWidth();
+    int srcH = renderHeight();
+
+    if (_displayFitWidth) {
+      dstW = width();
+      dstH = srcH * dstW / srcW;
+    }
+    else if (_displayFitHeight) {
+      dstH = height();
+      dstW = srcW * dstH / srcH;
+    }
+    else {
+      dstW = int(srcW  * _displayScale);
+      dstH = int(srcH * _displayScale);
+    }
+    dstX = (width() - dstW) / 2;
+    dstY = (height() - dstH) / 2;
+  }
+
+
+  void RenderWidget::widgetToRenderCoords(int widgetX, int widgetY, float& renderX, float& renderY)
+  {
+    int dstX, dstY, dstW, dstH;
+    displayRect(dstX, dstY, dstW, dstH);
+
+    int srcW = renderWidth();
+    int srcH = renderHeight();
+
+    renderX = float(widgetX - dstX) / float(dstW) * float(srcW);
+    renderY = float(height() - widgetY - dstY) / float(dstH) * float(srcH);
   }
 
 } // namespace vh
