@@ -19,11 +19,14 @@ namespace vh  {
 
   static const char* kShaderToyKey = "fdHtWW";
 
-
   static const QString kMainFunc_Image =
       "void main() {\n"
       "  mainImage(ShaderToolQt_oColor, gl_FragCoord.xy);\n"
       "}\n";
+
+
+  static constexpr int kTexture_PlaceholderImage       = 0;
+  static constexpr int kTexture_PlaceholderCubemap  = 1;
 
 
   //
@@ -434,14 +437,37 @@ namespace vh  {
       _renderData.commonSourceCode = _currentDoc->renderpasses[commonIdx].code;
     }
 
-    _renderData.numTextures = 0;
+    _renderData.numTextures = 2;
 
     // Allocate the "no texture" texture.
     {
-      Texture& tex = _renderData.textures[_renderData.numTextures++];
+      Texture& tex = _renderData.textures[kTexture_PlaceholderImage];
       uchar blackPixel[3] = { 0, 0, 0 };
       QImage blackImage = QImage(blackPixel, 1, 1, QImage::Format_RGB888);
       tex.obj = new QOpenGLTexture(blackImage);
+      tex.isBuffer = false;
+      tex.playbackTime = 0.0f;
+    }
+
+    // Allocate the "no cubemap" cubemap.
+    {
+      Texture& tex = _renderData.textures[kTexture_PlaceholderCubemap];
+      uchar whitePixel[3] = { 255, 255, 255 };
+      tex.obj = new QOpenGLTexture(QOpenGLTexture::TargetCubeMap);
+      tex.obj->setSize(1, 1);
+      tex.obj->setFormat(QOpenGLTexture::RGB8_UNorm);
+      tex.obj->setMinMagFilters(QOpenGLTexture::Nearest, QOpenGLTexture::Nearest);
+      tex.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
+      tex.obj->allocateStorage();
+      QOpenGLPixelTransferOptions transferOptions;
+      transferOptions.setAlignment(1);
+      tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapNegativeX, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
+      tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapPositiveX, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
+      tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapNegativeY, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
+      tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapPositiveY, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
+      tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapNegativeZ, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
+      tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapPositiveZ, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
+      tex.obj->generateMipMaps();
       tex.isBuffer = false;
       tex.playbackTime = 0.0f;
     }
@@ -546,7 +572,7 @@ namespace vh  {
             ++_renderData.numTextures;
           }
           else {
-            texIndex = 0;
+            texIndex = kTexture_PlaceholderImage;
           }
           assetIDtoTextureIndex[input.id] = texIndex;
           passOut.inputs[input.channel][0] = texIndex;
@@ -562,7 +588,7 @@ namespace vh  {
             ++_renderData.numTextures;
           }
           else {
-            texIndex = 0; // FIXME: we should have a placeholder cubemap for this case, so that the sampler type is correct.
+            texIndex = kTexture_PlaceholderCubemap;
           }
           assetIDtoTextureIndex[input.id] = texIndex;
           passOut.inputs[input.channel][0] = texIndex;
