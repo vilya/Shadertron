@@ -258,26 +258,31 @@ namespace vh  {
   }
 
 
-  void RenderWidget::setDisplayPassByName(const QString& name)
+  void RenderWidget::setDisplayPassByType(PassType passType, int index)
   {
-    if (name.isNull()) {
+    if (passType == PassType::eSound || passType == PassType::eCubemap) {
       return;
     }
 
-    int newDisplayPass = _displayPass;
+    int newPassIndex = _displayPass;
     for (int i = 0; i < _renderData.numRenderpasses; i++) {
-      if (_renderData.renderpasses[i].name == name) {
-        newDisplayPass = i;
-        break;
+      if (_renderData.renderpasses[i].type == passType) {
+        if (index == 0) {
+          newPassIndex = i;
+          break;
+        }
+        else {
+          --index;
+        }
       }
     }
 
-    if (newDisplayPass == _displayPass) {
+    if (newPassIndex == _displayPass) {
       return;
     }
 
-    _displayPass = newDisplayPass;
-    qDebug("Display pass set to %s", qPrintable(name));
+    _displayPass = newPassIndex;
+    qDebug("Display pass set to %s (idx = %d)", qPrintable(_renderData.renderpasses[_displayPass].name), _displayPass);
 
     if (!_playbackTimer.running()) {
       update();
@@ -514,19 +519,21 @@ namespace vh  {
     // which aren't present, this should be: Buf A -> Buf B -> Buf C -> Buf D -> Cube A -> Image
     int renderPassOrder[kMaxRenderpasses];
     int numRenderPasses = 0;
-    const QString names[] = {
-      QString("Buf A"),
-      QString("Buf B"),
-      QString("Buf C"),
-      QString("Buf D"),
-      QString("Cube A"),
-      QString("Image"),
-    };
-    for (const QString& name : names) {
-      int idx = _currentDoc->findRenderPassByName(name);
-      if (idx != -1) {
-        renderPassOrder[numRenderPasses++] = idx;
+    for (int i = 0; i < _currentDoc->renderpasses.size(); i++) {
+      if (_currentDoc->renderpasses[i].type == kRenderPassType_Buffer) {
+        renderPassOrder[numRenderPasses++] = i;
+        if (numRenderPasses == 4) {
+          break;
+        }
       }
+    }
+    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByType(kRenderPassType_CubeMap);
+    if (renderPassOrder[numRenderPasses] != -1) {
+      ++numRenderPasses;
+    }
+    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByType(kRenderPassType_Image);
+    if (renderPassOrder[numRenderPasses] != -1) {
+      ++numRenderPasses;
     }
 
     // Set up the render passes, allocating output textures for them as needed.
@@ -869,6 +876,9 @@ namespace vh  {
       }
 
       pass.program->release();
+
+      // TODO: only generate mipmaps if a downstream pass requires them.
+      _renderData.textures[pass.outputs[_renderData.backBuffer]].obj->generateMipMaps();
     }
 
     int displayTexIdx = _renderData.renderpasses[_displayPass].outputs[_renderData.backBuffer];
@@ -940,7 +950,7 @@ namespace vh  {
     QImage img(adjustedFilename);
     if (img.isNull()) {
       qDebug("failed to load texture %s", qPrintable(filename));
-      return false;;
+      return false;
     }
     if (flip) {
       img = img.mirrored();

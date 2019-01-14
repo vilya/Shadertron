@@ -75,11 +75,11 @@ namespace vh {
     int numTextures     = 0;
     int numRenderpasses = 0;
 
-    GLuint defaultVAO    = 0;
-    GLuint defaultFBO    = 0;
+    GLuint defaultVAO   = 0;
+    GLuint defaultFBO   = 0;
 
-    uint8_t backBuffer   = 0;
-    uint8_t frontBuffer  = 1;
+    uint8_t backBuffer  = 0;
+    uint8_t frontBuffer = 1;
 
     QString commonSourceCode;
     QString commonSourceFile;

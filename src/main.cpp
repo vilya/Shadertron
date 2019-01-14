@@ -100,14 +100,14 @@ namespace vh {
     QActionGroup* group = new QActionGroup(passMenu);
 
     QList<QAction*> actions;
-    actions.push_back(passMenu->addAction("&Image", [renderWidget](){ renderWidget->setDisplayPassByName("Image"); }));
+    actions.push_back(passMenu->addAction("&Image", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eImage); }));
     passMenu->addSeparator();
-    actions.push_back(passMenu->addAction("Buf &A", [renderWidget](){ renderWidget->setDisplayPassByName("Buf A"); }));
-    actions.push_back(passMenu->addAction("Buf &B", [renderWidget](){ renderWidget->setDisplayPassByName("Buf B"); }));
-    actions.push_back(passMenu->addAction("Buf &C", [renderWidget](){ renderWidget->setDisplayPassByName("Buf C"); }));
-    actions.push_back(passMenu->addAction("Buf &D", [renderWidget](){ renderWidget->setDisplayPassByName("Buf D"); }));
+    actions.push_back(passMenu->addAction("Buf &A", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 0); }));
+    actions.push_back(passMenu->addAction("Buf &B", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 1); }));
+    actions.push_back(passMenu->addAction("Buf &C", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 2); }));
+    actions.push_back(passMenu->addAction("Buf &D", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 3); }));
     passMenu->addSeparator();
-    actions.push_back(passMenu->addAction("C&ube A", [renderWidget](){ renderWidget->setDisplayPassByName("Cube A"); }));
+    actions.push_back(passMenu->addAction("C&ube A", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eCubemap); }));
 
     for (QAction* action : actions) {
       group->addAction(action);

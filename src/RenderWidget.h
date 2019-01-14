@@ -94,7 +94,7 @@ namespace vh {
     void setFixedRenderResolution(int w, int h);
     void setRelativeRenderResolution(float wScale, float hScale);
     void setDisplayOptions(bool fitWidth, bool fitHeight, float scale);
-    void setDisplayPassByName(const QString& name);
+    void setDisplayPassByType(PassType passType, int index=0);
 
     void doAction(Action action);
 
