@@ -497,14 +497,14 @@ namespace vh  {
     }
 
     // Set up all render pass inputs, loading assets as we encounter them.
-    for (int passOrderIdx = 0; passOrderIdx < numRenderPasses; passOrderIdx++) {
-      int passIdx = renderPassOrder[passOrderIdx];
+    for (int dstPassIndex = 0; dstPassIndex < numRenderPasses; dstPassIndex++) {
+      int passIdx = renderPassOrder[dstPassIndex];
       ShaderToyRenderPass& passIn = _currentDoc->renderpasses[passIdx];
       if (passIn.type == kRenderPassType_Common) {
         continue;
       }
 
-      int dstPassIndex = assetIDtoRenderpassIndex[passIn.outputs[0].id];
+//      int dstPassIndex = passOrderIdx;
       RenderPass& passOut = _renderData.renderpasses[dstPassIndex];
 
       for (int inputIdx = 0; inputIdx < passIn.inputs.size(); inputIdx++) {
@@ -540,10 +540,14 @@ namespace vh  {
 
         // If this is a texture we haven't loaded yet...
         if (input.ctype == kInputType_Texture) {
-          int texIndex = _renderData.numTextures++;
-          Texture& tex = _renderData.textures[texIndex];
+          int texIndex = _renderData.numTextures;
           bool flip = (input.sampler.vflip == "true");
-          loadImageTexture(input.src, flip, tex);
+          if (loadImageTexture(input.src, flip, _renderData.textures[texIndex])) {
+            ++_renderData.numTextures;
+          }
+          else {
+            texIndex = 0;
+          }
           assetIDtoTextureIndex[input.id] = texIndex;
           passOut.inputs[input.channel][0] = texIndex;
           passOut.inputs[input.channel][1] = texIndex;
@@ -552,10 +556,14 @@ namespace vh  {
 
         // If this is a cubemap we haven't loaded yet...
         if (input.ctype == kInputType_CubeMap) {
-          int texIndex = _renderData.numTextures++;
-          Texture& tex = _renderData.textures[texIndex];
+          int texIndex = _renderData.numTextures;
           bool flip = (input.sampler.vflip == "true");
-          loadCubemapTexture(input.src, flip, tex);
+          if (loadCubemapTexture(input.src, flip, _renderData.textures[texIndex])) {
+            ++_renderData.numTextures;
+          }
+          else {
+            texIndex = 0; // FIXME: we should have a placeholder cubemap for this case, so that the sampler type is correct.
+          }
           assetIDtoTextureIndex[input.id] = texIndex;
           passOut.inputs[input.channel][0] = texIndex;
           passOut.inputs[input.channel][1] = texIndex;
@@ -847,7 +855,7 @@ namespace vh  {
   }
 
 
-  void RenderWidget::loadImageTexture(const QString& filename, bool flip, Texture& tex)
+  bool RenderWidget::loadImageTexture(const QString& filename, bool flip, Texture& tex)
   {
     QString adjustedFilename = filename;
     if (adjustedFilename.startsWith("/media/a")) {
@@ -855,6 +863,10 @@ namespace vh  {
     }
 
     QImage img(adjustedFilename);
+    if (img.isNull()) {
+      qDebug("failed to load texture %s", qPrintable(filename));
+      return false;;
+    }
     if (flip) {
       img = img.mirrored();
     }
@@ -864,10 +876,12 @@ namespace vh  {
 
     tex.isBuffer = false;
     tex.playbackTime = 0.0f;
+
+    return true;
   }
 
 
-  void RenderWidget::loadCubemapTexture(const QString& filename, bool flip, Texture& tex)
+  bool RenderWidget::loadCubemapTexture(const QString& filename, bool flip, Texture& tex)
   {
     QFileInfo fileInfo(filename);
     QString path = fileInfo.path();
@@ -884,6 +898,18 @@ namespace vh  {
     faces[3] = QImage(QString("%1/%2_3.%3").arg(path).arg(basename).arg(suffix));
     faces[4] = QImage(QString("%1/%2_4.%3").arg(path).arg(basename).arg(suffix));
     faces[5] = QImage(QString("%1/%2_5.%3").arg(path).arg(basename).arg(suffix));
+
+    bool allFacesLoaded = true;
+    for (int i = 0; i < 6; i++) {
+      if (faces[i].isNull()) {
+        qDebug("cubemap %s is missing face %d", qPrintable(filename), i);
+        allFacesLoaded = false;
+      }
+    }
+    if (!allFacesLoaded) {
+      qDebug("failed to load cubemap %s", qPrintable(filename));
+      return false;
+    }
 
     QOpenGLTexture::CubeMapFace cubeMapFaces[6];
     cubeMapFaces[0] = QOpenGLTexture::CubeMapPositiveX;
@@ -919,6 +945,8 @@ namespace vh  {
 
     tex.isBuffer = false;
     tex.playbackTime = 0.0f;
+
+    return true;
   }
 
 
