@@ -370,6 +370,10 @@ namespace vh  {
       painter.drawText(10, y, QString("%1 ms/frame").arg(_fpsCounter.msPerFrame(), 0, 'f', 2));
       y += _lineHeight;
       painter.drawText(10, y, QString("%1 FPS").arg(_fpsCounter.framesPerSec(), 0, 'f', 2));
+      y += _lineHeight;
+      painter.drawText(10, y, QString("Mouse Pos %1,%2").arg(_renderData.iMouse[0], 0, 'f', 2).arg(_renderData.iMouse[1], 0, 'f', 2));
+      y += _lineHeight;
+      painter.drawText(10, y, QString("Mouse Down %1,%2").arg(_renderData.iMouse[2], 0, 'f', 2).arg(_renderData.iMouse[3], 0, 'f', 2));
     }
 
     ++_renderData.iFrame;
@@ -411,8 +415,8 @@ namespace vh  {
 
   void RenderWidget::mouseReleaseEvent(QMouseEvent* /*event*/)
   {
-    _renderData.iMouse[2] = -1.0f;
-    _renderData.iMouse[3] = -1.0f;
+    _renderData.iMouse[2] = -_renderData.iMouse[2];
+    _renderData.iMouse[3] = -_renderData.iMouse[3];
   }
 
 
