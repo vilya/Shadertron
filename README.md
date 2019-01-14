@@ -9,12 +9,10 @@ it back...*
 Project name
 ------------
 
-ShaderToolQt is a working title only, because it's pretty crap.
-
-The best idea I've had so far is "ShaderTide". It's a contraction of
-"ShaderToy" and "IDE", because I would ultimately like to make this into a
-kind of IDE for developing ShaderToys (and maybe even go beyond that to 
-something more general purpose).
+ShaderToolQt is a working title only, because it's pretty crap. Other ideas:
+ShaderTide (a contraction of "ShaderToy IDE"), ShaderKitchen, ShaderBakery,
+PixelKitchen, PixelBakery, PixelToy, FragmentToy, Pixery, Pixelhouse,
+Pixelhaus, Shaderhaus, Shaderhouse.
 
 
 Features
@@ -58,6 +56,16 @@ Assets:
 See 
   https://shadertoyunofficial.wordpress.com/2016/07/20/special-shadertoy-features/ 
 for useful info about some of these.
+
+Note: if you have your `clamp` args the wrong way around (value last instead
+of first, as in the original KifsOctahedron), the shader runs fine in WebGL
+and locally with an Intel GPU, but breaks with an Nvidia GPU. The GLSL spec
+says clamp's behaviour is undefined when the max argument is lower than the
+min and this is one place where the behaviour differs between vendors.
+
+It's not really practical to catch all of these cases. Maybe using GLES
+instead would give a more compatible result? It's kind of nice to have GL 4.5
+though...
 
 
 Other TODO
