@@ -1,0 +1,137 @@
+{
+    "Shader": {
+        "ver": "0.1",
+        "info": {
+            "id": "WdlGRf",
+            "date": "1547167616",
+            "viewed": 568,
+            "name": "kifs octahedrons",
+            "username": "macbooktall",
+            "description": "looks like coral to me. use the mouse :D",
+            "likes": 30,
+            "published": 3,
+            "flags": 32,
+            "tags": [
+                "kifs"
+            ],
+            "hasliked": 0
+        },
+        "renderpass": [
+            {
+                "inputs": [
+                    {
+                        "id": 258,
+                        "src": "/media/previz/buffer02.png",
+                        "ctype": "buffer",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 37,
+                        "channel": 0
+                    }
+                ],
+                "code": "void mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec2 uv = fragCoord/iResolution.xy;\n    vec2 uuv = uv * 2.0 - 1.0;\n    vec3 c = texture(iChannel0, uv).rgb;\n    vec4 col = vec4(pow(c, vec3(0.5)), 1.0);\n\n    fragColor = mix(vec4(.0), col, 1.-smoothstep(0.,1.,length(uuv)*0.6));\n}",
+                "filename": "KifsOctahedrons-Image.frag",
+                "name": "Image",
+                "description": "",
+                "type": "image"
+            },
+            {
+                "inputs": [],
+                "outputs": [
+                    {
+                        "id": 257,
+                        "channel": 0
+                    }
+                ],
+                "code": "// Comment this out to have the parameters that generated the gif\n#define USE_MOUSE\n\n// HG_SDF\n// Brought to you by MERCURY http://mercury.sexy\n// Released as Creative Commons Attribution-NonCommercial (CC BY-NC)\n\n#define TAU (2*PI)\n#define PHI (1.618033988749895)\n#define GDFVector0 vec3(1, 0, 0)\n#define GDFVector1 vec3(0, 1, 0)\n#define GDFVector2 vec3(0, 0, 1)\n\n#define GDFVector3 normalize(vec3(1, 1, 1 ))\n#define GDFVector4 normalize(vec3(-1, 1, 1))\n#define GDFVector5 normalize(vec3(1, -1, 1))\n#define GDFVector6 normalize(vec3(1, 1, -1))\n\n#define fGDFBegin float d = 0.;\n\n// Version with without exponent, creates objects with sharp edges and flat faces\n#define fGDF(v) d = max(d, abs(dot(p, v)));\n\n#define fGDFExpEnd return pow(d, 1./e) - r;\n#define fGDFEnd return d - r;\n\nfloat fOctahedron(vec3 p, float r) {\n\tfGDFBegin\n    fGDF(GDFVector3) fGDF(GDFVector4) fGDF(GDFVector5) fGDF(GDFVector6)\n    fGDFEnd\n}\n\nvoid pR(inout vec2 p, float a) {\n\tp = cos(a)*p + sin(a)*vec2(p.y, -p.x);\n}\n\n// end HG_SDF\n//----------------------------------------------------------------------\n\nfloat map( in vec3 pos ){\n    float scale = .55;\n\n    vec2 spacesize = vec2(3.65,2.75);\n    vec2 idx = floor(pos.xz/spacesize);\n    pos.xz = mod(pos.xz, spacesize) - spacesize*0.5;\n    \n    vec3 p = pos;\n    \n    vec2 rot;\n    #ifdef USE_MOUSE\n    rot = vec2(0.785,2.412)+3.14*iMouse.xy/iResolution.xy;\n    #else\n    rot = vec2(0.785,2.412);\n    #endif\n    \n\tfloat clock = iTime*2.;\n\tvec2 rotAnimPhase = vec2(clock + idx.x, clock + idx.y);\n\tvec2 rotAnimAmp = vec2(0.15, 0.3);\n    float cube = 1e20;\n   \n    vec3 displacement = vec3(-1.125, -0.75, -0.375);\n    \n    for (int i = 0; i < 8; i++) {\n        p.xyz = abs(p.xyz);\n        p += displacement * scale;\n\t\t\n        pR(p.xy, rot.x+sin(rotAnimPhase.x+ float(i)*0.5 + length(p)*.5 + idx.x*2.)*rotAnimAmp.x);\n        pR(p.yz, rot.y+cos(rotAnimPhase.y+ float(i)*0.5 + length(p)*.5 + idx.y*2.)*rotAnimAmp.y);\n\n\t\tscale *= 0.6;\n        \n        float octa = fOctahedron(p,scale);\n      \n        cube = min(cube,octa);    \n        \n    }\n\n    return cube;\n}\n\nfloat castRay( in vec3 ro, in vec3 rd )\n{\n\tfloat precis = 0.007;\n    float t = 0.;\n    float m = 0.0;\n    for( int i=0; i<40; i++ )\n    {\n   \t\tfloat res = map( ro+rd*t );\n        if (res < precis) break;\n        t += res;\n    }\n\n    return t;\n}\n\nvec3 calcNormal( in vec3 pos )\n{\n\tvec3 eps = vec3( 0.005, 0.0, 0.0 );\n\tvec3 nor = vec3(map(pos+eps.xyy) - map(pos-eps.xyy),\n        \t\t\tmap(pos+eps.yxy) - map(pos-eps.yxy),\n        \t\t\tmap(pos+eps.yyx) - map(pos-eps.yyx) );\n\treturn normalize(nor);\n}\n\nfloat calcAO( in vec3 pos, in vec3 nor )\n{\n\tfloat occ = 0.0;\n    float sca = 1.0;\n    for( int i=0; i<4; i++ )\n    {\n        float hr = 0.01 + 0.02*float(i)/4.0;\n        vec3 aopos =  nor * hr + pos;\n        float dd = map( aopos );\n        occ += -(dd-hr)*sca;\n        sca *= .95;\n    }\n    return clamp( 1.0 - 3.0*occ, 0.0, 1.0 );    \n}\n\nvec4 render( in vec3 ro, in vec3 rd )\n{\n    vec3 col = vec3(1.);\n    float res = castRay(ro,rd);\n    vec3 pos = ro + res*rd;\n    vec3 nor = calcNormal( pos );\n\n    float occ = calcAO( pos, nor )*1.25;\n\n    col = vec3(.85+dot(rd,nor));\n\tnor.g = 0.;\n    col *= (1.-nor.rgb*0.5-0.5) * occ;\n\t\n    col = mix(col, vec3(0.), clamp((res)/6.5, 0., 1.));\n\n    return vec4( clamp(col,0.0,1.0), res );\n}\n\nmat3 setCamera( in vec3 ro, in vec3 ta, float cr )\n{\n    vec3 cw = normalize(ta-ro);\n    vec3 cp = vec3(sin(cr), cos(cr),0.0);\n    vec3 cu = normalize( cross(cw,cp) );\n    vec3 cv = normalize( cross(cu,cw) );\n    return mat3( cu, cv, cw );\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord ) \n{\n    vec2 q = fragCoord.xy/iResolution.xy;\n    vec2 p = -1.0+2.0*q;\n    p.x *= iResolution.x/iResolution.y;\n\n    vec3 ro = vec3(-0.65 , 2., -1.5);\n    vec3 ta = ro+vec3(.45+sin(iTime*2.)*0.025,-.475 + cos(1.5+iTime*2.)*0.025,1.);\n    mat3 ca = setCamera( ro, ta, 0. );\n    vec3 rd = ca * normalize(vec3(p.xy,3.4 + cos(iTime*2.)*0.15));\n    vec4 col = render( ro, rd );\n\n    fragColor=col;\n}",
+                "filename": "KifsOctahedrons-BufA.frag",                
+                "name": "Buffer A",
+                "description": "",
+                "type": "buffer"
+            },
+            {
+                "inputs": [
+                    {
+                        "id": 257,
+                        "src": "/media/previz/buffer00.png",
+                        "ctype": "buffer",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 258,
+                        "channel": 0
+                    }
+                ],
+                "code": "// This buffer does some bokeh based on the alpha channel of buffer A which is the distance of the surface from the pixel.\n\nfloat normpdf(in float x, in float sigma)\n{\n\treturn 0.39894*exp(-0.5*x*x/(sigma*sigma))/sigma;\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n   \tvec2 uv = fragCoord.xy / iResolution.xy;\n    vec3 base = vec3(0.);\n    \n    // Gaussian blur by mrharicot https://www.shadertoy.com/view/XdfGDH\n    \n    //declare stuff\n    const int mSize = 7;\n    const int kSize = (mSize-1)/2;\n    float kernel[mSize];\n    vec3 final_colour = vec3(0.0);\n\tfloat depth = texture(iChannel0, uv).a;\n    \n    //create the 1-D kernel\n    float sigma = mix(0.1, 10., max(0., -.55 + depth*0.2));\n    float Z = .0;\n    for (int j = 0; j <= kSize; ++j)\n    {\n        kernel[kSize+j] = kernel[kSize-j] = normpdf(float(j), sigma);\n    }\n\n    //get the normalization factor (as the gaussian has been clamped)\n    for (int j = 0; j < mSize; ++j)\n    {\n        Z += kernel[j];\n    }\n\n    //read out the texels\n    for (int i=-kSize; i <= kSize; ++i)\n    {\n        for (int j=-kSize; j <= kSize; ++j)\n        {\n            base += kernel[kSize+j]*kernel[kSize+i]*texture(iChannel0, (fragCoord.xy+vec2(float(i),float(j))) / iResolution.xy).rgb;\n        }\n    }\n   \tvec4 b = vec4(base/(Z*Z), 1.0);\n\n    vec3 col = clamp(vec3(0.),vec3(1.),b.rgb);\n \n    fragColor = vec4(col, 1.0);\n}\n",
+                "filename": "KifsOctahedrons-BufB.frag",
+                "name": "Buffer B",
+                "description": "",
+                "type": "buffer"
+            },
+            {
+                "inputs": [
+                    {
+                        "id": 258,
+                        "src": "/media/previz/buffer01.png",
+                        "ctype": "buffer",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    },
+                    {
+                        "id": 259,
+                        "src": "/media/previz/buffer02.png",
+                        "ctype": "buffer",
+                        "channel": 1,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 259,
+                        "channel": 0
+                    }
+                ],
+                "code": "// subtle feedback loop: blend the last frame with the current one\n\nvec3 blendSoftLight(vec3 base, vec3 blend) {\n    vec3 s = step(0.5,blend);\n    return s * (sqrt(base)*(2.0*blend-1.0)+2.0*base*(1.0-blend)) + (1.-s)*(2.*base*blend+base*base*(1.0-2.0*blend));\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n   \tvec2 uv = fragCoord.xy / iResolution.xy;\n    vec3 base = texture(iChannel0, uv).rgb;\n    vec3 overlay = texture(iChannel1, uv).rgb;\n    vec4 col = vec4(base +(blendSoftLight(base, overlay*2.)), 1.0);\n    \n    fragColor = col;\n}",
+                "filename": "KifsOctahedrons-BufC.frag",
+                "name": "Buffer C",
+                "description": "",
+                "type": "buffer"
+            }
+        ]
+    }
+}
