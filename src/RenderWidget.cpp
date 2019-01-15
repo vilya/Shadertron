@@ -398,7 +398,12 @@ namespace vh  {
     painter.beginNativePainting();
 
     updateRenderData();
-    render();
+    if (_currentDoc != nullptr) {
+      render();
+    }
+    else {
+      renderEmpty();
+    }
 
     painter.endNativePainting();
 
@@ -420,10 +425,13 @@ namespace vh  {
       painter.drawText(10, y, QString("Mouse Down %1,%2").arg(_renderData.iMouse[2], 0, 'f', 2).arg(_renderData.iMouse[3], 0, 'f', 2));
     }
 
-    ++_renderData.iFrame;
-    _prevTime = _renderData.iTime;
+    if (_currentDoc != nullptr) {
+      ++_renderData.iFrame;
+      _prevTime = _renderData.iTime;
+    }
 
-    // Clear the "key pressed" flag for all keys. We only want this one
+    // Clear the "key pressed" flag for all keys. The flag only stays set for
+    // the duration of one frame.
     for (int i = 0; i < 256; i++) {
       _renderData.keyboardTexData[1][i] = 0;
     }
@@ -897,53 +905,45 @@ namespace vh  {
 
   void RenderWidget::updateRenderData()
   {
-    bool anyChanges = (_pendingDoc != _currentDoc) || _resized;
+    if (_pendingDoc != _currentDoc) {
+      stopPlayback();
+      makePendingDocCurrent();
+      startPlayback();
+    }
+    else {
+      // TODO: rebuild all the shaders if anything changed.
 
-    if (anyChanges) {
-      if (_pendingDoc != _currentDoc) {
-        stopPlayback();
-        makePendingDocCurrent();
-        startPlayback();
-      }
-      else {
-        // TODO: rebuild all the shaders if anything changed.
-
-        // Resize all the output textures if the window was resized.
-        if (_resized) {
-          for (int i = 0; i < _renderData.numTextures; i++) {
-            if (_renderData.textures[i].isBuffer) {
-              resizeRenderPassTexture(_renderData.textures[i]);
-            }
+      // Resize all the output textures if the window was resized.
+      if (_resized) {
+        for (int i = 0; i < _renderData.numTextures; i++) {
+          if (_renderData.textures[i].isBuffer) {
+            resizeRenderPassTexture(_renderData.textures[i]);
           }
-          _resized = false;
-          _clearTextures = true;
         }
+        _resized = false;
+        _clearTextures = true;
       }
     }
 
-    _renderData.iResolution[0] = float(renderWidth());
-    _renderData.iResolution[1] = float(renderHeight());
-    _renderData.iResolution[2] = 0.0f;
+    if (_currentDoc != nullptr) {
+      _renderData.iResolution[0] = float(renderWidth());
+      _renderData.iResolution[1] = float(renderHeight());
+      _renderData.iResolution[2] = 0.0f;
 
-    _renderData.iTime = static_cast<float>(_playbackTimer.elapsedSecs());
-    _renderData.iTimeDelta = _renderData.iTime - _prevTime;
+      _renderData.iTime = static_cast<float>(_playbackTimer.elapsedSecs());
+      _renderData.iTimeDelta = _renderData.iTime - _prevTime;
 
-    _renderData.textures[kTexture_Keyboard].obj->setData(QOpenGLTexture::Red,  QOpenGLTexture::UInt8, _renderData.keyboardTexData);
+      _renderData.textures[kTexture_Keyboard].obj->setData(QOpenGLTexture::Red,  QOpenGLTexture::UInt8, _renderData.keyboardTexData);
 
-    if (_renderData.iFrame == 0) {
-      _clearTextures = true;
+      if (_renderData.iFrame == 0) {
+        _clearTextures = true;
+      }
     }
   }
 
 
   void RenderWidget::render()
   {
-    if (_currentDoc == nullptr) {
-      glClearColor(0.33f, 0.33f, 0.5f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-      return;
-    }
-
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_STENCIL_TEST);
@@ -1031,6 +1031,14 @@ namespace vh  {
 
     _renderData.frontBuffer ^= 1;
     _renderData.backBuffer ^= 1;
+  }
+
+
+  void RenderWidget::renderEmpty()
+  {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());
+    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
   }
 
 

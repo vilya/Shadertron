@@ -128,6 +128,7 @@ namespace vh {
     void teardownRenderData();
     void updateRenderData();
     void render();
+    void renderEmpty();
 
     void createRenderPassTexture(Texture& tex);
     void resizeRenderPassTexture(Texture& tex);
