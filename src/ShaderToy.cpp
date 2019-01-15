@@ -402,6 +402,51 @@ namespace vh {
   }
 
 
+  ShaderToyDocument* defaultShaderToyDocument()
+  {
+    ShaderToyDocument* document = new ShaderToyDocument();
+
+    document->version = "0.1";
+
+    document->info.id = "";
+    document->info.date = ""; // TODO: set to the current date and time
+    document->info.viewed = 0;
+    document->info.name = "Untitled";
+    document->info.username = ""; // TODO: save user's ShaderToy username?
+    document->info.description = "";
+    document->info.likes = 0;
+    document->info.published = 0;
+    document->info.flags = 0;
+    document->info.hasliked = 0;
+
+    ShaderToyRenderPass pass;
+    pass.outputs.push_back(ShaderToyOutput{ 37, 0 });
+    pass.code =
+        "void mainImage( out vec4 fragColor, in vec2 fragCoord )\n"
+        "{\n"
+        "    // Normalized pixel coordinates (from 0 to 1)\n"
+        "    vec2 uv = fragCoord/iResolution.xy;\n"
+        "\n"
+        "    // Time varying pixel color\n"
+        "    vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));\n"
+        "\n"
+        "    // Output to screen\n"
+        "    fragColor = vec4(col,1.0);\n"
+        "}\n";
+    pass.name = "Image";
+    pass.description = "";
+    pass.type = kRenderPassType_Image;
+    pass.filename = "";
+
+    document->renderpasses.push_back(pass);
+
+    document->src = "";
+    document->refDir = QDir::current();
+
+    return document;
+  }
+
+
   void roundtripJsonFile(const QString& filename, const QString& outFilename)
   {
     QFile file(filename);

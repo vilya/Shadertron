@@ -138,6 +138,8 @@ namespace vh {
   ShaderToyDocument* loadShaderToyJSONFile(const QString& filename);
   void saveShaderToyJSONFile(const ShaderToyDocument* document, const QString& filename);
 
+  ShaderToyDocument* defaultShaderToyDocument();
+
   void roundtripJsonFile(const QString& filename, const QString& outFilename);
 
 } // namespace vh

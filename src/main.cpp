@@ -176,6 +176,10 @@ int main(int argc, char *argv[])
     }
   }
 
+  if (doc == nullptr) {
+    doc = defaultShaderToyDocument();
+  }
+
   QMainWindow mainWindow;
   RenderWidget* renderWidget = new RenderWidget(&mainWindow);
   renderWidget->setShaderToyDocument(doc);
