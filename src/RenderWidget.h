@@ -82,6 +82,7 @@ namespace vh {
     explicit RenderWidget(QWidget* parent = nullptr);
     virtual ~RenderWidget();
 
+    ShaderToyDocument* currentShaderToyDocument() const;
     void setShaderToyDocument(ShaderToyDocument* newDoc);
 
     bool keyboardShaderInput() const;
@@ -106,6 +107,8 @@ namespace vh {
 
     void setKeyboardShaderInput(bool enabled);
     void setMouseShaderInput(bool enabled);
+
+    void reloadCurrentShaderToyDocument();
 
     void doAction(Action action);
 
@@ -154,6 +157,7 @@ namespace vh {
 
     ShaderToyDocument* _currentDoc = nullptr;
     ShaderToyDocument* _pendingDoc = nullptr;
+    bool _forceReload = false;
     bool _resized = false;
 
     bool _clearTextures = true;

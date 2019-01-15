@@ -379,7 +379,6 @@ namespace vh {
     document->src = filename;
     document->refDir = fileInfo.absoluteDir();
     document->fromJSON(json["Shader"].toObject());
-
     document->loadExternalCode();
 
     return document;
@@ -444,6 +443,79 @@ namespace vh {
     document->refDir = QDir::current();
 
     return document;
+  }
+
+
+  void extractGLSLToFiles(ShaderToyDocument* document, bool overwriteExisting)
+  {
+    if (document == nullptr) {
+      return;
+    }
+
+    for (int i = 0; i < document->renderpasses.size(); i++) {
+      ShaderToyRenderPass& pass = document->renderpasses[i];
+      if (pass.filename.isEmpty() && !pass.code.isEmpty()) {
+        QString glslFilename = QString("%1-%2.frag").arg(document->info.name.replace(' ', "")).arg(pass.name.replace(' ', ""));
+
+        QFileInfo fileInfo(document->refDir.absoluteFilePath(glslFilename));
+        if (fileInfo.exists() && !overwriteExisting) {
+          QString err = QString("cannot extract %1 to GLSL file %2, file already exists").arg(pass.name).arg(glslFilename);
+          throw std::runtime_error(qPrintable(err));
+        }
+
+        QFile file(document->refDir.absoluteFilePath(glslFilename));
+        if (!file.open(QIODevice::WriteOnly)) {
+          QString err = QString("unable to open GLSL file %1 for writing").arg(glslFilename);
+          throw std::runtime_error(qPrintable(err));
+        }
+
+        QByteArray contents = pass.code.toLatin1();
+        int bytesWritten = file.write(contents);
+        if (bytesWritten < contents.length()) {
+          QString err = QString("failed while writing %1 to GLSL file %2").arg(pass.name).arg(glslFilename);
+          throw std::runtime_error(qPrintable(err));
+        }
+
+        file.close();
+
+        pass.filename = glslFilename;
+      }
+    }
+  }
+
+
+  void inlineGLSLFromFiles(ShaderToyDocument* document)
+  {
+    if (document == nullptr) {
+      return;
+    }
+
+    for (int i = 0; i < document->renderpasses.size(); i++) {
+      ShaderToyRenderPass& pass = document->renderpasses[i];
+      if (!pass.filename.isEmpty()) {
+        pass.loadExternalCode(document->refDir);
+        pass.filename = QString();
+      }
+    }
+  }
+
+
+  void watchAllFiles(const ShaderToyDocument* document, QFileSystemWatcher& watcher)
+  {
+    if (document == nullptr) {
+      return;
+    }
+
+    if (!document->src.isEmpty()) {
+      watcher.addPath(document->src);
+    }
+
+    for (int i = 0; i < document->renderpasses.size(); i++) {
+      const ShaderToyRenderPass& pass = document->renderpasses[i];
+      if (!pass.filename.isEmpty()) {
+        watcher.addPath(pass.filename);
+      }
+    }
   }
 
 

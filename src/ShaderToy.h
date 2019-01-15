@@ -5,6 +5,7 @@
 // Code for loading and saving ShaderToy's JSON documents.
 
 #include <QDir>
+#include <QFileSystemWatcher>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -139,6 +140,10 @@ namespace vh {
   void saveShaderToyJSONFile(const ShaderToyDocument* document, const QString& filename);
 
   ShaderToyDocument* defaultShaderToyDocument();
+
+  void extractGLSLToFiles(ShaderToyDocument* document, bool overwriteExisting);
+  void inlineGLSLFromFiles(ShaderToyDocument* document);
+  void watchAllFiles(const ShaderToyDocument* document, QFileSystemWatcher& watcher);
 
   void roundtripJsonFile(const QString& filename, const QString& outFilename);
 

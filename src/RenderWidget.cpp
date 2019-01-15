@@ -163,6 +163,12 @@ namespace vh  {
   }
 
 
+  ShaderToyDocument* RenderWidget::currentShaderToyDocument() const
+  {
+    return _currentDoc;
+  }
+
+
   void RenderWidget::setShaderToyDocument(ShaderToyDocument* newDoc)
   {
     if (_pendingDoc != _currentDoc) {
@@ -307,13 +313,18 @@ namespace vh  {
   void RenderWidget::setKeyboardShaderInput(bool enabled)
   {
     _keyboardShaderInput = enabled;
-    qDebug("_keyboardShaderInput set to %s", _keyboardShaderInput ? "true" : "false");
   }
 
 
   void RenderWidget::setMouseShaderInput(bool enabled)
   {
     _mouseShaderInput = enabled;
+  }
+
+
+  void RenderWidget::reloadCurrentShaderToyDocument()
+  {
+    _forceReload = true;
   }
 
 
@@ -909,6 +920,15 @@ namespace vh  {
       stopPlayback();
       makePendingDocCurrent();
       startPlayback();
+    }
+    else if (_forceReload) {
+      if (_currentDoc != nullptr) {
+        stopPlayback();
+        teardownRenderData();
+        setupRenderData();
+        _forceReload = false;
+        startPlayback();
+      }
     }
     else {
       // TODO: rebuild all the shaders if anything changed.

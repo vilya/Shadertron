@@ -22,13 +22,14 @@ extern "C" {
 }
 #endif
 
+using namespace vh;
 
 namespace vh {
 
-  void openFile(RenderWidget* target)
+  void openFile(RenderWidget* renderWidget)
   {
     QString initialDir = ".";
-    QString filename =  QFileDialog::getOpenFileName(target,
+    QString filename =  QFileDialog::getOpenFileName(renderWidget,
         "Open ShaderToy", initialDir, "ShaderToy JSON Files (*.json)");
     if (filename.isNull()) {
       return;
@@ -43,7 +44,78 @@ namespace vh {
       return;
     }
 
-    target->setShaderToyDocument(doc);
+    renderWidget->setShaderToyDocument(doc);
+  }
+
+
+  void saveFile(RenderWidget* renderWidget, bool saveAs)
+  {
+    ShaderToyDocument* doc = renderWidget->currentShaderToyDocument();
+    if (doc == nullptr) {
+      return;
+    }
+
+
+    QString initialDir = ".";
+    QString filename = doc->src;
+    if (filename.isEmpty()) {
+      saveAs = true;
+    }
+    if (saveAs) {
+      filename = QFileDialog::getSaveFileName(renderWidget,
+          "Save ShaderToy", initialDir, "ShaderToy JSON Files (*.json)");
+      if (filename.isNull()) {
+        return;
+      }
+    }
+
+    try {
+      saveShaderToyJSONFile(doc, filename);
+    }
+    catch (const std::runtime_error& err) {
+      qCritical("Failed to save %s: %s", qPrintable(filename), err.what());
+      return;
+    }
+
+    if (saveAs) {
+      doc->src = filename;
+    }
+  }
+
+
+  void extractGLSL(RenderWidget* renderWidget)
+  {
+    ShaderToyDocument* doc = renderWidget->currentShaderToyDocument();
+    if (doc == nullptr) {
+      return;
+    }
+
+    try {
+      extractGLSLToFiles(doc, false);
+    }
+    catch (const std::runtime_error& err) {
+      qCritical("Failed to extract GLSL: %s", err.what());
+    }
+
+    renderWidget->reloadCurrentShaderToyDocument();
+  }
+
+
+  void inlineGLSL(RenderWidget* renderWidget)
+  {
+    ShaderToyDocument* doc = renderWidget->currentShaderToyDocument();
+    if (doc == nullptr) {
+      return;
+    }
+
+    try {
+      inlineGLSLFromFiles(doc);
+    }
+    catch (const std::runtime_error& err) {
+      qCritical("Failed to extract GLSL: %s", err.what());
+    }
+
+    renderWidget->reloadCurrentShaderToyDocument();
   }
 
 
@@ -148,8 +220,6 @@ namespace vh {
 
 int main(int argc, char *argv[])
 {
-  using namespace vh;
-
   QSurfaceFormat format;
   format.setMajorVersion(4);
   format.setMinorVersion(5);
@@ -188,8 +258,14 @@ int main(int argc, char *argv[])
   mainWindow.setMenuBar(menubar);
 
   QMenu* fileMenu = menubar->addMenu("&File");
-  fileMenu->addAction("&Open", [renderWidget](){ openFile(renderWidget); }, QKeySequence(QKeySequence::Open));
+  fileMenu->addAction("&New", [renderWidget](){ renderWidget->setShaderToyDocument(defaultShaderToyDocument()); }, QKeySequence(QKeySequence::New));
+  fileMenu->addAction("&Open...", [renderWidget](){ openFile(renderWidget); }, QKeySequence(QKeySequence::Open));
   fileMenu->addAction("&Close", [renderWidget](){ renderWidget->setShaderToyDocument(nullptr); }, QKeySequence(QKeySequence::Close));
+  fileMenu->addAction("&Save", [renderWidget](){ saveFile(renderWidget, false); });
+  fileMenu->addAction("Save &As...", [renderWidget](){ saveFile(renderWidget, true); });
+  fileMenu->addSeparator();
+  fileMenu->addAction("&Extract GLSL...", [renderWidget](){ extractGLSL(renderWidget); });
+  fileMenu->addAction("&Inline GLSL...", [renderWidget](){ inlineGLSL(renderWidget); });
   fileMenu->addSeparator();
   fileMenu->addAction("E&xit", &mainWindow, &QMainWindow::close, QKeySequence(QKeySequence::Quit));
 

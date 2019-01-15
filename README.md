@@ -24,8 +24,12 @@ Features
   - Texture
   - Cube map
   - Mouse
+  - Keyboard
+- Can toggle keyboard & mouse input to shaders on or off (off is useful when you want to use keyboard shortcuts, for example).
 - Uses ShaderToy's JSON format (as returned by their API) as the native file format, with some minor extensions.
   - Supports external file references
+  - Can automatically extract GLSL into external files
+  - Can automatically inline GLSL from external files back into the JSON.
 - Playback controls:
   - Play, pause, restart
   - Fast forward/rewind in small, medium or large increments
@@ -43,7 +47,6 @@ Shader types:
 - VR
 Input sources:
 - 3D texture
-- Keyboard
 - Video stream/file
 - Audio stream/file
 - Webcam input
@@ -57,11 +60,20 @@ See
   https://shadertoyunofficial.wordpress.com/2016/07/20/special-shadertoy-features/ 
 for useful info about some of these.
 
-Note: if you have your `clamp` args the wrong way around (value last instead
-of first, as in the original KifsOctahedron), the shader runs fine in WebGL
-and locally with an Intel GPU, but breaks with an Nvidia GPU. The GLSL spec
-says clamp's behaviour is undefined when the max argument is lower than the
-min and this is one place where the behaviour differs between vendors.
+
+A note about driver-level incompatibilities
+-------------------------------------------
+
+There are some driver-level incompatibilities which can trip us up. I've hit
+two examples so far:
+
+- KifsOctahedron had arguments to `clamp` in the wrong order, leading to
+  undefined behaviour. Intel & WebGL shader compilers accept this, the Nvidia
+  shader compiler gives incorrect output.
+
+- WordToy used `char` as an identifier, but it's actually a reserved word in 
+  GLSL. Nvidia shader compiler treats this as a compile error, the WebGL 
+  compiler accepts it.
 
 It's not really practical to catch all of these cases. Maybe using GLES
 instead would give a more compatible result? It's kind of nice to have GL 4.5
