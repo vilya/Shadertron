@@ -1,0 +1,46 @@
+{
+    "Shader": {
+        "ver": "0.1",
+        "info": {
+            "id": "lsXGzf",
+            "date": "1375672030",
+            "viewed": 3573,
+            "name": "Input - Keyboard",
+            "username": "iq",
+            "description": "An example showing how to use the keyboard input. First row of texels contain the current state of the 256 keys. The second row contains a toggle for every key. Third contains Keypress. Texel positions correspond to ASCII codes. Press arrow keys to test.",
+            "likes": 37,
+            "published": 3,
+            "flags": 16,
+            "tags": [
+                "2d",
+                "keyboard"
+            ],
+            "hasliked": 0
+        },
+        "renderpass": [
+            {
+                "inputs": [
+                    {
+                        "id": 33,
+                        "src": "/presets/tex00.jpg",
+                        "ctype": "keyboard",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "nearest",
+                            "wrap": "clamp",
+                            "vflip": "false",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [],
+                "code": "// Created by inigo quilez - iq/2013\n\n\n// An example showing how to use the keyboard input.\n//\n// Row 0: contain the current state of the 256 keys. \n// Row 1: contains Keypress.\n// Row 2: contains a toggle for every key.\n//\n// Texel positions correspond to ASCII codes. Press arrow keys to test.\n\n\n// See also:\n//\n// Input - Keyboard    : https://www.shadertoy.com/view/lsXGzf\n// Input - Microphone  : https://www.shadertoy.com/view/llSGDh\n// Input - Mouse       : https://www.shadertoy.com/view/Mss3zH\n// Input - Sound       : https://www.shadertoy.com/view/Xds3Rr\n// Input - SoundCloud  : https://www.shadertoy.com/view/MsdGzn\n// Input - Time        : https://www.shadertoy.com/view/lsXGz8\n// Input - TimeDelta   : https://www.shadertoy.com/view/lsKGWV\n// Inout - 3D Texture  : https://www.shadertoy.com/view/4llcR4\n\n\nconst int KEY_LEFT  = 37;\nconst int KEY_UP    = 38;\nconst int KEY_RIGHT = 39;\nconst int KEY_DOWN  = 40;\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    vec2 uv = (-iResolution.xy + 2.0*fragCoord) / iResolution.y;\n\n    vec3 col = vec3(0.0);\n\n    // state\n    col = mix( col, vec3(1.0,0.0,0.0), \n        (1.0-smoothstep(0.3,0.31,length(uv-vec2(-0.75,0.0))))*\n        (0.3+0.7*texelFetch( iChannel0, ivec2(KEY_LEFT,0), 0 ).x) );\n\n    col = mix( col, vec3(1.0,1.0,0.0), \n        (1.0-smoothstep(0.3,0.31,length(uv-vec2(0.0,0.5))))*\n        (0.3+0.7*texelFetch( iChannel0, ivec2(KEY_UP,0), 0 ).x));\n\t\n    col = mix( col, vec3(0.0,1.0,0.0),\n        (1.0-smoothstep(0.3,0.31,length(uv-vec2(0.75,0.0))))*\n        (0.3+0.7*texelFetch( iChannel0, ivec2(KEY_RIGHT,0), 0 ).x));\n\n    col = mix( col, vec3(0.0,0.0,1.0),\n        (1.0-smoothstep(0.3,0.31,length(uv-vec2(0.0,-0.5))))*\n        (0.3+0.7*texelFetch( iChannel0, ivec2(KEY_DOWN,0), 0 ).x));\n\n\n    // keypress\t\n    col = mix( col, vec3(1.0,0.0,0.0), \n        (1.0-smoothstep(0.0,0.01,abs(length(uv-vec2(-0.75,0.0))-0.35)))*\n        texelFetch( iChannel0, ivec2(KEY_LEFT,1),0 ).x);\n\t\n    col = mix( col, vec3(1.0,1.0,0.0),\n        (1.0-smoothstep(0.0,0.01,abs(length(uv-vec2(0.0,0.5))-0.35)))*\n        texelFetch( iChannel0, ivec2(KEY_UP,1),0 ).x);\n\n    col = mix( col, vec3(0.0,1.0,0.0),\n        (1.0-smoothstep(0.0,0.01,abs(length(uv-vec2(0.75,0.0))-0.35)))*\n        texelFetch( iChannel0, ivec2(KEY_RIGHT,1),0 ).x);\n\t\n    col = mix( col, vec3(0.0,0.0,1.0),\n        (1.0-smoothstep(0.0,0.01,abs(length(uv-vec2(0.0,-0.5))-0.35)))*\n        texelFetch( iChannel0, ivec2(KEY_DOWN,1),0 ).x);\n    \n    \n    // toggle\t\n    col = mix( col, vec3(1.0,0.0,0.0), \n        (1.0-smoothstep(0.0,0.01,abs(length(uv-vec2(-0.75,0.0))-0.3)))*\n        texelFetch( iChannel0, ivec2(KEY_LEFT,2),0 ).x);\n\t\n    col = mix( col, vec3(1.0,1.0,0.0),\n        (1.0-smoothstep(0.0,0.01,abs(length(uv-vec2(0.0,0.5))-0.3)))*\n        texelFetch( iChannel0, ivec2(KEY_UP,2),0 ).x);\n\n    col = mix( col, vec3(0.0,1.0,0.0),\n        (1.0-smoothstep(0.0,0.01,abs(length(uv-vec2(0.75,0.0))-0.3)))*\n        texelFetch( iChannel0, ivec2(KEY_RIGHT,2),0 ).x);\n\t\n    col = mix( col, vec3(0.0,0.0,1.0),\n        (1.0-smoothstep(0.0,0.01,abs(length(uv-vec2(0.0,-0.5))-0.3)))*\n        texelFetch( iChannel0, ivec2(KEY_DOWN,2),0 ).x);\n\n    fragColor = vec4(col,1.0);\n}",
+                "name": "Image",
+                "description": "",
+                "type": "image"
+            }
+        ]
+    }
+}

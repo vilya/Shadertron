@@ -11,9 +11,15 @@ namespace vh {
   // Constants
   //
 
+  static constexpr int kTexture_PlaceholderImage    = 0;
+  static constexpr int kTexture_PlaceholderCubemap  = 1;
+  static constexpr int kTexture_Keyboard            = 2;
+
+  static constexpr int kNumSpecialTextures = kTexture_Keyboard + 1;
+
   static constexpr int kMaxInputs       = 4;
   static constexpr int kMaxRenderpasses = 5;
-  static constexpr int kMaxTextures     = kMaxRenderpasses * (2 + kMaxInputs) + 1;
+  static constexpr int kMaxTextures     = kMaxRenderpasses * (2 + kMaxInputs) + kNumSpecialTextures;
 
 
   //
@@ -92,6 +98,9 @@ namespace vh {
     float iMouse[4]      = { 0.0f, 0.0f, -1.0, -1.0f };
     float iDate[4]       = { 0.0f, 0.0f, 0.0f, 0.0f };
     float iSampleRate    = 0.0f;
+
+    // Source data for keyboard texture.
+    uchar keyboardTexData[3][256];
   };
 
 } // namespace vh

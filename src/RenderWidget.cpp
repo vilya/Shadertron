@@ -28,10 +28,6 @@ namespace vh  {
       "}\n";
 
 
-  static constexpr int kTexture_PlaceholderImage    = 0;
-  static constexpr int kTexture_PlaceholderCubemap  = 1;
-
-
   //
   // Private helper functions
   //
@@ -387,6 +383,11 @@ namespace vh  {
     ++_renderData.iFrame;
     _prevTime = _renderData.iTime;
 
+    // Clear the "key pressed" flag for all keys. We only want this one
+    for (int i = 0; i < 256; i++) {
+      _renderData.keyboardTexData[2][i] = 0;
+    }
+
     if (_playbackTimer.running()) {
       QTimer::singleShot(1, this, SLOT(update()));
     }
@@ -430,6 +431,12 @@ namespace vh  {
 
   void RenderWidget::keyPressEvent(QKeyEvent* event)
   {
+    // Update the keyboard texture
+    int key = event->nativeVirtualKey();
+    _renderData.keyboardTexData[0][key] = 127;  // The key down flag
+    _renderData.keyboardTexData[1][key] ^= 127; // The key toggle. Flips each time the key is pressed.
+    _renderData.keyboardTexData[2][key] = 127;  // The key pressed flag, non-zero only on for frame where the key is first pressed.
+
     Action action = _keyPressBindings.value(KeyBinding::fromEvent(event), Action::eNoAction);
     doAction(action);
   }
@@ -437,6 +444,11 @@ namespace vh  {
 
   void RenderWidget::keyReleaseEvent(QKeyEvent* event)
   {
+    // Update the keyboard texture
+    int key = event->nativeVirtualKey();
+    _renderData.keyboardTexData[0][key] = 0;  // The key down flag
+    _renderData.keyboardTexData[2][key] = 0;  // The key pressed flag, non-zero only on the frame where the key is first pressed.
+
     Action action = _keyReleaseBindings.value(KeyBinding::fromEvent(event), Action::eNoAction);
     doAction(action);
   }
@@ -476,7 +488,7 @@ namespace vh  {
       _renderData.commonSourceCode = _currentDoc->renderpasses[commonIdx].code;
     }
 
-    _renderData.numTextures = 2;
+    _renderData.numTextures = kNumSpecialTextures;
 
     // Allocate the "no texture" texture.
     {
@@ -507,6 +519,28 @@ namespace vh  {
       tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapNegativeZ, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
       tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapPositiveZ, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
       tex.obj->generateMipMaps();
+      tex.isBuffer = false;
+      tex.playbackTime = 0.0f;
+    }
+
+    // Allocate the keyboard texture.
+    {
+      Texture& tex = _renderData.textures[kTexture_Keyboard];
+      tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
+      tex.obj->setSize(256, 3);
+      tex.obj->setFormat(QOpenGLTexture::R8_UNorm);
+      tex.obj->setMinMagFilters(QOpenGLTexture::Nearest, QOpenGLTexture::Nearest);
+      tex.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
+      tex.obj->setAutoMipMapGenerationEnabled(false);
+      tex.obj->allocateStorage();
+
+      for (int row = 0; row < 3; row++) {
+        for (int key = 0; key < 256; key++) {
+          _renderData.keyboardTexData[row][key] = 0;
+        }
+      }
+
+      tex.obj->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, _renderData.keyboardTexData);
       tex.isBuffer = false;
       tex.playbackTime = 0.0f;
     }
@@ -608,6 +642,13 @@ namespace vh  {
           int readBackbuffer = (srcPassIndex < dstPassIndex) ? 1 : 0;
           passOut.inputs[input.channel][0] = srcPass.outputs[readBackbuffer];
           passOut.inputs[input.channel][1] = srcPass.outputs[readBackbuffer ^ 1];
+          continue;
+        }
+
+        // If this input refers to the keyboard texture...
+        if (input.ctype == kInputType_Keyboard) {
+          passOut.inputs[input.channel][0] = kTexture_Keyboard;
+          passOut.inputs[input.channel][1] = kTexture_Keyboard;
           continue;
         }
 
@@ -803,6 +844,8 @@ namespace vh  {
 
     _renderData.iTime = static_cast<float>(_playbackTimer.elapsedSecs());
     _renderData.iTimeDelta = _renderData.iTime - _prevTime;
+
+    _renderData.textures[kTexture_Keyboard].obj->setData(QOpenGLTexture::Red,  QOpenGLTexture::UInt8, _renderData.keyboardTexData);
 
     if (_renderData.iFrame == 0) {
       _clearTextures = true;
