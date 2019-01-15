@@ -40,6 +40,8 @@ namespace vh {
     eRewind_Small,
     eRewind_Medium,
     eRewind_Large,
+    eToggleKeyboardInput,
+    eToggleMouseInput,
   };
 
 
@@ -82,8 +84,14 @@ namespace vh {
 
     void setShaderToyDocument(ShaderToyDocument* newDoc);
 
+    bool keyboardShaderInput() const;
+    bool mouseShaderInput() const;
+
   signals:
     void closeRequested();
+
+    void keyboardShaderInputChanged(bool newValue);
+    void mouseShaderInputChanged(bool newValue);
 
   public slots:
     void startPlayback();
@@ -95,6 +103,9 @@ namespace vh {
     void setRelativeRenderResolution(float wScale, float hScale);
     void setDisplayOptions(bool fitWidth, bool fitHeight, float scale);
     void setDisplayPassByType(PassType passType, int index=0);
+
+    void setKeyboardShaderInput(bool enabled);
+    void setMouseShaderInput(bool enabled);
 
     void doAction(Action action);
 
@@ -159,6 +170,9 @@ namespace vh {
     bool _displayFitWidth = true;
     bool _displayFitHeight = false;
     float _displayScale = 1.0f;
+
+    bool _keyboardShaderInput = true;
+    bool _mouseShaderInput = true;
 
     QHash<KeyBinding, Action> _keyPressBindings;
     QHash<KeyBinding, Action> _keyReleaseBindings;

@@ -47,6 +47,31 @@ namespace vh {
   }
 
 
+  QMenu* setupInputMenu(QMenu* menu, RenderWidget* renderWidget)
+  {
+    QAction* keyboardAction = menu->addAction("&Keyboard");
+    QAction* mouseAction = menu->addAction("&Mouse");
+
+    // Setup the keyboard action.
+    keyboardAction->setCheckable(true);
+    keyboardAction->setChecked(renderWidget->keyboardShaderInput());
+    keyboardAction->setShortcut(QKeySequence("F2"));
+
+    QObject::connect(keyboardAction, &QAction::toggled, renderWidget, &RenderWidget::setKeyboardShaderInput);
+    QObject::connect(renderWidget, &RenderWidget::keyboardShaderInputChanged, keyboardAction, &QAction::setChecked);
+
+    // Setup the mouse action.
+    mouseAction->setCheckable(true);
+    mouseAction->setChecked(renderWidget->mouseShaderInput());
+    mouseAction->setShortcut(QKeySequence("F3"));
+
+    QObject::connect(mouseAction, &QAction::toggled, renderWidget, &RenderWidget::setMouseShaderInput);
+    QObject::connect(renderWidget, &RenderWidget::mouseShaderInputChanged, mouseAction, &QAction::setChecked);
+
+    return menu;
+  }
+
+
   QMenu* setupViewRenderMenu(QMenu* renderMenu, RenderWidget* renderWidget)
   {
     QActionGroup* group = new QActionGroup(renderMenu);
@@ -174,6 +199,9 @@ int main(int argc, char *argv[])
   playbackMenu->addAction("Back 100 ms",     [renderWidget](){ renderWidget->doAction(Action::eRewind_Small); });
   playbackMenu->addAction("Back 1 sec",      [renderWidget](){ renderWidget->doAction(Action::eRewind_Medium); });
   playbackMenu->addAction("Back 10 secs",    [renderWidget](){ renderWidget->doAction(Action::eRewind_Large); });
+
+  QMenu* inputMenu = menubar->addMenu("&Input");
+  setupInputMenu(inputMenu, renderWidget);
 
   QMenu* viewMenu = menubar->addMenu("&View");
   QMenu* viewRenderMenu = viewMenu->addMenu("&Render");

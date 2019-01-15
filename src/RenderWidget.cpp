@@ -147,6 +147,9 @@ namespace vh  {
     _keyPressBindings[KeyBinding{ Qt::Key_Left,   0                   }] = Action::eRewind_Medium;
     _keyPressBindings[KeyBinding{ Qt::Key_Left,   Qt::ControlModifier }] = Action::eRewind_Large;
 
+    _keyReleaseBindings[KeyBinding{ Qt::Key_F2, 0 }] = Action::eToggleKeyboardInput;
+    _keyReleaseBindings[KeyBinding{ Qt::Key_F3, 0 }] = Action::eToggleMouseInput;
+
     _runtimeTimer.start();
   }
 
@@ -166,6 +169,18 @@ namespace vh  {
       delete _pendingDoc;
     }
     _pendingDoc = newDoc;
+  }
+
+
+  bool RenderWidget::keyboardShaderInput() const
+  {
+    return _keyboardShaderInput;
+  }
+
+
+  bool RenderWidget::mouseShaderInput() const
+  {
+    return _mouseShaderInput;
   }
 
 
@@ -289,6 +304,19 @@ namespace vh  {
   }
 
 
+  void RenderWidget::setKeyboardShaderInput(bool enabled)
+  {
+    _keyboardShaderInput = enabled;
+    qDebug("_keyboardShaderInput set to %s", _keyboardShaderInput ? "true" : "false");
+  }
+
+
+  void RenderWidget::setMouseShaderInput(bool enabled)
+  {
+    _mouseShaderInput = enabled;
+  }
+
+
   void RenderWidget::doAction(Action action)
   {
     switch (action) {
@@ -326,6 +354,18 @@ namespace vh  {
       break;
     case Action::eRewind_Large:
       adjustPlaybackTime(-kLargeStepMS);
+      break;
+    case Action::eToggleKeyboardInput:
+      // Do nothing. The event should bubble up to be handled by the main window.
+//      setKeyboardShaderInput(!_keyboardShaderInput);
+//      emit keyboardShaderInputChanged(_keyboardShaderInput);
+      break;
+    case Action::eToggleMouseInput:
+      // Do nothing. The event should bubble up to be handled by the main window.
+//      setMouseShaderInput(!_mouseShaderInput);
+//      emit mouseShaderInputChanged(_mouseShaderInput);
+      break;
+    default:
       break;
     }
   }
@@ -385,7 +425,7 @@ namespace vh  {
 
     // Clear the "key pressed" flag for all keys. We only want this one
     for (int i = 0; i < 256; i++) {
-      _renderData.keyboardTexData[2][i] = 0;
+      _renderData.keyboardTexData[1][i] = 0;
     }
 
     if (_playbackTimer.running()) {
@@ -406,53 +446,103 @@ namespace vh  {
 
   void RenderWidget::mousePressEvent(QMouseEvent* event)
   {
-    float rx, ry;
-    widgetToRenderCoords(event->x(), event->y(), rx, ry);
-    _renderData.iMouse[0] = _renderData.iMouse[2] = rx;
-    _renderData.iMouse[1] = _renderData.iMouse[3] = ry;
+    if (_mouseShaderInput) {
+      float rx, ry;
+      widgetToRenderCoords(event->x(), event->y(), rx, ry);
+      _renderData.iMouse[0] = _renderData.iMouse[2] = rx;
+      _renderData.iMouse[1] = _renderData.iMouse[3] = ry;
+    }
+    else {
+      // TODO
+    }
   }
 
 
   void RenderWidget::mouseMoveEvent(QMouseEvent* event)
   {
-    float rx, ry;
-    widgetToRenderCoords(event->x(), event->y(), rx, ry);
-    _renderData.iMouse[0] = rx;
-    _renderData.iMouse[1] = ry;
+    if (_mouseShaderInput) {
+      float rx, ry;
+      widgetToRenderCoords(event->x(), event->y(), rx, ry);
+      _renderData.iMouse[0] = rx;
+      _renderData.iMouse[1] = ry;
+    }
+    else {
+      // TODO
+    }
   }
 
 
   void RenderWidget::mouseReleaseEvent(QMouseEvent* /*event*/)
   {
-    _renderData.iMouse[2] = -_renderData.iMouse[2];
-    _renderData.iMouse[3] = -_renderData.iMouse[3];
+    if (_mouseShaderInput) {
+      _renderData.iMouse[2] = -_renderData.iMouse[2];
+      _renderData.iMouse[3] = -_renderData.iMouse[3];
+    }
+    else {
+      // TODO
+    }
   }
 
 
   void RenderWidget::keyPressEvent(QKeyEvent* event)
   {
-    // Update the keyboard texture
-    int key = (event->text().size() == 1) ? event->text().at(0).toLatin1() : event->nativeVirtualKey();
-    qDebug("key pressed = '%c' (%d)", char(key), key);
-    _renderData.keyboardTexData[0][key] = 127;  // The key down flag
-    _renderData.keyboardTexData[1][key] ^= 127; // The key toggle. Flips each time the key is pressed.
-    _renderData.keyboardTexData[2][key] = 127;  // The key pressed flag, non-zero only on for frame where the key is first pressed.
+    // Note: QKeyEvent is implicitly accepted. You have to call event->ignore()
+    // if you don't want to accept it.
 
     Action action = _keyPressBindings.value(KeyBinding::fromEvent(event), Action::eNoAction);
-    doAction(action);
+    if (_keyboardShaderInput) {
+      // Even if we're sending keyboard input to the shader, there are still
+      // certain actions we should be able to trigger via the keyboard.
+      if (action == Action::eToggleKeyboardInput ||
+          action == Action::eToggleMouseInput ||
+          action == Action::eQuit) {
+        doAction(action);
+        return;
+      }
+
+      // Update the keyboard texture
+      int key = (event->text().size() == 1) ? event->text().toUpper().at(0).toLatin1() : event->nativeVirtualKey();
+      _renderData.keyboardTexData[0][key] = 255;  // The key down flag
+      _renderData.keyboardTexData[1][key] = 255;  // The key pressed flag, non-zero only on the frame where the key is first pressed.
+      _renderData.keyboardTexData[2][key] ^= 255; // The key toggle. Flips each time the key is pressed.
+    }
+    else if (action != Action::eNoAction) {
+      doAction(action);
+    }
+    else {
+      event->ignore();
+    }
   }
 
 
   void RenderWidget::keyReleaseEvent(QKeyEvent* event)
   {
-    // Update the keyboard texture
-    int key = (event->text().size() == 1) ? event->text().at(0).toLatin1() : event->nativeVirtualKey();
-    qDebug("key released = '%c' (%d)", char(key), key);
-    _renderData.keyboardTexData[0][key] = 0;  // The key down flag
-    _renderData.keyboardTexData[2][key] = 0;  // The key pressed flag, non-zero only on the frame where the key is first pressed.
+    // Note: QKeyEvent is implicitly accepted. You have to call event->ignore()
+    // if you don't want to accept it.
 
     Action action = _keyReleaseBindings.value(KeyBinding::fromEvent(event), Action::eNoAction);
-    doAction(action);
+    if (_keyboardShaderInput) {
+      // Even if we're sending keyboard input to the shader, there are still
+      // certain actions we should be able to trigger via the keyboard.
+      if (action == Action::eToggleKeyboardInput || action == Action::eToggleMouseInput) {
+        event->ignore();
+        return;
+      }
+      else if (action == Action::eQuit) {
+        doAction(action);
+        return;
+      }
+
+      // Update the keyboard texture
+      int key = (event->text().size() == 1) ? event->text().toUpper().at(0).toLatin1() : event->nativeVirtualKey();
+      _renderData.keyboardTexData[0][key] = 0;  // The key down flag
+    }
+    else if (action != Action::eNoAction) {
+      doAction(action);
+    }
+    else {
+      event->ignore();
+    }
   }
 
 
@@ -810,11 +900,6 @@ namespace vh  {
     bool anyChanges = (_pendingDoc != _currentDoc) || _resized;
 
     if (anyChanges) {
-//      bool wasPlayingBack = _playbackTimer.running();
-//      if (wasPlayingBack) {
-//        stopPlayback();
-//      }
-
       if (_pendingDoc != _currentDoc) {
         stopPlayback();
         makePendingDocCurrent();
@@ -833,10 +918,6 @@ namespace vh  {
           _resized = false;
           _clearTextures = true;
         }
-
-//        if (wasPlayingBack) {
-//          resumePlayback();
-//        }
       }
     }
 
