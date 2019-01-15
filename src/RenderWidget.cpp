@@ -432,7 +432,8 @@ namespace vh  {
   void RenderWidget::keyPressEvent(QKeyEvent* event)
   {
     // Update the keyboard texture
-    int key = event->nativeVirtualKey();
+    int key = (event->text().size() == 1) ? event->text().at(0).toLatin1() : event->nativeVirtualKey();
+    qDebug("key pressed = '%c' (%d)", char(key), key);
     _renderData.keyboardTexData[0][key] = 127;  // The key down flag
     _renderData.keyboardTexData[1][key] ^= 127; // The key toggle. Flips each time the key is pressed.
     _renderData.keyboardTexData[2][key] = 127;  // The key pressed flag, non-zero only on for frame where the key is first pressed.
@@ -445,7 +446,8 @@ namespace vh  {
   void RenderWidget::keyReleaseEvent(QKeyEvent* event)
   {
     // Update the keyboard texture
-    int key = event->nativeVirtualKey();
+    int key = (event->text().size() == 1) ? event->text().at(0).toLatin1() : event->nativeVirtualKey();
+    qDebug("key released = '%c' (%d)", char(key), key);
     _renderData.keyboardTexData[0][key] = 0;  // The key down flag
     _renderData.keyboardTexData[2][key] = 0;  // The key pressed flag, non-zero only on the frame where the key is first pressed.
 
