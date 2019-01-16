@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QMap>
 #include <QMessageLogger>
 
 #include <stdexcept>
@@ -41,7 +42,7 @@ namespace vh {
 
   bool ShaderToySampler::isValid() const
   {
-    // TODO
+    // TODO: add validation logic for a ShaderToySampler
     return true;
   }
 
@@ -109,7 +110,7 @@ namespace vh {
 
   bool ShaderToyOutput::isValid() const
   {
-    // TODO
+    // TODO: add validation logic for a ShaderToyOutput
     return true;
   }
 
@@ -166,7 +167,7 @@ namespace vh {
 
   bool ShaderToyInfo::isValid() const
   {
-    // TODO
+    // TODO: add validation logic for ShaderToyInfo
     return true;
   }
 
@@ -235,17 +236,42 @@ namespace vh {
       return;
     }
 
-    QFileInfo fileInfo(filename);
-    if (!fileInfo.isAbsolute()) {
-      filename = refDir.absoluteFilePath(filename);
-    }
-
-    QFile file(filename);
+    QFile file(refDir.absoluteFilePath(filename));
     if (!file.open(QIODevice::ReadOnly)) {
       return;
     }
 
     code = QString::fromLatin1(file.readAll());
+    file.close();
+  }
+
+
+  void ShaderToyRenderPass::saveExternalCode(const QDir& refDir, bool overwriteExisting)
+  {
+    if (filename.isEmpty()) {
+      return;
+    }
+
+    QFileInfo fileInfo(refDir.absoluteFilePath(filename));
+    if (fileInfo.exists() && !overwriteExisting) {
+      QString err = QString("cannot extract %1 to GLSL file %2, file already exists").arg(name).arg(filename);
+      throw std::runtime_error(qPrintable(err));
+    }
+
+
+    QFile file(refDir.absoluteFilePath(filename));
+    if (!file.open(QIODevice::WriteOnly)) {
+      QString err = QString("unable to open GLSL file %1 for writing").arg(filename);
+      throw std::runtime_error(qPrintable(err));
+    }
+
+    QByteArray contents = code.toLatin1();
+    int bytesWritten = file.write(contents);
+    if (bytesWritten < contents.length()) {
+      QString err = QString("failed while writing %1 to GLSL file %2").arg(name).arg(filename);
+      throw std::runtime_error(qPrintable(err));
+    }
+
     file.close();
   }
 
@@ -317,19 +343,53 @@ namespace vh {
   }
 
 
+  void ShaderToyDocument::saveExternalCode(bool overwriteExisting)
+  {
+    for (int i = 0; i < renderpasses.size(); i++) {
+      renderpasses[i].saveExternalCode(refDir, overwriteExisting);
+    }
+  }
+
+
   bool ShaderToyDocument::isValid() const
   {
     // TODO: validate the version field.
+
 
     if (!info.isValid()) {
       return false;
     }
 
-    // Validate render passes
+    // Make sure all render passes are valid.
     for (int i = 0; i < renderpasses.size(); i++) {
       if (!renderpasses[i].isValid()) {
         return false;
       }
+    }
+
+    // Must have exactly one image pass.
+    if (countRenderPassesByType(kRenderPassType_Image) != 1) {
+      return false;
+    }
+
+    // Can only have one common pass at most.
+    if (countRenderPassesByType(kRenderPassType_Common) > 1) {
+      return false;
+    }
+
+    // Can only have one cubemap pass at most.
+    if (countRenderPassesByType(kRenderPassType_CubeMap) > 1) {
+      return false;
+    }
+
+    // Can only have one sound pass at most.
+    if (countRenderPassesByType(kRenderPassType_Sound) > 1) {
+      return false;
+    }
+
+    // Can have up to 4 buffer passes.
+    if (countRenderPassesByType(kRenderPassType_Buffer) > 4) {
+      return false;
     }
 
     return true;
@@ -358,6 +418,18 @@ namespace vh {
   }
 
 
+  int ShaderToyDocument::countRenderPassesByType(const QString& type) const
+  {
+    int num = 0;
+    for (int i = 0; i < renderpasses.size(); i++) {
+      if (renderpasses[i].type == type) {
+        ++num;
+      }
+    }
+    return num;
+  }
+
+
   //
   // Public functions
   //
@@ -379,6 +451,9 @@ namespace vh {
     document->src = filename;
     document->refDir = fileInfo.absoluteDir();
     document->fromJSON(json["Shader"].toObject());
+    if (!document->isValid()) {
+      throw std::runtime_error("file contains invalid data");
+    }
     document->loadExternalCode();
 
     return document;
@@ -454,32 +529,15 @@ namespace vh {
 
     for (int i = 0; i < document->renderpasses.size(); i++) {
       ShaderToyRenderPass& pass = document->renderpasses[i];
-      if (pass.filename.isEmpty() && !pass.code.isEmpty()) {
-        QString glslFilename = QString("%1-%2.frag").arg(document->info.name.replace(' ', "")).arg(pass.name.replace(' ', ""));
-
-        QFileInfo fileInfo(document->refDir.absoluteFilePath(glslFilename));
-        if (fileInfo.exists() && !overwriteExisting) {
-          QString err = QString("cannot extract %1 to GLSL file %2, file already exists").arg(pass.name).arg(glslFilename);
-          throw std::runtime_error(qPrintable(err));
-        }
-
-        QFile file(document->refDir.absoluteFilePath(glslFilename));
-        if (!file.open(QIODevice::WriteOnly)) {
-          QString err = QString("unable to open GLSL file %1 for writing").arg(glslFilename);
-          throw std::runtime_error(qPrintable(err));
-        }
-
-        QByteArray contents = pass.code.toLatin1();
-        int bytesWritten = file.write(contents);
-        if (bytesWritten < contents.length()) {
-          QString err = QString("failed while writing %1 to GLSL file %2").arg(pass.name).arg(glslFilename);
-          throw std::runtime_error(qPrintable(err));
-        }
-
-        file.close();
-
-        pass.filename = glslFilename;
+      if (pass.code.isEmpty()) {
+        continue;
       }
+
+      if (pass.filename.isEmpty()) {
+        pass.filename = QString("%1-%2.frag").arg(document->info.name).arg(pass.name).replace(' ', "");
+      }
+
+      pass.saveExternalCode(document->refDir, overwriteExisting);
     }
   }
 

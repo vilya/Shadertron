@@ -7,7 +7,7 @@
 #include <QObject>
 #include <QSurfaceFormat>
 
-//#include "Shader.h"
+#include "AppWindow.h"
 #include "ShaderToy.h"
 #include "RenderWidget.h"
 
@@ -23,200 +23,6 @@ extern "C" {
 #endif
 
 using namespace vh;
-
-namespace vh {
-
-  void openFile(RenderWidget* renderWidget)
-  {
-    QString initialDir = ".";
-    QString filename =  QFileDialog::getOpenFileName(renderWidget,
-        "Open ShaderToy", initialDir, "ShaderToy JSON Files (*.json)");
-    if (filename.isNull()) {
-      return;
-    }
-
-    ShaderToyDocument* doc = nullptr;
-    try {
-      doc = loadShaderToyJSONFile(filename);
-    }
-    catch (const std::runtime_error& err) {
-      qCritical("JSON parsing error in %s: %s", qPrintable(filename), err.what());
-      return;
-    }
-
-    renderWidget->setShaderToyDocument(doc);
-  }
-
-
-  void saveFile(RenderWidget* renderWidget, bool saveAs)
-  {
-    ShaderToyDocument* doc = renderWidget->currentShaderToyDocument();
-    if (doc == nullptr) {
-      return;
-    }
-
-
-    QString initialDir = ".";
-    QString filename = doc->src;
-    if (filename.isEmpty()) {
-      saveAs = true;
-    }
-    if (saveAs) {
-      filename = QFileDialog::getSaveFileName(renderWidget,
-          "Save ShaderToy", initialDir, "ShaderToy JSON Files (*.json)");
-      if (filename.isNull()) {
-        return;
-      }
-    }
-
-    try {
-      saveShaderToyJSONFile(doc, filename);
-    }
-    catch (const std::runtime_error& err) {
-      qCritical("Failed to save %s: %s", qPrintable(filename), err.what());
-      return;
-    }
-
-    if (saveAs) {
-      doc->src = filename;
-    }
-  }
-
-
-  void extractGLSL(RenderWidget* renderWidget)
-  {
-    ShaderToyDocument* doc = renderWidget->currentShaderToyDocument();
-    if (doc == nullptr) {
-      return;
-    }
-
-    try {
-      extractGLSLToFiles(doc, false);
-    }
-    catch (const std::runtime_error& err) {
-      qCritical("Failed to extract GLSL: %s", err.what());
-    }
-
-    renderWidget->reloadCurrentShaderToyDocument();
-  }
-
-
-  void inlineGLSL(RenderWidget* renderWidget)
-  {
-    ShaderToyDocument* doc = renderWidget->currentShaderToyDocument();
-    if (doc == nullptr) {
-      return;
-    }
-
-    try {
-      inlineGLSLFromFiles(doc);
-    }
-    catch (const std::runtime_error& err) {
-      qCritical("Failed to extract GLSL: %s", err.what());
-    }
-
-    renderWidget->reloadCurrentShaderToyDocument();
-  }
-
-
-  QMenu* setupInputMenu(QMenu* menu, RenderWidget* renderWidget)
-  {
-    QAction* keyboardAction = menu->addAction("&Keyboard");
-    QAction* mouseAction = menu->addAction("&Mouse");
-
-    // Setup the keyboard action.
-    keyboardAction->setCheckable(true);
-    keyboardAction->setChecked(renderWidget->keyboardShaderInput());
-    keyboardAction->setShortcut(QKeySequence("F2"));
-
-    QObject::connect(keyboardAction, &QAction::toggled, renderWidget, &RenderWidget::setKeyboardShaderInput);
-    QObject::connect(renderWidget, &RenderWidget::keyboardShaderInputChanged, keyboardAction, &QAction::setChecked);
-
-    // Setup the mouse action.
-    mouseAction->setCheckable(true);
-    mouseAction->setChecked(renderWidget->mouseShaderInput());
-    mouseAction->setShortcut(QKeySequence("F3"));
-
-    QObject::connect(mouseAction, &QAction::toggled, renderWidget, &RenderWidget::setMouseShaderInput);
-    QObject::connect(renderWidget, &RenderWidget::mouseShaderInputChanged, mouseAction, &QAction::setChecked);
-
-    return menu;
-  }
-
-
-  QMenu* setupViewRenderMenu(QMenu* renderMenu, RenderWidget* renderWidget)
-  {
-    QActionGroup* group = new QActionGroup(renderMenu);
-
-    QList<QAction*> actions;
-    actions.push_back(renderMenu->addAction("640x360 (Default ShaderToy Resolution)",  [renderWidget](){ renderWidget->setFixedRenderResolution(640, 360); }));
-    actions.push_back(renderMenu->addAction("1280x720", [renderWidget](){ renderWidget->setFixedRenderResolution(1280, 720); }));
-    actions.push_back(renderMenu->addAction("1920x1080", [renderWidget](){ renderWidget->setFixedRenderResolution(1920, 1080); }));
-    renderMenu->addSeparator();
-    actions.push_back(renderMenu->addAction("0.5x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(0.5f, 0.5f); }));
-    actions.push_back(renderMenu->addAction("1.0x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(1.0f, 1.0f); }));
-    actions.push_back(renderMenu->addAction("2.0x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(2.0f, 2.0f); }));
-
-    for (QAction* action : actions) {
-      group->addAction(action);
-      action->setCheckable(true);
-    }
-    actions.front()->setChecked(true);
-
-    return renderMenu;
-  }
-
-
-  QMenu* setupViewZoomMenu(QMenu* displayMenu, RenderWidget* renderWidget)
-  {
-    QActionGroup* group = new QActionGroup(displayMenu);
-
-    QList<QAction*> actions;
-    actions.push_back(displayMenu->addAction("Fit &width",  [renderWidget](){ renderWidget->setDisplayOptions(true, false, 1.0f); }));
-    actions.push_back(displayMenu->addAction("Fit &height", [renderWidget](){ renderWidget->setDisplayOptions(false, true, 1.0f); }));
-    displayMenu->addSeparator();
-    actions.push_back(displayMenu->addAction("25%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.25f); }));
-    actions.push_back(displayMenu->addAction("50%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.5f); }));
-    actions.push_back(displayMenu->addAction("75%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.75f); }));
-    actions.push_back(displayMenu->addAction("100%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 1.0f); }, QKeySequence("=")));
-    actions.push_back(displayMenu->addAction("150%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 1.5f); }));
-    actions.push_back(displayMenu->addAction("200%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 2.0f); }));
-
-    for (QAction* action : actions) {
-      group->addAction(action);
-      action->setCheckable(true);
-    }
-    actions.front()->setChecked(true);
-
-    return displayMenu;
-  }
-
-
-  QMenu* setupViewPassMenu(QMenu* passMenu, RenderWidget* renderWidget)
-  {
-    QActionGroup* group = new QActionGroup(passMenu);
-
-    QList<QAction*> actions;
-    actions.push_back(passMenu->addAction("&Image", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eImage); }));
-    passMenu->addSeparator();
-    actions.push_back(passMenu->addAction("Buf &A", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 0); }));
-    actions.push_back(passMenu->addAction("Buf &B", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 1); }));
-    actions.push_back(passMenu->addAction("Buf &C", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 2); }));
-    actions.push_back(passMenu->addAction("Buf &D", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 3); }));
-    passMenu->addSeparator();
-    actions.push_back(passMenu->addAction("C&ube A", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eCubemap); }));
-
-    for (QAction* action : actions) {
-      group->addAction(action);
-      action->setCheckable(true);
-    }
-    actions.front()->setChecked(true);
-
-    return passMenu;
-  }
-
-} // namespace vh
-
 
 int main(int argc, char *argv[])
 {
@@ -234,75 +40,14 @@ int main(int argc, char *argv[])
   app.setAttribute(Qt::AA_UseDesktopOpenGL);
   app.setAttribute(Qt::AA_ShareOpenGLContexts);
 
-  ShaderToyDocument* doc = nullptr;
+  AppWindow mainWindow;
   if (argc > 1) {
-    try {
-      QString filename = QString::fromLocal8Bit(argv[1]);
-      doc = loadShaderToyJSONFile(filename);
-    }
-    catch (const std::runtime_error& err) {
-      qCritical("JSON parsing error in %s: %s", argv[1], err.what());
-      doc = nullptr;
-    }
+    QString filename = QString::fromLocal8Bit(argv[1]);
+    mainWindow.openNamedFile(filename);
   }
 
-  if (doc == nullptr) {
-    doc = defaultShaderToyDocument();
-  }
-
-  QMainWindow mainWindow;
-  RenderWidget* renderWidget = new RenderWidget(&mainWindow);
-  renderWidget->setShaderToyDocument(doc);
-
-  QMenuBar* menubar = new QMenuBar();
-  mainWindow.setMenuBar(menubar);
-
-  QMenu* fileMenu = menubar->addMenu("&File");
-  fileMenu->addAction("&New", [renderWidget](){ renderWidget->setShaderToyDocument(defaultShaderToyDocument()); }, QKeySequence(QKeySequence::New));
-  fileMenu->addAction("&Open...", [renderWidget](){ openFile(renderWidget); }, QKeySequence(QKeySequence::Open));
-  fileMenu->addAction("&Close", [renderWidget](){ renderWidget->setShaderToyDocument(nullptr); }, QKeySequence(QKeySequence::Close));
-  fileMenu->addAction("&Save", [renderWidget](){ saveFile(renderWidget, false); });
-  fileMenu->addAction("Save &As...", [renderWidget](){ saveFile(renderWidget, true); });
-  fileMenu->addSeparator();
-  fileMenu->addAction("&Extract GLSL...", [renderWidget](){ extractGLSL(renderWidget); });
-  fileMenu->addAction("&Inline GLSL...", [renderWidget](){ inlineGLSL(renderWidget); });
-  fileMenu->addSeparator();
-  fileMenu->addAction("E&xit", &mainWindow, &QMainWindow::close, QKeySequence(QKeySequence::Quit));
-
-  QMenu* playbackMenu = menubar->addMenu("&Playback");
-  playbackMenu->addAction("&Play/Pause", [renderWidget](){ renderWidget->doAction(Action::eTogglePlayback); });
-  playbackMenu->addAction("&Restart",    [renderWidget](){ renderWidget->doAction(Action::eRestartPlayback); });
-  playbackMenu->addSeparator();
-  playbackMenu->addAction("Forward 100 ms",  [renderWidget](){ renderWidget->doAction(Action::eFastForward_Small); });
-  playbackMenu->addAction("Forward 1 sec",   [renderWidget](){ renderWidget->doAction(Action::eFastForward_Medium); });
-  playbackMenu->addAction("Forward 10 secs", [renderWidget](){ renderWidget->doAction(Action::eFastForward_Large); });
-  playbackMenu->addAction("Back 100 ms",     [renderWidget](){ renderWidget->doAction(Action::eRewind_Small); });
-  playbackMenu->addAction("Back 1 sec",      [renderWidget](){ renderWidget->doAction(Action::eRewind_Medium); });
-  playbackMenu->addAction("Back 10 secs",    [renderWidget](){ renderWidget->doAction(Action::eRewind_Large); });
-
-  QMenu* inputMenu = menubar->addMenu("&Input");
-  setupInputMenu(inputMenu, renderWidget);
-
-  QMenu* viewMenu = menubar->addMenu("&View");
-  QMenu* viewRenderMenu = viewMenu->addMenu("&Render");
-  QMenu* viewZoomMenu = viewMenu->addMenu("&Zoom");
-  viewMenu->addSeparator();
-  QMenu* viewPassMenu = viewMenu->addMenu("&Pass");
-  viewMenu->addSeparator();
-  viewMenu->addAction("&Overlay on/off", [renderWidget](){ renderWidget->doAction(Action::eToggleOverlay); });
-
-  setupViewRenderMenu(viewRenderMenu, renderWidget);
-  setupViewZoomMenu(viewZoomMenu, renderWidget);
-  setupViewPassMenu(viewPassMenu, renderWidget);
-
-  QObject::connect(renderWidget, &RenderWidget::closeRequested, &mainWindow, &QMainWindow::close);
-
-  mainWindow.setCentralWidget(renderWidget);
-  mainWindow.resize(1280, 720);
   mainWindow.show();
-
-  renderWidget->setFocus();
-  renderWidget->startPlayback();
+  mainWindow.resize(1280, 720 + mainWindow.menuBar()->height());
 
   return app.exec();
 }

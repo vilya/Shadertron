@@ -91,6 +91,8 @@ namespace vh {
   signals:
     void closeRequested();
 
+    void currentShaderToyDocumentChanged();
+
     void keyboardShaderInputChanged(bool newValue);
     void mouseShaderInputChanged(bool newValue);
 
@@ -143,6 +145,9 @@ namespace vh {
     void displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const;
 
     void widgetToRenderCoords(int widgetX, int widgetY, float& renderX, float& renderY);
+
+  private slots:
+    void fileChanged(const QString& path);
 
   private:
     Timer _runtimeTimer;

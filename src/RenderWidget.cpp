@@ -159,7 +159,6 @@ namespace vh  {
     if (_pendingDoc != _currentDoc) {
       delete _pendingDoc;
     }
-    delete _currentDoc;
   }
 
 
@@ -171,9 +170,6 @@ namespace vh  {
 
   void RenderWidget::setShaderToyDocument(ShaderToyDocument* newDoc)
   {
-    if (_pendingDoc != _currentDoc) {
-      delete _pendingDoc;
-    }
     _pendingDoc = newDoc;
   }
 
@@ -472,7 +468,7 @@ namespace vh  {
       _renderData.iMouse[1] = _renderData.iMouse[3] = ry;
     }
     else {
-      // TODO
+      // TODO: pan and zoom support, other mouse press interactions
     }
   }
 
@@ -486,7 +482,7 @@ namespace vh  {
       _renderData.iMouse[1] = ry;
     }
     else {
-      // TODO
+      // TODO: pan and zoom support, other mouse move interactions
     }
   }
 
@@ -498,7 +494,7 @@ namespace vh  {
       _renderData.iMouse[3] = -_renderData.iMouse[3];
     }
     else {
-      // TODO
+      // TODO: pan and zoom support, other mouse release interactions
     }
   }
 
@@ -579,6 +575,7 @@ namespace vh  {
     if (_currentDoc != nullptr) {
       setupRenderData();
     }
+    emit currentShaderToyDocumentChanged();
   }
 
 
@@ -931,8 +928,6 @@ namespace vh  {
       }
     }
     else {
-      // TODO: rebuild all the shaders if anything changed.
-
       // Resize all the output textures if the window was resized.
       if (_resized) {
         for (int i = 0; i < _renderData.numTextures; i++) {
@@ -1236,6 +1231,17 @@ namespace vh  {
 
     renderX = float(widgetX - dstX) / float(dstW) * float(srcW);
     renderY = float(height() - widgetY - dstY) / float(dstH) * float(srcH);
+  }
+
+
+  //
+  // RenderWidget private slots
+  //
+
+  void RenderWidget::fileChanged(const QString& path)
+  {
+    qDebug("%s changed, reloading shader", qPrintable(path));
+    reloadCurrentShaderToyDocument();
   }
 
 } // namespace vh

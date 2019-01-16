@@ -110,6 +110,7 @@ namespace vh {
     QJsonObject toJSON() const;
 
     void loadExternalCode(const QDir& refDir);
+    void saveExternalCode(const QDir& refDir, bool overwriteExisting);
 
     bool isValid() const;
   };
@@ -128,11 +129,14 @@ namespace vh {
     QJsonObject toJSON() const;
 
     void loadExternalCode();
+    void saveExternalCode(bool overwriteExisting);
 
     bool isValid() const;
 
     int findRenderPassByName(const QString& name, int startIndex=0) const;
     int findRenderPassByType(const QString& type, int startIndex=0) const;
+
+    int countRenderPassesByType(const QString& type) const;
   };
 
 
