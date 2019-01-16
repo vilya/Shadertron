@@ -4,6 +4,7 @@
 
 #include <QFileSystemWatcher>
 #include <QMainWindow>
+#include <QNetworkAccessManager>
 
 namespace vh {
 
@@ -30,6 +31,7 @@ namespace vh {
   public slots:
     void newFile();
     void openFile();
+    void downloadFromShaderToy();
     void closeFile();
     void saveFile();
     void saveFileAs();
@@ -38,6 +40,8 @@ namespace vh {
     void inlineGLSL();
 
     void openNamedFile(const QString& filename);
+
+    void fetchShaderToyByID(const QString& id);
 
   private:
     void createWidgets();
@@ -55,6 +59,7 @@ namespace vh {
   private slots:
     void reloadFile();
     void renderWidgetDocumentChanged();
+    void fetchComplete(QNetworkReply* reply);
 
   private:
     QMenuBar* _menubar = nullptr;
@@ -64,6 +69,9 @@ namespace vh {
     QFileSystemWatcher* _watcher = nullptr;
 
     ShaderToyDocument* _oldDocument = nullptr;
+
+    QNetworkAccessManager* _networkAccess = nullptr;
+    // TODO: add a cache dir, use it to store downloaded shaders, assets, thumbnails, etc.
   };
 
 } // namespace vh

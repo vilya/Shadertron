@@ -8,8 +8,9 @@
 #include <QFileDialog>
 #include <QMenu>
 #include <QMenuBar>
-#include <QVBoxLayout>
-
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QStandardPaths>
 
 namespace vh {
 
@@ -56,6 +57,12 @@ namespace vh {
     }
 
     openNamedFile(filename);
+  }
+
+
+  void AppWindow::downloadFromShaderToy()
+  {
+    fetchShaderToyByID("3dXGWB"); // ID is for "Stop Motion Fox"
   }
 
 
@@ -191,6 +198,18 @@ namespace vh {
   }
 
 
+  void AppWindow::fetchShaderToyByID(const QString &id)
+  {
+    if (_networkAccess == nullptr) {
+      _networkAccess = new QNetworkAccessManager(this);
+      connect(_networkAccess, &QNetworkAccessManager::finished, this, &AppWindow::fetchComplete);
+    }
+
+    QString urlStr = QString("https://www.shadertoy.com/api/v1/shaders/%1?key=fdHtWW").arg(id);
+    _networkAccess->get(QNetworkRequest(QUrl(urlStr)));
+  }
+
+
   //
   // AppWindow private methods
   //
@@ -226,6 +245,7 @@ namespace vh {
   {
     menu->addAction("&New",        this, &AppWindow::newFile,    QKeySequence(QKeySequence::New));
     menu->addAction("&Open...",    this, &AppWindow::openFile,   QKeySequence(QKeySequence::Open));
+    menu->addAction("&Download from ShaderToy...", this, &AppWindow::downloadFromShaderToy);
     menu->addAction("&Close",      this, &AppWindow::closeFile,  QKeySequence(QKeySequence::Close));
     menu->addAction("&Save",       this, &AppWindow::saveFile,   QKeySequence(QKeySequence::Save));
     menu->addAction("&Save As...", this, &AppWindow::saveFileAs, QKeySequence(QKeySequence::SaveAs));
@@ -396,6 +416,24 @@ namespace vh {
       _watcher = new QFileSystemWatcher(this);
       watchAllFiles(_document, *_watcher);
     }
+  }
+
+
+  void AppWindow::fetchComplete(QNetworkReply* reply)
+  {
+    QByteArray data = reply->readAll();
+    reply->deleteLater();
+
+    // Save data to a local file, then open it
+    QString localFilename = "C:/Users/vilya/Code/ShaderToolQt/downloaded.json";
+    QFile file(localFilename);
+    if (!file.open(QIODevice::WriteOnly)) {
+      qCritical("Unable to save download to %s", localFilename);
+    }
+    file.write(data);
+    file.close();
+
+    openNamedFile(localFilename);
   }
 
 } // namespace vh

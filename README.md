@@ -12,7 +12,7 @@ Project name
 ShaderToolQt is a working title only, because it's pretty crap. Other ideas:
 ShaderTide (a contraction of "ShaderToy IDE"), ShaderKitchen, ShaderBakery,
 PixelKitchen, PixelBakery, PixelToy, FragmentToy, Pixery, Pixelhouse,
-Pixelhaus, Shaderhaus, Shaderhouse.
+Pixelhaus, Shaderhaus, Shaderhouse, Nightshader, N-Shade, V-Shade
 
 
 Features
@@ -30,12 +30,27 @@ Features
   - Supports external file references
   - Can automatically extract GLSL into external files
   - Can automatically inline GLSL from external files back into the JSON.
+- Download directly from ShaderToy  
 - Playback controls:
   - Play, pause, restart
   - Fast forward/rewind in small, medium or large increments
 - Overlay showing playback and performance stats
 - User-specified rendering resolution
 - Zoom
+- Overlay showing all intermediate images
+
+
+TODO: downloading from ShaderToy
+- Add a search form
+  - Support built in sort types: name, love, popular, newest & hot
+  - Support built in filter types: vr, soundoutput, soundinput, webcam, multipass, musicstream
+  - Use paging to show results.
+- Cache downloaded shaders.
+- Download and cache all asssets referenced by shaders.
+- Download and cache thumbnails for shaders:
+  - https://www.shadertoy.com/media/shaders/<shader-id>.jpg
+- Figure out how to tell when a cached file is out of date.
+- Show download progress
 
 
 ShaderToy Compatibility TODO
@@ -54,6 +69,8 @@ Input sources:
 - Soundcloud input
 Assets:
 - Ship with standard shadertoy assets, if their license will allow it
+- Option to download standard ShaderToy assets on first run
+  - Have a list of URLs, grab any that aren't already in the cache.
 
 
 See 
