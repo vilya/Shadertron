@@ -32,6 +32,7 @@ namespace vh {
     eNoAction,
     eQuit,
     eToggleOverlay,
+    eToggleIntermediates,
     eTogglePlayback,
     eRestartPlayback,
     eFastForward_Small,
@@ -132,7 +133,8 @@ namespace vh {
     void setupRenderData();
     void teardownRenderData();
     void updateRenderData();
-    void render();
+    void renderMain();
+    void renderIntermediates();
     void renderEmpty();
 
     void createRenderPassTexture(Texture& tex);
@@ -159,6 +161,8 @@ namespace vh {
     QFont _overlayFont;
     QPen _overlayPen;
     int _lineHeight;
+
+    bool _showIntermediates = false;
 
     ShaderToyDocument* _currentDoc = nullptr;
     ShaderToyDocument* _pendingDoc = nullptr;

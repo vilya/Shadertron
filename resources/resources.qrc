@@ -19,5 +19,7 @@
         <file>media/a/cd4c518bc6ef165c39d4405b347b51ba40f8d7a065ab0e8d2e4f422cbc1e8a43.jpg</file>
         <file>media/a/f735bee5b64ef98879dc618b016ecf7939a5756040c2cde21ccb15e69a6e1cfb.png</file>
         <file>media/a/0a40562379b63dfb89227e6d172f39fdce9022cba76623f1054a2c83d6c0ba5d.png</file>
+        <file>glsl/textured-quad.frag</file>
+        <file>glsl/textured-quad.vert</file>
     </qresource>
 </RCC>

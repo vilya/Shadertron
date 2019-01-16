@@ -285,7 +285,8 @@ namespace vh {
     menu->addSeparator();
     QMenu* viewPassMenu   = menu->addMenu("&Pass");
     menu->addSeparator();
-    menu->addAction("&Overlay on/off", [renderWidget](){ renderWidget->doAction(Action::eToggleOverlay); });
+    menu->addAction("&Overlay on/off",       [renderWidget](){ renderWidget->doAction(Action::eToggleOverlay); });
+    menu->addAction("&Intermediates on/off", [renderWidget](){ renderWidget->doAction(Action::eToggleIntermediates); });
 
     setupViewRenderMenu(viewRenderMenu);
     setupViewZoomMenu(viewZoomMenu);

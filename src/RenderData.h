@@ -75,6 +75,15 @@ namespace vh {
   };
 
 
+  struct TexturedQuadShader {
+    QOpenGLShaderProgram* program = nullptr;
+
+    // Uniform locations
+    int iResolutionLoc = -1;
+    int iShapeLoc = -1;
+  };
+
+
   struct RenderData {
     Texture textures[kMaxTextures]            = {}; // Element 0 will be a special "no texture" value.
     RenderPass renderpasses[kMaxRenderpasses] = {}; // In order: all of the intermediate buffers followed by the final output.
@@ -101,6 +110,9 @@ namespace vh {
 
     // Source data for keyboard texture.
     uchar keyboardTexData[3][256];
+
+    // Utility shaders
+    TexturedQuadShader texturedQuadShader;
   };
 
 } // namespace vh

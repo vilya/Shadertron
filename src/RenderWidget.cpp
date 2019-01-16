@@ -333,6 +333,9 @@ namespace vh  {
     case Action::eToggleOverlay:
       _showOverlay = !_showOverlay;
       break;
+    case Action::eToggleIntermediates:
+      _showIntermediates = !_showIntermediates;
+      break;
     case Action::eTogglePlayback:
       if (_playbackTimer.running()) {
         stopPlayback();
@@ -406,7 +409,10 @@ namespace vh  {
 
     updateRenderData();
     if (_currentDoc != nullptr) {
-      render();
+      renderMain();
+      if (_showIntermediates) {
+        renderIntermediates();
+      }
     }
     else {
       renderEmpty();
@@ -846,6 +852,22 @@ namespace vh  {
       passOut.program->release();
     }
 
+    // Compile the shader for drawing textured quads in the viewport.
+    {
+      TexturedQuadShader& quadShader = _renderData.texturedQuadShader;
+      quadShader.program = new QOpenGLShaderProgram(this);
+      quadShader.program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/glsl/textured-quad.vert");
+      quadShader.program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/glsl/textured-quad.frag");
+      quadShader.program->link();
+
+      quadShader.iResolutionLoc = quadShader.program->uniformLocation("iResolution");
+      quadShader.iShapeLoc      = quadShader.program->uniformLocation("iSize");
+
+      quadShader.program->bind();
+      quadShader.program->setUniformValue("iChannel0", 0);
+      quadShader.program->release();
+    }
+
     // Display the "image" pass
     _displayPass = _renderData.numRenderpasses - 1;
   }
@@ -908,6 +930,12 @@ namespace vh  {
       tex.isBuffer = false;
       tex.playbackTime = 0.0;
     }
+
+    // Delete utility shaders.
+    delete _renderData.texturedQuadShader.program;
+    _renderData.texturedQuadShader.program        = nullptr;
+    _renderData.texturedQuadShader.iResolutionLoc = -1;
+    _renderData.texturedQuadShader.iShapeLoc      = -1;
   }
 
 
@@ -957,7 +985,7 @@ namespace vh  {
   }
 
 
-  void RenderWidget::render()
+  void RenderWidget::renderMain()
   {
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
@@ -1046,6 +1074,45 @@ namespace vh  {
 
     _renderData.frontBuffer ^= 1;
     _renderData.backBuffer ^= 1;
+  }
+
+
+  void RenderWidget::renderIntermediates()
+  {
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    glBindVertexArray(_renderData.defaultVAO);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());
+
+    glViewport(0, 0, width(), height());
+
+    // Calculate the dimensions for each intermediate, preserving their aspect ratio.
+    int rw = renderWidth();
+    int rh = renderHeight();
+    int w = width() / 4;
+    int h = rh * w / rw;
+    int level = 0;
+//    while ((rw >> 1) > w && (rh >> 1) > h) {
+//      ++level;
+//      rw >>= 1;
+//      rh >>= 1;
+//    }
+
+    int x = width() - w;
+    int y = height() - h;
+    for (int i = 0; i < kMaxRenderpasses; i++) {
+      const RenderPass& pass = _renderData.renderpasses[i];
+      if (pass.type == PassType::eBuffer || pass.type == PassType::eImage) {
+        QOpenGLTexture* texObj = _renderData.textures[pass.outputs[_renderData.frontBuffer]].obj;
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
+        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), level);
+        glBlitFramebuffer(0, 0, rw, rh, x, y, x + w, y + h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        y -= h;
+      }
+    }
+
+    glBindVertexArray(0);
   }
 
 
