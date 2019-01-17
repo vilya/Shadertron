@@ -10,6 +10,48 @@
 namespace vh {
 
   //
+  // Constants
+  //
+
+  static const QString kShaderToyShaderURL("https://www.shadertoy.com/api/v1/shaders/%1?key=%2");
+  static const QString kShaderToyAssetURL("https://www.shadertoy.com/%1?key=%2");
+
+
+  static const QString kStandardShaderToyAssets[] = {
+    QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785.png"),
+    QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_1.png"),
+    QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_2.png"),
+    QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_3.png"),
+    QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_4.png"),
+    QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_5.png"),
+    QString::fromUtf8("/media/a/0a40562379b63dfb89227e6d172f39fdce9022cba76623f1054a2c83d6c0ba5d.png"),
+    QString::fromUtf8("/media/a/0c7bf5fe9462d5bffbd11126e82908e39be3ce56220d900f633d58fb432e56f5.png"),
+    QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58.jpg"),
+    QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_1.jpg"),
+    QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_2.jpg"),
+    QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_3.jpg"),
+    QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_4.jpg"),
+    QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_5.jpg"),
+    QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232.png"),
+    QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_1.png"),
+    QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_2.png"),
+    QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_3.png"),
+    QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_4.png"),
+    QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_5.png"),
+    QString::fromUtf8("/media/a/92d7758c402f0927011ca8d0a7e40251439fba3a1dac26f5b8b62026323501aa.jpg"),
+    QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0.png"),
+    QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_1.png"),
+    QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_2.png"),
+    QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_3.png"),
+    QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_4.png"),
+    QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_5.png"),
+    QString::fromUtf8("/media/a/ad56fba948dfba9ae698198c109e71f118a54d209c0ea50d77ea546abad89c57.png"),
+    QString::fromUtf8("/media/a/cd4c518bc6ef165c39d4405b347b51ba40f8d7a065ab0e8d2e4f422cbc1e8a43.jpg"),
+    QString::fromUtf8("/media/a/f735bee5b64ef98879dc618b016ecf7939a5756040c2cde21ccb15e69a6e1cfb.png"),
+  };
+
+
+  //
   // FileCache public methods
   //
 
@@ -26,9 +68,11 @@ namespace vh {
   }
 
 
-  //
-  // FileCache public methods
-  //
+  QDir FileCache::cacheDir() const
+  {
+    return _cacheDir;
+  }
+
 
   bool FileCache::saveFileToCache(const QString& path, const QByteArray& data, QWidget* parentForErrorDialogs)
   {
@@ -109,10 +153,68 @@ namespace vh {
       _networkAccess = new QNetworkAccessManager(this);
     }
 
-    QString urlStr = QString("https://www.shadertoy.com/api/v1/shaders/%1?key=%2").arg(id).arg(kShaderToyAppKey);
+    QString urlStr = kShaderToyShaderURL.arg(id).arg(kShaderToyAppKey);
     QNetworkReply* reply = _networkAccess->get(QNetworkRequest(QUrl(urlStr)));
     connect(reply, &QNetworkReply::finished, this, &FileCache::shaderDownloaded);
     connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &FileCache::shaderDownloadFailed);
+  }
+
+
+  void FileCache::fetchShaderToyStandardAssets()
+  {
+    if (_networkAccess == nullptr) {
+      _networkAccess = new QNetworkAccessManager(this);
+    }
+
+    _assetsToDownloadLock.lock();
+    _assetsToDownload.clear();
+    _downloadedShaderFile.clear();
+    for (const QString& path : kStandardShaderToyAssets) {
+      if (isCached(path)) {
+        qDebug("Already have %s", qPrintable(path));
+        continue;
+      }
+
+      if (_assetsToDownload.contains(path)) {
+        continue;
+      }
+
+      qDebug("Need to download %s", qPrintable(path));
+      _assetsToDownload.insert(path);
+
+      QString urlStr = kShaderToyAssetURL.arg(path.mid(1)).arg(kShaderToyAppKey);
+      QNetworkReply* reply = _networkAccess->get(QNetworkRequest(QUrl(urlStr)));
+      connect(reply, &QNetworkReply::finished, this, &FileCache::assetDownloaded);
+      connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &FileCache::assetDownloadFailed);
+    }
+    bool ready = _assetsToDownload.empty();
+    _assetsToDownloadLock.unlock();
+    if (ready) {
+      emit standardAssetsReady();
+    }
+  }
+
+
+  void FileCache::deleteCache()
+  {
+    qDebug("Removing all files and subdirectories from the cache");
+
+    QDir dir = _cacheDir;
+
+    // Remove all files inside the directory.
+    dir.setFilter(QDir::NoDotAndDotDot | QDir::Files);
+    for (QString filename : dir.entryList()) {
+      qDebug("Removing %s", qPrintable(filename));
+      dir.remove(filename);
+    }
+
+    // Remove all subdirectories inside the directory.
+    dir.setFilter(QDir::NoDotAndDotDot | QDir::Dirs);
+    for (QString dirname : dir.entryList()) {
+      qDebug("Removing %s", qPrintable(dirname));
+      QDir subdir = QDir(dir.absoluteFilePath(dirname));
+      subdir.removeRecursively();
+    }
   }
 
 
@@ -135,6 +237,7 @@ namespace vh {
       return;
     }
 
+    qDebug("Successfully downloaded %s", qPrintable(path));
     _downloadedShaderFile = pathForCachedFile(path);
 
     // Download successful, now let's parse the document so we can also grab
@@ -201,7 +304,7 @@ namespace vh {
       qDebug("Need to download %s", qPrintable(src));
       _assetsToDownload.insert(src);
 
-      QString urlStr = QString("https://www.shadertoy.com/%1?key=%2").arg(src.mid(1)).arg(kShaderToyAppKey);
+      QString urlStr = kShaderToyAssetURL.arg(src.mid(1)).arg(kShaderToyAppKey);
       QNetworkReply* reply = _networkAccess->get(QNetworkRequest(QUrl(urlStr)));
       connect(reply, &QNetworkReply::finished, this, &FileCache::assetDownloaded);
       connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &FileCache::assetDownloadFailed);
@@ -235,6 +338,7 @@ namespace vh {
     bool ready = false;
     _assetsToDownloadLock.lock();
     if (_assetsToDownload.remove(path)) {
+      qDebug("Successfully downloaded asset %s", qPrintable(path));
       ready = _assetsToDownload.isEmpty();
     }
     _assetsToDownloadLock.unlock();
@@ -245,8 +349,13 @@ namespace vh {
     saveFileToCache(path, data, false);
 
     if (ready) {
-      emit shaderReady(_downloadedShaderFile);
-      _downloadedShaderFile = QString();
+      if (_downloadedShaderFile.isEmpty()) {
+        emit standardAssetsReady();
+      }
+      else {
+        emit shaderReady(_downloadedShaderFile);
+        _downloadedShaderFile = QString();
+      }
     }
   }
 
@@ -267,8 +376,13 @@ namespace vh {
     qCritical("Failed to download asset from ShaderToy (url was %s)", qPrintable(reply->url().toDisplayString()));
 
     if (ready) {
-      emit shaderReady(_downloadedShaderFile);
-      _downloadedShaderFile = QString();
+      if (_downloadedShaderFile.isEmpty()) {
+        emit standardAssetsReady();
+      }
+      else {
+        emit shaderReady(_downloadedShaderFile);
+        _downloadedShaderFile = QString();
+      }
     }
   }
 

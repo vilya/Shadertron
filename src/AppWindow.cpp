@@ -6,6 +6,7 @@
 #include "ShaderToy.h"
 
 #include <QAction>
+#include <QDesktopServices>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMenu>
@@ -25,6 +26,7 @@ namespace vh {
   {
     _cache = new FileCache(this);
     connect(_cache, &FileCache::shaderReady, this, &AppWindow::openNamedFile);
+    connect(_cache, &FileCache::standardAssetsReady, this, &AppWindow::standardAssetsReady);
 
     createWidgets();
     createMenus();
@@ -206,6 +208,21 @@ namespace vh {
   }
 
 
+  void AppWindow::deleteCache()
+  {
+    if (_cache == nullptr) {
+      return;
+    }
+
+    int answer = QMessageBox::question(this, "Delete cache?", "Delete all files in the cache directory?");
+    if (answer != QMessageBox::Yes) {
+      return;
+    }
+
+    _cache->deleteCache();
+  }
+
+
   void AppWindow::openNamedFile(const QString& filename)
   {
     // If there's any file currently open, close it.
@@ -251,11 +268,13 @@ namespace vh {
     QMenu* playbackMenu = menubar->addMenu("&Playback");
     QMenu* inputMenu    = menubar->addMenu("&Input");
     QMenu* viewMenu     = menubar->addMenu("&View");
+    QMenu* cacheMenu     = menubar->addMenu("&Cache");
 
     setupFileMenu(fileMenu);
     setupPlaybackMenu(playbackMenu);
     setupInputMenu(inputMenu);
     setupViewMenu(viewMenu);
+    setupCacheMenu(cacheMenu);
   }
 
 
@@ -329,6 +348,17 @@ namespace vh {
     setupViewRenderMenu(viewRenderMenu);
     setupViewZoomMenu(viewZoomMenu);
     setupViewPassMenu(viewPassMenu);
+  }
+
+
+  void AppWindow::setupCacheMenu(QMenu* menu)
+  {
+    FileCache* cache = _cache;
+
+    menu->addAction("Download ShaderToy standard assets", cache, &FileCache::fetchShaderToyStandardAssets);
+    menu->addAction("Open cache directory...", [cache](){ QDesktopServices::openUrl(cache->cacheDir().absolutePath()); });
+    menu->addSeparator();
+    menu->addAction("Clear cache...", this, &AppWindow::deleteCache);
   }
 
 
@@ -442,6 +472,12 @@ namespace vh {
   {
     qDebug("detected a change to file %s, reloading", qPrintable(path));
     reloadFile();
+  }
+
+
+  void AppWindow::standardAssetsReady()
+  {
+    QMessageBox::information(this, "Download complete", "Finished downloading the standard ShaderToy assets");
   }
 
 } // namespace vh

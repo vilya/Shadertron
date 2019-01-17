@@ -46,6 +46,8 @@ namespace vh {
     void extractGLSL();
     void inlineGLSL();
 
+    void deleteCache();
+
     void openNamedFile(const QString& filename);
 
   private:
@@ -56,6 +58,7 @@ namespace vh {
     void setupPlaybackMenu(QMenu* menu);
     void setupInputMenu(QMenu* menu);
     void setupViewMenu(QMenu* menu);
+    void setupCacheMenu(QMenu* menu);
 
     void setupViewRenderMenu(QMenu* menu);
     void setupViewZoomMenu(QMenu* menu);
@@ -65,6 +68,7 @@ namespace vh {
     void reloadFile();
     void renderWidgetDocumentChanged();
     void watchedfileChanged(const QString& path);
+    void standardAssetsReady();
 
   private:
     QMenuBar* _menubar = nullptr;

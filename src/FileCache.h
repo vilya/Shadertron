@@ -19,6 +19,8 @@ namespace vh {
     explicit FileCache(QObject *parent = nullptr);
     virtual ~FileCache();
 
+    QDir cacheDir() const;
+
     bool saveFileToCache(const QString& path, const QByteArray& data, QWidget* parentForErrorDialogs);
     QString pathForCachedFile(const QString& path);
     bool isCached(const QString& path);
@@ -26,9 +28,12 @@ namespace vh {
 
   public slots:
     void fetchShaderToyByID(const QString& id);
+    void fetchShaderToyStandardAssets();
+    void deleteCache();
 
   signals:
     void shaderReady(const QString& path);
+    void standardAssetsReady();
 
   private slots:
     void shaderDownloaded();
