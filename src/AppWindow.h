@@ -49,6 +49,10 @@ namespace vh {
     void deleteCache();
 
     void openNamedFile(const QString& filename);
+    void restoreWindowState();
+
+  protected:
+    virtual void closeEvent(QCloseEvent* event);
 
   private:
     void createWidgets();
@@ -59,6 +63,7 @@ namespace vh {
     void setupInputMenu(QMenu* menu);
     void setupViewMenu(QMenu* menu);
     void setupCacheMenu(QMenu* menu);
+    void setupWindowMenu(QMenu* menu);
 
     void setupViewRenderMenu(QMenu* menu);
     void setupViewZoomMenu(QMenu* menu);
@@ -70,6 +75,9 @@ namespace vh {
     void watchedfileChanged(const QString& path);
     void standardAssetsReady();
 
+    void saveWindowState();
+    void removeSavedWindowState();
+
   private:
     QMenuBar* _menubar = nullptr;
     RenderWidget* _renderWidget = nullptr;
@@ -80,6 +88,8 @@ namespace vh {
     ShaderToyDocument* _oldDocument = nullptr;
 
     FileCache* _cache = nullptr;
+
+    bool _saveWindowState = true;
   };
 
 } // namespace vh

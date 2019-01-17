@@ -6,16 +6,41 @@
 #include "ShaderToy.h"
 
 #include <QAction>
+#include <QApplication>
+#include <QCloseEvent>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QRect>
+#include <QScreen>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
 
 namespace vh {
+
+  //
+  // Constants
+  //
+
+  // Keys for use with a QSettings object.
+  static const QString kDesktopWindowGeometry = "desktopWindowSize";
+  static const QString kDesktopWindowState = "desktopWindowState";
+  static const QString kDesktopWindowVersion = "desktopWindowVersion"; // Used to decide whether to restore saved window geometry & state or not.
+
+
+  // Increment this when you make changes to the set of available windows and
+  // dockable panels.
+  //
+  // We save this value alongside the window geometry and state in Settings.
+  // When restoring the windows at startup time, we check this value first
+  // to see whether the saved window data is compatible with this verison of
+  // the program.
+  static const int kDesktopUIVersion = 1;
+
 
   //
   // AppWindow public methods
@@ -30,6 +55,7 @@ namespace vh {
 
     createWidgets();
     createMenus();
+
     _renderWidget->setFocus();
   }
 
@@ -245,6 +271,17 @@ namespace vh {
 
 
   //
+  // AppWindow protected methods
+  //
+
+  void AppWindow::closeEvent(QCloseEvent* /*event*/)
+  {
+    // TODO: Check for changes that need saving before we exit.
+    saveWindowState();
+  }
+
+
+  //
   // AppWindow private methods
   //
 
@@ -268,13 +305,15 @@ namespace vh {
     QMenu* playbackMenu = menubar->addMenu("&Playback");
     QMenu* inputMenu    = menubar->addMenu("&Input");
     QMenu* viewMenu     = menubar->addMenu("&View");
-    QMenu* cacheMenu     = menubar->addMenu("&Cache");
+    QMenu* cacheMenu    = menubar->addMenu("&Cache");
+    QMenu* windowMenu   = menubar->addMenu("&Window");
 
     setupFileMenu(fileMenu);
     setupPlaybackMenu(playbackMenu);
     setupInputMenu(inputMenu);
     setupViewMenu(viewMenu);
     setupCacheMenu(cacheMenu);
+    setupWindowMenu(windowMenu);
   }
 
 
@@ -359,6 +398,20 @@ namespace vh {
     menu->addAction("Open cache directory...", [cache](){ QDesktopServices::openUrl(cache->cacheDir().absolutePath()); });
     menu->addSeparator();
     menu->addAction("Clear cache...", this, &AppWindow::deleteCache);
+  }
+
+
+  void AppWindow::setupWindowMenu(QMenu* menu)
+  {
+    QAction* saveWindowStateAction = menu->addAction("&Save window state on exit");
+    QAction* removeWindowStateAction = menu->addAction("&Remove saved window state", this, &AppWindow::removeSavedWindowState);
+
+    saveWindowStateAction->setCheckable(true);
+    saveWindowStateAction->setChecked(_saveWindowState);
+
+    bool* state = &_saveWindowState;
+    connect(saveWindowStateAction, &QAction::toggled, [state](bool value) { *state = value; });
+    connect(removeWindowStateAction, &QAction::triggered, [saveWindowStateAction](){ saveWindowStateAction->setChecked(false); });
   }
 
 
@@ -478,6 +531,69 @@ namespace vh {
   void AppWindow::standardAssetsReady()
   {
     QMessageBox::information(this, "Download complete", "Finished downloading the standard ShaderToy assets");
+  }
+
+
+  void AppWindow::saveWindowState()
+  {
+    if (!_saveWindowState) {
+      return;
+    }
+
+    qDebug("Saving window state");
+    QSettings settings;
+    settings.setValue(kDesktopWindowGeometry, saveGeometry());
+    settings.setValue(kDesktopWindowState, saveState());
+    settings.setValue(kDesktopWindowVersion, kDesktopUIVersion);
+  }
+
+
+  void AppWindow::restoreWindowState()
+  {
+    qDebug("Restoring window state");
+
+    QSettings settings;
+    int savedWindowStateVersion = settings.value(kDesktopWindowVersion, -1).toInt();
+    bool shouldRestore = (savedWindowStateVersion == kDesktopUIVersion);
+    bool restored = false;
+    if (!shouldRestore) {
+      settings.remove(kDesktopWindowGeometry);
+      settings.remove(kDesktopWindowState);
+      settings.remove(kDesktopWindowVersion);
+    }
+    else {
+      restored = restoreGeometry(settings.value(kDesktopWindowGeometry).toByteArray());
+    }
+
+    if (!restored) {
+      qDebug("Window state was not restored, calculating default window rectangle");
+
+      // If this is the first run, or the user has deleted their settings,
+      // there may not be any geometry to restore. In this case, fall back
+      // to making the window an exact multiple of 640x360 (the default render
+      // resolution) and centering it on the screen.
+      QScreen* screen = QApplication::primaryScreen();
+      if (screen != nullptr) {
+        QRect rect = screen->availableGeometry();
+        int menuBarHeight = menuBar()->height();
+        int scale = qMin(rect.width() / 640, (rect.height() - menuBarHeight) / 360);
+        int w = 640 * scale;
+        int h = 360 * scale + menuBarHeight;
+        int x = rect.x() + (rect.width() - w) / 2;
+        int y = rect.y() + (rect.height() - h) / 2;
+        setGeometry(x, y, w, h);
+      }
+    }
+    restoreState(settings.value(kDesktopWindowState).toByteArray());
+  }
+
+
+  void AppWindow::removeSavedWindowState()
+  {
+    QSettings settings;
+    settings.remove(kDesktopWindowGeometry);
+    settings.remove(kDesktopWindowState);
+    settings.remove(kDesktopWindowVersion);
   }
 
 } // namespace vh

@@ -36,6 +36,8 @@ int main(int argc, char *argv[])
   QApplication app(argc, argv);
   app.setApplicationName("ShaderToolQt");
   app.setApplicationVersion("");
+  app.setOrganizationName("The ShaderTool Developers");
+  app.setOrganizationDomain("shader.tool");
   app.setQuitOnLastWindowClosed(true);
   app.setAttribute(Qt::AA_UseDesktopOpenGL);
   app.setAttribute(Qt::AA_ShareOpenGLContexts);
@@ -47,7 +49,10 @@ int main(int argc, char *argv[])
   }
 
   mainWindow.show();
-  mainWindow.resize(1280, 720 + mainWindow.menuBar()->height());
+
+  // Important to call this *after* show, otherwise layout won't have been
+  // performed and any calculations we do based on widgets sizes will be wrong.
+  mainWindow.restoreWindowState();
 
   return app.exec();
 }
