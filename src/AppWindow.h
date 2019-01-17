@@ -2,9 +2,14 @@
 #ifndef VH_APPWINDOW_H
 #define VH_APPWINDOW_H
 
+#include <QDir>
 #include <QFileSystemWatcher>
 #include <QMainWindow>
+#include <QMutex>
 #include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QSet>
+#include <QString>
 
 namespace vh {
 
@@ -12,9 +17,11 @@ namespace vh {
   // Forward declarations
   //
 
+  class FileCache;
   class RenderWidget;
 
   struct ShaderToyDocument;
+
 
   //
   // AppWindow class
@@ -41,8 +48,6 @@ namespace vh {
 
     void openNamedFile(const QString& filename);
 
-    void fetchShaderToyByID(const QString& id);
-
   private:
     void createWidgets();
     void createMenus();
@@ -59,7 +64,6 @@ namespace vh {
   private slots:
     void reloadFile();
     void renderWidgetDocumentChanged();
-    void fetchComplete(QNetworkReply* reply);
     void watchedfileChanged(const QString& path);
 
   private:
@@ -71,8 +75,7 @@ namespace vh {
 
     ShaderToyDocument* _oldDocument = nullptr;
 
-    QNetworkAccessManager* _networkAccess = nullptr;
-    // TODO: add a cache dir, use it to store downloaded shaders, assets, thumbnails, etc.
+    FileCache* _cache = nullptr;
   };
 
 } // namespace vh

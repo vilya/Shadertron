@@ -2,6 +2,7 @@
 #ifndef VH_RENDERWIDGET_H
 #define VH_RENDERWIDGET_H
 
+#include "FileCache.h"
 #include "FPSCounter.h"
 #include "RenderData.h"
 #include "ShaderToy.h"
@@ -82,6 +83,8 @@ namespace vh {
   public:
     explicit RenderWidget(QWidget* parent = nullptr);
     virtual ~RenderWidget();
+
+    void setFileCache(FileCache* cache);
 
     ShaderToyDocument* currentShaderToyDocument() const;
     void setShaderToyDocument(ShaderToyDocument* newDoc);
@@ -190,6 +193,8 @@ namespace vh {
 
     QHash<KeyBinding, Action> _keyPressBindings;
     QHash<KeyBinding, Action> _keyReleaseBindings;
+
+    FileCache* _cache = nullptr;
   };
 
 } // namespace vh

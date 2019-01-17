@@ -32,7 +32,8 @@ SOURCES += \
     src/Shader.cpp \
     src/ShaderToy.cpp \
     src/RenderData.cpp \
-    src/AppWindow.cpp
+    src/AppWindow.cpp \
+    src/FileCache.cpp
 
 HEADERS += \
     src/RenderWidget.h \
@@ -41,7 +42,8 @@ HEADERS += \
     src/Shader.h \
     src/ShaderToy.h \
     src/RenderData.h \
-    src/AppWindow.h
+    src/AppWindow.h \
+    src/FileCache.h
 
 #FORMS +=
 

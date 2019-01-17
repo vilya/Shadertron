@@ -445,6 +445,10 @@ namespace vh {
     file.close();
 
     QJsonObject json = jsonDoc.object();
+    if (json.contains("Error")) {
+      QString err = QString("ShaderToy error: %1").arg(json["Error"].toString());
+      throw std::runtime_error(qPrintable(err));
+    }
 
     ShaderToyDocument* document = new ShaderToyDocument();
     QFileInfo fileInfo(filename);

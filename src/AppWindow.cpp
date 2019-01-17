@@ -1,16 +1,18 @@
 // Copyright 2019 Vilya Harvey
 #include "AppWindow.h"
 
+#include "FileCache.h"
 #include "RenderWidget.h"
 #include "ShaderToy.h"
 
 #include <QAction>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QMenu>
 #include <QMenuBar>
-#include <QNetworkReply>
-#include <QNetworkRequest>
+#include <QMessageBox>
 #include <QStandardPaths>
+#include <QUrl>
 
 namespace vh {
 
@@ -21,6 +23,9 @@ namespace vh {
   AppWindow::AppWindow(QWidget* parent) :
     QMainWindow(parent)
   {
+    _cache = new FileCache(this);
+    connect(_cache, &FileCache::shaderReady, this, &AppWindow::openNamedFile);
+
     createWidgets();
     createMenus();
     _renderWidget->setFocus();
@@ -62,7 +67,30 @@ namespace vh {
 
   void AppWindow::downloadFromShaderToy()
   {
-    fetchShaderToyByID("3dXGWB"); // ID is for "Stop Motion Fox"
+    bool ok;
+    QString shaderID = QInputDialog::getText(this,
+        "Download from ShaderToy", "Shader ID", QLineEdit::Normal, QString(), &ok);
+    if (!ok || shaderID.isEmpty()) {
+      return;
+    }
+
+    bool valid = shaderID.length() == 6;
+    if (valid) {
+      for (int i = 0; i < shaderID.length(); i++) {
+        if (!shaderID.at(i).isLetterOrNumber()) {
+          valid = false;
+          break;
+        }
+      }
+    }
+
+    if (!valid) {
+      QMessageBox::critical(this, "Invalid shader ID",
+          "The shader ID you have entered is not valid");
+      return;
+    }
+
+    _cache->fetchShaderToyByID(shaderID);
   }
 
 
@@ -187,7 +215,8 @@ namespace vh {
       _document = loadShaderToyJSONFile(filename);
     }
     catch (const std::runtime_error& err) {
-      qCritical("JSON parsing error in %s: %s", qPrintable(filename), err.what());
+      qCritical("Unable to load %s: %s", qPrintable(filename), err.what());
+      QMessageBox::critical(this, "Load failed", QString("Unable to load %1: %2").arg(filename).arg(err.what()));
       // Restore the old document.
       _document = _oldDocument;
       _oldDocument = nullptr;
@@ -198,18 +227,6 @@ namespace vh {
   }
 
 
-  void AppWindow::fetchShaderToyByID(const QString &id)
-  {
-    if (_networkAccess == nullptr) {
-      _networkAccess = new QNetworkAccessManager(this);
-      connect(_networkAccess, &QNetworkAccessManager::finished, this, &AppWindow::fetchComplete);
-    }
-
-    QString urlStr = QString("https://www.shadertoy.com/api/v1/shaders/%1?key=fdHtWW").arg(id);
-    _networkAccess->get(QNetworkRequest(QUrl(urlStr)));
-  }
-
-
   //
   // AppWindow private methods
   //
@@ -217,6 +234,7 @@ namespace vh {
   void AppWindow::createWidgets()
   {
     _renderWidget = new RenderWidget(this);
+    _renderWidget->setFileCache(_cache);
     setCentralWidget(_renderWidget);
 
     QObject::connect(_renderWidget, &RenderWidget::closeRequested, this, &QMainWindow::close);
@@ -417,24 +435,6 @@ namespace vh {
       watchAllFiles(_document, *_watcher);
       connect(_watcher, &QFileSystemWatcher::fileChanged, this, &AppWindow::watchedfileChanged);
     }
-  }
-
-
-  void AppWindow::fetchComplete(QNetworkReply* reply)
-  {
-    QByteArray data = reply->readAll();
-    reply->deleteLater();
-
-    // Save data to a local file, then open it
-    QString localFilename = "C:/Users/vilya/Code/ShaderToolQt/downloaded.json";
-    QFile file(localFilename);
-    if (!file.open(QIODevice::WriteOnly)) {
-      qCritical("Unable to save download to %s", localFilename);
-    }
-    file.write(data);
-    file.close();
-
-    openNamedFile(localFilename);
   }
 
 

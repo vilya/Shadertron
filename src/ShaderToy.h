@@ -31,6 +31,8 @@ namespace vh {
   static const QString kInputType_Texture = "texture";
   static const QString kInputType_Keyboard = "keyboard";
 
+  static const QString kShaderToyAppKey = "fdHtWW";
+
 
   //
   // Structs

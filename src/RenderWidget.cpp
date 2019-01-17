@@ -17,8 +17,6 @@ namespace vh  {
   static constexpr double kMediumStepMS = 1000.0;
   static constexpr double kLargeStepMS = 10000.0;
 
-  static const char* kShaderToyKey = "fdHtWW";
-
   static const QString kMainFunc_Image =
       "void main() {\n"
       "  vec2 fragCoord = gl_FragCoord.xy;\n"
@@ -159,6 +157,12 @@ namespace vh  {
     if (_pendingDoc != _currentDoc) {
       delete _pendingDoc;
     }
+  }
+
+
+  void RenderWidget::setFileCache(FileCache* cache)
+  {
+    _cache = cache;
   }
 
 
@@ -1161,8 +1165,13 @@ namespace vh  {
   bool RenderWidget::loadImageTexture(const QString& filename, bool flip, Texture& tex)
   {
     QString adjustedFilename = filename;
-    if (adjustedFilename.startsWith("/media/a")) {
-      adjustedFilename = QString(":%1").arg(filename);
+    if (_cache != nullptr) {
+      if (_cache->isResource(filename)) {
+        adjustedFilename = QString(":%1").arg(filename);
+      }
+      else if (_cache->isCached(filename)) {
+        adjustedFilename = _cache->pathForCachedFile(filename);
+      }
     }
 
     QImage img(adjustedFilename);
@@ -1190,23 +1199,35 @@ namespace vh  {
     QString path = fileInfo.path();
     QString basename = fileInfo.completeBaseName();
     QString suffix = fileInfo.suffix();
-    if (path == "/media/a") {
-      path = QString(":%1").arg(path);
+
+    QString facePaths[6];
+    facePaths[0] = QString("%1/%2.%3"  ).arg(path).arg(basename).arg(suffix);
+    facePaths[1] = QString("%1/%2_1.%3").arg(path).arg(basename).arg(suffix);
+    facePaths[2] = QString("%1/%2_2.%3").arg(path).arg(basename).arg(suffix);
+    facePaths[3] = QString("%1/%2_3.%3").arg(path).arg(basename).arg(suffix);
+    facePaths[4] = QString("%1/%2_4.%3").arg(path).arg(basename).arg(suffix);
+    facePaths[5] = QString("%1/%2_5.%3").arg(path).arg(basename).arg(suffix);
+
+    for (int i = 0; i < 6; i++) {
+      if (_cache != nullptr) {
+        if (_cache->isResource(facePaths[i])) {
+          facePaths[i] = QString(":%1").arg(facePaths[i]);
+        }
+        else if (_cache->isCached(filename)) {
+          facePaths[i] = _cache->pathForCachedFile(facePaths[i]);
+        }
+      }
+
     }
 
     QImage faces[6];
-    faces[0] = QImage(QString("%1/%2.%3"  ).arg(path).arg(basename).arg(suffix));
-    faces[1] = QImage(QString("%1/%2_1.%3").arg(path).arg(basename).arg(suffix));
-    faces[2] = QImage(QString("%1/%2_2.%3").arg(path).arg(basename).arg(suffix));
-    faces[3] = QImage(QString("%1/%2_3.%3").arg(path).arg(basename).arg(suffix));
-    faces[4] = QImage(QString("%1/%2_4.%3").arg(path).arg(basename).arg(suffix));
-    faces[5] = QImage(QString("%1/%2_5.%3").arg(path).arg(basename).arg(suffix));
-
     bool allFacesLoaded = true;
     for (int i = 0; i < 6; i++) {
+      faces[i] = QImage(facePaths[i]);
       if (faces[i].isNull()) {
-        qDebug("cubemap %s is missing face %d", qPrintable(filename), i);
+        qDebug("cubemap %s is missing face %d", qPrintable(facePaths[i]), i);
         allFacesLoaded = false;
+        break;
       }
     }
     if (!allFacesLoaded) {
