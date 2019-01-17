@@ -415,6 +415,7 @@ namespace vh {
     if (_document != nullptr) {
       _watcher = new QFileSystemWatcher(this);
       watchAllFiles(_document, *_watcher);
+      connect(_watcher, &QFileSystemWatcher::fileChanged, this, &AppWindow::watchedfileChanged);
     }
   }
 
@@ -434,6 +435,13 @@ namespace vh {
     file.close();
 
     openNamedFile(localFilename);
+  }
+
+
+  void AppWindow::watchedfileChanged(const QString& path)
+  {
+    qDebug("detected a change to file %s, reloading", qPrintable(path));
+    reloadFile();
   }
 
 } // namespace vh

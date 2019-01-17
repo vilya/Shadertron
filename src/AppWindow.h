@@ -60,6 +60,7 @@ namespace vh {
     void reloadFile();
     void renderWidgetDocumentChanged();
     void fetchComplete(QNetworkReply* reply);
+    void watchedfileChanged(const QString& path);
 
   private:
     QMenuBar* _menubar = nullptr;

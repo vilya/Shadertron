@@ -733,7 +733,6 @@ namespace vh  {
         continue;
       }
 
-//      int dstPassIndex = passOrderIdx;
       RenderPass& passOut = _renderData.renderpasses[dstPassIndex];
 
       for (int inputIdx = 0; inputIdx < passIn.inputs.size(); inputIdx++) {

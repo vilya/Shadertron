@@ -565,13 +565,16 @@ namespace vh {
     }
 
     if (!document->src.isEmpty()) {
-      watcher.addPath(document->src);
+      QFileInfo info(document->src);
+      watcher.addPath(info.absoluteFilePath());
+      qDebug("watching file %s", qPrintable(document->src));
     }
 
     for (int i = 0; i < document->renderpasses.size(); i++) {
       const ShaderToyRenderPass& pass = document->renderpasses[i];
       if (!pass.filename.isEmpty()) {
-        watcher.addPath(pass.filename);
+        watcher.addPath(document->refDir.absoluteFilePath(pass.filename));
+        qDebug("watching file %s", qPrintable(pass.filename));
       }
     }
   }
