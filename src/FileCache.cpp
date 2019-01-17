@@ -227,6 +227,10 @@ namespace vh {
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
     QString path = reply->url().path();
 
+    if (QFileInfo(path).suffix() != "json") {
+      path += ".json";
+    }
+
     QByteArray data = reply->readAll();
     reply->deleteLater();
 
@@ -237,7 +241,7 @@ namespace vh {
       return;
     }
 
-    qDebug("Successfully downloaded %s", qPrintable(path));
+    qDebug("Successfully downloaded %s", qPrintable(reply->url().toDisplayString()));
     _downloadedShaderFile = pathForCachedFile(path);
 
     // Download successful, now let's parse the document so we can also grab
