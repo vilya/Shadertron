@@ -29,7 +29,6 @@ SOURCES += \
     src/RenderWidget.cpp \
     src/Timer.cpp \
     src/FPSCounter.cpp \
-    src/Shader.cpp \
     src/ShaderToy.cpp \
     src/RenderData.cpp \
     src/AppWindow.cpp \
@@ -39,7 +38,6 @@ HEADERS += \
     src/RenderWidget.h \
     src/Timer.h \
     src/FPSCounter.h \
-    src/Shader.h \
     src/ShaderToy.h \
     src/RenderData.h \
     src/AppWindow.h \
