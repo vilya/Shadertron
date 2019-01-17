@@ -1,0 +1,116 @@
+{
+    "Shader": {
+        "ver": "0.1",
+        "info": {
+            "id": "4l2BRc",
+            "date": "1547054041",
+            "viewed": 57,
+            "name": "Path Tracer WIP",
+            "username": "Vil",
+            "description": "Raymarching path tracer with geometry defined by an SDF. Optionally animated (see the Common tab). Use the mouse to move the camera; image converges over ~128 frames when still. Work-in-progress.",
+            "likes": 0,
+            "published": 0,
+            "flags": 0,
+            "tags": [
+                "3d",
+                "raymarching",
+                "sdf"
+            ],
+            "hasliked": 0
+        },
+        "renderpass": [
+            {
+                "inputs": [
+                    {
+                        "id": 257,
+                        "src": "/media/previz/buffer00.png",
+                        "ctype": "buffer",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 37,
+                        "channel": 0
+                    }
+                ],
+                "filename": "PathTracerWIP-Image.frag",
+                "name": "Image",
+                "description": "",
+                "type": "image"
+            },
+            {
+                "inputs": [
+					{
+						"id": 26,
+						"src": "\/media\/a\/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0.png",
+						"ctype": "cubemap",
+						"channel": 0,
+						"sampler": {
+							"filter": "mipmap",
+							"wrap": "clamp",
+							"vflip": "false",
+							"srgb": "false",
+							"internal": "byte"
+						},
+						"published": 1
+					},
+					{
+						"id": 47,
+						"src": "\/media\/a\/ad56fba948dfba9ae698198c109e71f118a54d209c0ea50d77ea546abad89c57.png",
+						"ctype": "texture",
+						"channel":1,
+						"sampler": {
+							"filter": "mipmap",
+							"wrap": "repeat", 
+							"vflip": "false",
+							"srgb": "false",
+							"internal": "byte"
+						},
+						"published": 1
+					},
+                    {
+                        "id": 257,
+                        "src": "/media/previz/buffer00.png",
+                        "ctype": "buffer",
+                        "channel": 2,
+                        "sampler": {
+                            "filter": "linear",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 257,
+                        "channel": 0
+                    }
+                ],
+                "filename": "PathTracerWIP-BufA.frag",
+                "name": "Buffer A",
+                "description": "",
+                "type": "buffer"
+            },
+            {
+                "inputs": [],
+                "outputs": [],
+                "filename": "PathTracerWIP-Common.frag",
+                "name": "Common",
+                "description": "",
+                "type": "common"
+            }
+        ]
+    }
+}
