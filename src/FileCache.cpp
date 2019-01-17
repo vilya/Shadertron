@@ -288,13 +288,8 @@ namespace vh {
         continue;
       }
 
-      // Check whether we have a built-in copy of the asset.
-      if (isResource(src)) {
-        qDebug("Shader uses %s which we already have as a built-in resource", qPrintable(src));
-        continue;
-      }
-
-      // If we don't have it as a resource, maybe we've downloaded it already?
+      // Check whether the file is already in the cache. If so, we assume it's
+      // up to date.
       if (isCached(src)) {
         qDebug("Shader uses %s which we already have in our cache", qPrintable(src));
         continue;

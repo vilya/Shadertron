@@ -1165,13 +1165,8 @@ namespace vh  {
   bool RenderWidget::loadImageTexture(const QString& filename, bool flip, Texture& tex)
   {
     QString adjustedFilename = filename;
-    if (_cache != nullptr) {
-      if (_cache->isResource(filename)) {
-        adjustedFilename = QString(":%1").arg(filename);
-      }
-      else if (_cache->isCached(filename)) {
-        adjustedFilename = _cache->pathForCachedFile(filename);
-      }
+    if (_cache != nullptr && _cache->isCached(filename)) {
+      adjustedFilename = _cache->pathForCachedFile(filename);
     }
 
     QImage img(adjustedFilename);
@@ -1209,15 +1204,9 @@ namespace vh  {
     facePaths[5] = QString("%1/%2_5.%3").arg(path).arg(basename).arg(suffix);
 
     for (int i = 0; i < 6; i++) {
-      if (_cache != nullptr) {
-        if (_cache->isResource(facePaths[i])) {
-          facePaths[i] = QString(":%1").arg(facePaths[i]);
-        }
-        else if (_cache->isCached(filename)) {
-          facePaths[i] = _cache->pathForCachedFile(facePaths[i]);
-        }
+      if (_cache != nullptr && _cache->isCached(filename)) {
+        facePaths[i] = _cache->pathForCachedFile(facePaths[i]);
       }
-
     }
 
     QImage faces[6];
