@@ -43,7 +43,15 @@ namespace vh {
     eRewind_Medium,
     eRewind_Large,
     eToggleKeyboardInput,
-    eToggleMouseInput,
+    eCenterImage,
+  };
+
+
+  enum class MouseAction {
+    eNone,
+    eSendToShader,
+    ePanImage,
+    eZoomImage,
   };
 
 
@@ -67,6 +75,26 @@ namespace vh {
   inline uint qHash(KeyBinding kb)
   {
     return ::qHash(kb.key) * 17 + ::qHash(kb.modifiers);
+  }
+
+
+  struct MouseBinding {
+    MouseAction activeAction; // The action that this binding applies for.
+    int button;               // The button that triggers the actionn, i.e. Qt::LeftButton.
+    Qt::KeyboardModifiers modifiers;  // The modifier keys that must be active when the button is pressed for the action to trigger.
+
+    inline bool operator == (const MouseBinding& other) const { return activeAction == other.activeAction && button == other.button && modifiers == other.modifiers; }
+    inline bool operator != (const MouseBinding& other) const { return activeAction == other.activeAction && button != other.button || modifiers != other.modifiers; }
+
+    static MouseBinding fromEvent(MouseAction activeAction, const QMouseEvent* event) {
+      return MouseBinding{ activeAction, event->button(), event->modifiers() };
+    }
+  };
+
+
+  inline uint qHash(MouseBinding mb)
+  {
+    return (::qHash(int(mb.activeAction)) * 17 + ::qHash(mb.button)) * 17 + ::qHash(mb.modifiers);
   }
 
 
@@ -105,14 +133,17 @@ namespace vh {
     void stopPlayback();
     void resumePlayback();
     void adjustPlaybackTime(double amountMS);
+    void togglePlayback();
 
     void setFixedRenderResolution(int w, int h);
     void setRelativeRenderResolution(float wScale, float hScale);
     void setDisplayOptions(bool fitWidth, bool fitHeight, float scale);
     void setDisplayPassByType(PassType passType, int index=0);
+    void toggleOverlay();
+    void toggleIntermediates();
+    void recenterImage();
 
     void setKeyboardShaderInput(bool enabled);
-    void setMouseShaderInput(bool enabled);
 
     void reloadCurrentShaderToyDocument();
 
@@ -149,7 +180,7 @@ namespace vh {
     int renderHeight() const;
     void displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const;
 
-    void widgetToRenderCoords(int widgetX, int widgetY, float& renderX, float& renderY);
+    void updateShaderMousePos(QPoint mousePosWithFlippedY, bool setDownPos);
 
   private slots:
     void fileChanged(const QString& path);
@@ -187,18 +218,30 @@ namespace vh {
     bool _displayFitWidth = true;
     bool _displayFitHeight = false;
     float _displayScale = 1.0f;
+    float _displayPanX = 0.0f;
+    float _displayPanY = 0.0f;
 
     bool _keyboardShaderInput = true;
     bool _mouseShaderInput = true;
 
     QHash<KeyBinding, Action> _keyPressBindings;
     QHash<KeyBinding, Action> _keyReleaseBindings;
+    QHash<MouseBinding, MouseAction> _mousePressBindings;
+    QHash<MouseBinding, MouseAction> _mouseReleaseBindings;
 
     FileCache* _cache = nullptr;
+
+    MouseAction _mouseAction = MouseAction::eNone;
+    QPoint _mouseDown = QPoint();
+    float _initialDisplayScale = 1.0f;
+    float _initialPanX = 0.0f;
+    float _initialPanY = 0.0f;
   };
 
 } // namespace vh
 
 Q_DECLARE_METATYPE(vh::Action)
+
+Q_DECLARE_METATYPE(vh::MouseAction)
 
 #endif // VH_RENDERWIDGET_H

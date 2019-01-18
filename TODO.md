@@ -43,11 +43,9 @@ Other TODO
   - Asset library?
 - Allow zooming & panning of the output image
 - Save settings between runs
-  - window size & position
-  - Selected render size & zoom
   - Last directory used to open a file
   - ...
-  
+
 
 Blue sky ideas
 --------------
@@ -56,5 +54,6 @@ Blue sky ideas
 - Save contents of an intermediate buffer as an image.
 - Unlimited number of render passes, arranged in a graph.
 - Allow rendering onto a triangle mesh, rather than a full screen triangle.
-- Allow custom vertex shaders too.
-
+- Custom vertex shaders
+- Buffers as input (i.e. SSBOs and/or tex buffers)
+- Compute shaders generating an arbitrary output buffer.

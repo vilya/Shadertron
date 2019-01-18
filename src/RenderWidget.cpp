@@ -146,7 +146,13 @@ namespace vh  {
     _keyPressBindings[KeyBinding{ Qt::Key_Left,   Qt::ControlModifier }] = Action::eRewind_Large;
 
     _keyReleaseBindings[KeyBinding{ Qt::Key_F2, 0 }] = Action::eToggleKeyboardInput;
-    _keyReleaseBindings[KeyBinding{ Qt::Key_F3, 0 }] = Action::eToggleMouseInput;
+
+    _mousePressBindings[MouseBinding{ MouseAction::eNone, Qt::LeftButton, Qt::NoModifier      }] = MouseAction::eSendToShader;
+    _mousePressBindings[MouseBinding{ MouseAction::eNone, Qt::LeftButton, Qt::AltModifier     }] = MouseAction::ePanImage;
+    _mousePressBindings[MouseBinding{ MouseAction::eNone, Qt::LeftButton, Qt::ControlModifier }] = MouseAction::eZoomImage;
+
+//    _mouseReleaseBindings[MouseBinding{ MouseAction::ePanImage,  Qt::LeftButton, Qt::AltModifier     }] = MouseAction::eNone;
+//    _mouseReleaseBindings[MouseBinding{ MouseAction::eZoomImage, Qt::LeftButton, Qt::ControlModifier }]  = MouseAction::eNone;
 
     _runtimeTimer.start();
   }
@@ -181,12 +187,6 @@ namespace vh  {
   bool RenderWidget::keyboardShaderInput() const
   {
     return _keyboardShaderInput;
-  }
-
-
-  bool RenderWidget::mouseShaderInput() const
-  {
-    return _mouseShaderInput;
   }
 
 
@@ -242,6 +242,17 @@ namespace vh  {
   }
 
 
+  void RenderWidget::togglePlayback()
+  {
+    if (_playbackTimer.running()) {
+      stopPlayback();
+    }
+    else {
+      resumePlayback();
+    }
+  }
+
+
   void RenderWidget::setFixedRenderResolution(int w, int h)
   {
     _renderWidth = w;
@@ -270,8 +281,16 @@ namespace vh  {
   {
     _displayFitWidth = fitWidth;
     _displayFitHeight = fitHeight;
-    _displayScale = scale;
-    _resized = true;
+    if (_displayFitWidth) {
+      _displayScale = float(width()) / float(renderWidth());
+    }
+    else if (_displayFitHeight) {
+      _displayScale = float(height()) / float(renderHeight());
+    }
+    else {
+      _displayScale = 1.0f;
+    }
+    _displayScale *= scale;
     if (!_playbackTimer.running()) {
       update();
     }
@@ -310,15 +329,40 @@ namespace vh  {
   }
 
 
-  void RenderWidget::setKeyboardShaderInput(bool enabled)
+  void RenderWidget::toggleOverlay()
   {
-    _keyboardShaderInput = enabled;
+    _showOverlay = !_showOverlay;
+
+    if (!_playbackTimer.running()) {
+      update();
+    }
   }
 
 
-  void RenderWidget::setMouseShaderInput(bool enabled)
+  void RenderWidget::toggleIntermediates()
   {
-    _mouseShaderInput = enabled;
+    _showIntermediates = !_showIntermediates;
+
+    if (!_playbackTimer.running()) {
+      update();
+    }
+  }
+
+
+  void RenderWidget::recenterImage()
+  {
+    _displayPanX = (float(width())  - float(renderWidth())  * _displayScale) * 0.5f;
+    _displayPanY = (float(height()) - float(renderHeight()) * _displayScale) * 0.5f;
+
+    if (!_playbackTimer.running()) {
+      update();
+    }
+  }
+
+
+  void RenderWidget::setKeyboardShaderInput(bool enabled)
+  {
+    _keyboardShaderInput = enabled;
   }
 
 
@@ -335,18 +379,13 @@ namespace vh  {
       emit closeRequested();
       break;
     case Action::eToggleOverlay:
-      _showOverlay = !_showOverlay;
+      toggleOverlay();
       break;
     case Action::eToggleIntermediates:
-      _showIntermediates = !_showIntermediates;
+      toggleIntermediates();
       break;
     case Action::eTogglePlayback:
-      if (_playbackTimer.running()) {
-        stopPlayback();
-      }
-      else {
-        resumePlayback();
-      }
+      togglePlayback();
       break;
     case Action::eRestartPlayback:
       startPlayback();
@@ -374,11 +413,8 @@ namespace vh  {
 //      setKeyboardShaderInput(!_keyboardShaderInput);
 //      emit keyboardShaderInputChanged(_keyboardShaderInput);
       break;
-    case Action::eToggleMouseInput:
-      // Do nothing. The event should bubble up to be handled by the main window.
-//      setMouseShaderInput(!_mouseShaderInput);
-//      emit mouseShaderInputChanged(_mouseShaderInput);
-      break;
+    case Action::eCenterImage:
+
     default:
       break;
     }
@@ -466,46 +502,94 @@ namespace vh  {
       // that we can ensure it doesn't happen while we're trying to render.
       _resized = true;
     }
+
+    _initialDisplayScale = _displayScale;
+    if (_displayFitWidth) {
+      _displayScale = float(width()) / float(renderWidth());
+    }
+    else if (_displayFitHeight) {
+      _displayScale = float(height()) / float(renderHeight());
+    }
+
+    recenterImage();
   }
 
 
   void RenderWidget::mousePressEvent(QMouseEvent* event)
   {
-    if (_mouseShaderInput) {
-      float rx, ry;
-      widgetToRenderCoords(event->x(), event->y(), rx, ry);
-      _renderData.iMouse[0] = _renderData.iMouse[2] = rx;
-      _renderData.iMouse[1] = _renderData.iMouse[3] = ry;
-    }
-    else {
-      // TODO: pan and zoom support, other mouse press interactions
+    _mouseDown = event->pos();
+    _mouseDown.setY(height() - _mouseDown.y());
+
+    // Figure out what action we're performing.
+    _mouseAction = _mousePressBindings.value(MouseBinding::fromEvent(_mouseAction, event), MouseAction::eNone);
+
+    // Begin the action.
+    switch (_mouseAction) {
+    case MouseAction::eSendToShader:
+      updateShaderMousePos(_mouseDown, true);
+      break;
+    case MouseAction::ePanImage:
+      _initialPanX = _displayPanX;
+      _initialPanY = _displayPanY;
+      break;
+    case MouseAction::eZoomImage:
+      _initialDisplayScale = _displayScale;
+      _initialPanX = _displayPanX;
+      _initialPanY = _displayPanY;
+      break;
+    default:
+      break;
     }
   }
 
 
   void RenderWidget::mouseMoveEvent(QMouseEvent* event)
   {
-    if (_mouseShaderInput) {
-      float rx, ry;
-      widgetToRenderCoords(event->x(), event->y(), rx, ry);
-      _renderData.iMouse[0] = rx;
-      _renderData.iMouse[1] = ry;
-    }
-    else {
-      // TODO: pan and zoom support, other mouse move interactions
+    QPoint mousePos = event->pos();
+    mousePos.setY(height() - mousePos.y());
+
+    switch (_mouseAction) {
+    case MouseAction::eSendToShader:
+      updateShaderMousePos(mousePos, false);
+      break;
+    case MouseAction::ePanImage:
+      _displayPanX = _initialPanX + mousePos.x() - _mouseDown.x();
+      _displayPanY = _initialPanY + mousePos.y() - _mouseDown.y();
+      break;
+    case MouseAction::eZoomImage:
+      {
+        float minScale = 4.0f / qMin(renderWidth(), renderHeight()); // Don't go below 4 pixels wide or tall.
+        _displayScale = qMax(_initialDisplayScale + float(mousePos.x() - _mouseDown.x()) / 200.0f, minScale);
+        float relativeScale = _displayScale /  _initialDisplayScale;
+        _displayPanX = (_initialPanX - _mouseDown.x()) * relativeScale + _mouseDown.x();
+        _displayPanY = (_initialPanY - _mouseDown.y()) * relativeScale + _mouseDown.y();
+      }
+      break;
+    default:
+      break;
     }
   }
 
 
-  void RenderWidget::mouseReleaseEvent(QMouseEvent* /*event*/)
+  void RenderWidget::mouseReleaseEvent(QMouseEvent* event)
   {
-    if (_mouseShaderInput) {
+    // Figure out what action we're performing.
+    MouseAction newMouseAction = _mouseReleaseBindings.value(MouseBinding::fromEvent(_mouseAction, event), MouseAction::eNone);
+
+    switch (_mouseAction) {
+    case MouseAction::eSendToShader:
       _renderData.iMouse[2] = -_renderData.iMouse[2];
       _renderData.iMouse[3] = -_renderData.iMouse[3];
+      break;
+    case MouseAction::ePanImage:
+      break;
+    case MouseAction::eZoomImage:
+      break;
+    default:
+      break;
     }
-    else {
-      // TODO: pan and zoom support, other mouse release interactions
-    }
+
+    _mouseAction = newMouseAction;
   }
 
 
@@ -519,7 +603,6 @@ namespace vh  {
       // Even if we're sending keyboard input to the shader, there are still
       // certain actions we should be able to trigger via the keyboard.
       if (action == Action::eToggleKeyboardInput ||
-          action == Action::eToggleMouseInput ||
           action == Action::eQuit) {
         doAction(action);
         return;
@@ -549,7 +632,7 @@ namespace vh  {
     if (_keyboardShaderInput) {
       // Even if we're sending keyboard input to the shader, there are still
       // certain actions we should be able to trigger via the keyboard.
-      if (action == Action::eToggleKeyboardInput || action == Action::eToggleMouseInput) {
+      if (action == Action::eToggleKeyboardInput) {
         event->ignore();
         return;
       }
@@ -585,6 +668,7 @@ namespace vh  {
     if (_currentDoc != nullptr) {
       setupRenderData();
     }
+    recenterImage();
     emit currentShaderToyDocumentChanged();
   }
 
@@ -1096,11 +1180,6 @@ namespace vh  {
     int w = width() / 4;
     int h = rh * w / rw;
     int level = 0;
-//    while ((rw >> 1) > w && (rh >> 1) > h) {
-//      ++level;
-//      rw >>= 1;
-//      rh >>= 1;
-//    }
 
     int x = width() - w;
     int y = height() - h;
@@ -1277,27 +1356,14 @@ namespace vh  {
 
   void RenderWidget::displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const
   {
-    int srcW = renderWidth();
-    int srcH = renderHeight();
-
-    if (_displayFitWidth) {
-      dstW = width();
-      dstH = srcH * dstW / srcW;
-    }
-    else if (_displayFitHeight) {
-      dstH = height();
-      dstW = srcW * dstH / srcH;
-    }
-    else {
-      dstW = int(srcW  * _displayScale);
-      dstH = int(srcH * _displayScale);
-    }
-    dstX = (width() - dstW) / 2;
-    dstY = (height() - dstH) / 2;
+    dstX = _displayPanX;
+    dstY = _displayPanY;
+    dstW = int(renderWidth() * _displayScale);
+    dstH = int(renderHeight() * _displayScale);
   }
 
 
-  void RenderWidget::widgetToRenderCoords(int widgetX, int widgetY, float& renderX, float& renderY)
+  void RenderWidget::updateShaderMousePos(QPoint mousePosWithFlippedY, bool setDownPos)
   {
     int dstX, dstY, dstW, dstH;
     displayRect(dstX, dstY, dstW, dstH);
@@ -1305,8 +1371,13 @@ namespace vh  {
     int srcW = renderWidth();
     int srcH = renderHeight();
 
-    renderX = float(widgetX - dstX) / float(dstW) * float(srcW);
-    renderY = float(height() - widgetY - dstY) / float(dstH) * float(srcH);
+    _renderData.iMouse[0] = float(mousePosWithFlippedY.x() - dstX) / float(dstW) * float(srcW);
+    _renderData.iMouse[1] = float(mousePosWithFlippedY.y() - dstY) / float(dstH) * float(srcH);
+
+    if (setDownPos) {
+      _renderData.iMouse[2] = _renderData.iMouse[0];
+      _renderData.iMouse[3] = _renderData.iMouse[1];
+    }
   }
 
 

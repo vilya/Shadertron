@@ -352,7 +352,6 @@ namespace vh {
   void AppWindow::setupInputMenu(QMenu* menu)
   {
     QAction* keyboardAction = menu->addAction("&Keyboard");
-    QAction* mouseAction = menu->addAction("&Mouse");
 
     // Setup the keyboard action.
     keyboardAction->setCheckable(true);
@@ -361,14 +360,6 @@ namespace vh {
 
     QObject::connect(keyboardAction, &QAction::toggled, _renderWidget, &RenderWidget::setKeyboardShaderInput);
     QObject::connect(_renderWidget, &RenderWidget::keyboardShaderInputChanged, keyboardAction, &QAction::setChecked);
-
-    // Setup the mouse action.
-    mouseAction->setCheckable(true);
-    mouseAction->setChecked(_renderWidget->mouseShaderInput());
-    mouseAction->setShortcut(QKeySequence("F3"));
-
-    QObject::connect(mouseAction, &QAction::toggled, _renderWidget, &RenderWidget::setMouseShaderInput);
-    QObject::connect(_renderWidget, &RenderWidget::mouseShaderInputChanged, mouseAction, &QAction::setChecked);
   }
 
 
@@ -381,8 +372,16 @@ namespace vh {
     menu->addSeparator();
     QMenu* viewPassMenu   = menu->addMenu("&Pass");
     menu->addSeparator();
-    menu->addAction("&Overlay on/off",       [renderWidget](){ renderWidget->doAction(Action::eToggleOverlay); });
-    menu->addAction("&Intermediates on/off", [renderWidget](){ renderWidget->doAction(Action::eToggleIntermediates); });
+    QAction* toggleOverlayAction       = menu->addAction("Show &Overlay",       renderWidget, &RenderWidget::toggleOverlay);
+    QAction* toggleIntermediatesAction = menu->addAction("Show &Intermediates", renderWidget, &RenderWidget::toggleIntermediates);
+    menu->addSeparator();
+    menu->addAction("&Center", renderWidget, &RenderWidget::recenterImage);
+
+    toggleOverlayAction->setCheckable(true);
+    toggleOverlayAction->setChecked(true);
+
+    toggleIntermediatesAction->setCheckable(true);
+    toggleIntermediatesAction->setChecked(false);
 
     setupViewRenderMenu(viewRenderMenu);
     setupViewZoomMenu(viewZoomMenu);

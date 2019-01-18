@@ -1,18 +1,25 @@
-A program for running ShaderToy scripts on your local computer, instead of in
-a web browser.
+Run ShaderToy scripts on your local computer, instead of in a web browser. 
 
-It watches the shader files in use by your project and automatically reloads
-them if they change. *FIXME: this was broken during refactoring, need to bring
-it back...*
+The goal is to be 100% compatible with the complete ShaderToy feature set.
+This is still in progress; see below for what is & isn't supported so far.
+
+We also provide some useful extensions to ShaderToy's capabilities: 
+* GLSL code can be stored in external files
+* You can edit the code in a text editor of your choice. Wehn you save the
+  file, we'll detect the change and aautomaatically reload.
+* You can provide your own assets rather than having to use ShaderToy's built
+  in ones (although you can use the built-in ones too).
 
 
 Project name
 ------------
 
-ShaderToolQt is a working title only, because it's pretty crap. Other ideas:
-ShaderTide (a contraction of "ShaderToy IDE"), ShaderKitchen, ShaderBakery,
-PixelKitchen, PixelBakery, PixelToy, FragmentToy, Pixery, Pixelhouse,
-Pixelhaus, Shaderhaus, Shaderhouse, Nightshader, N-Shade, V-Shade
+Still undecided. ShaderToolQt is a working title only, it's pretty crap. 
+
+Other ideas: ShaderTide, ShaderKitchen, ShaderBakery, PixelKitchen,
+PixelBakery, PixelToy, FragmentToy, Pixery, Pixelhouse, Pixelhaus, Shaderhaus,
+Shaderhouse, Nightshade, N-Shade, V-Shade,
+
 
 
 Features
@@ -38,7 +45,7 @@ Features
   - Fast forward/rewind in small, medium or large increments
 - Overlay showing playback and performance stats
 - User-specified rendering resolution
-- Zoom
+- Pan and Zoom the output
 - Overlay showing all intermediate images
 
 
