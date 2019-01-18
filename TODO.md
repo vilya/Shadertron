@@ -12,6 +12,9 @@ Input sources:
 - Webcam input
 - Microphone input
 - Soundcloud input
+Sampler properties
+- flip (need to handle the same texture with different flip settings)
+- srgb (ditto)
 Assets:
 - Ship with standard shadertoy assets, if their license will allow it
 - Option to download standard ShaderToy assets on first run
@@ -41,7 +44,6 @@ Other TODO
 - Upload to ShaderToy (if their API allows it?)
 - Make it easy to import custom assets
   - Asset library?
-- Allow zooming & panning of the output image
 - Save settings between runs
   - Last directory used to open a file
   - ...

@@ -775,7 +775,7 @@ namespace vh  {
       ++numRenderPasses;
     }
 
-    // Set up the render passes, allocating output textures for them as needed.
+    // Set up the render passes, allocating output textures and samplers for them as needed.
     for (int passOrderIdx = 0; passOrderIdx < numRenderPasses; passOrderIdx++) {
       int passIdx = renderPassOrder[passOrderIdx];
       ShaderToyRenderPass& passIn = _currentDoc->renderpasses[passIdx];
@@ -807,6 +807,31 @@ namespace vh  {
         passOut.outputs[i] = _renderData.numTextures;
 
         _renderData.numTextures++;
+      }
+
+      glGenSamplers(kMaxInputs, passOut.samplers);
+      for (int inputIdx = 0; inputIdx < passIn.inputs.size(); inputIdx++) {
+        ShaderToyInput& input = passIn.inputs[inputIdx];
+
+        GLenum minFilter = GL_NEAREST;
+        GLenum magFilter = GL_NEAREST;
+        if (input.sampler.filter == kSamplerFilterType_Mipmap) {
+          minFilter = GL_LINEAR_MIPMAP_LINEAR;
+          magFilter = GL_LINEAR;
+        }
+        else if (input.sampler.filter == kSamplerFilterType_Linear) {
+          minFilter = GL_LINEAR;
+          magFilter = GL_LINEAR;
+        }
+        glSamplerParameteri(passOut.samplers[input.channel], GL_TEXTURE_MIN_FILTER, minFilter);
+        glSamplerParameteri(passOut.samplers[input.channel], GL_TEXTURE_MAG_FILTER, magFilter);
+
+        GLenum wrap = GL_REPEAT;
+        if (input.sampler.wrap == kSamplerWrapType_Clamp) {
+          wrap = GL_CLAMP_TO_EDGE;
+        }
+        glSamplerParameteri(passOut.samplers[input.channel], GL_TEXTURE_WRAP_S, wrap);
+        glSamplerParameteri(passOut.samplers[input.channel], GL_TEXTURE_WRAP_T, wrap);
       }
 
       passOut.sourceCode = passIn.code;
@@ -980,9 +1005,13 @@ namespace vh  {
       delete pass.program;
       pass.program = nullptr;
 
+      glDeleteSamplers(kMaxInputs, pass.samplers);
+
       for (int i = 0; i < kMaxInputs; i++) {
         pass.inputs[i][0] = 0;
         pass.inputs[i][1] = 0;
+
+        pass.samplers[i] = 0;
       }
 
       pass.outputs[0] = 0;
@@ -1115,6 +1144,8 @@ namespace vh  {
       pass.program->setUniformValue(pass.iFrameLoc, _renderData.iFrame);
       pass.program->setUniformValueArray(pass.iMouseLoc, _renderData.iMouse, 1, 4);
 
+      glBindSamplers(0, GLuint(kMaxInputs), pass.samplers);
+
       float iChannelResolution[4][3];
       for (int inputIdx = 0; inputIdx < kMaxInputs; inputIdx++) {
         int texIdx = pass.inputs[inputIdx][_renderData.frontBuffer];
@@ -1139,6 +1170,8 @@ namespace vh  {
       // TODO: only generate mipmaps if a downstream pass requires them.
       _renderData.textures[pass.outputs[_renderData.backBuffer]].obj->generateMipMaps();
     }
+
+    glBindSamplers(0, GLuint(kMaxInputs), nullptr);
 
     int displayTexIdx = _renderData.renderpasses[_displayPass].outputs[_renderData.backBuffer];
     QOpenGLTexture* texObj = _renderData.textures[displayTexIdx].obj;

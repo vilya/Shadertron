@@ -20,6 +20,8 @@ namespace vh {
   // Constants
   //
 
+  static const QString kShaderToyAppKey = "fdHtWW";
+
   static const QString kRenderPassType_Common  = "common";
   static const QString kRenderPassType_Buffer  = "buffer";
   static const QString kRenderPassType_Image   = "image";
@@ -31,7 +33,12 @@ namespace vh {
   static const QString kInputType_Texture = "texture";
   static const QString kInputType_Keyboard = "keyboard";
 
-  static const QString kShaderToyAppKey = "fdHtWW";
+  static const QString kSamplerFilterType_Nearest = "nearest";
+  static const QString kSamplerFilterType_Linear  = "linear";
+  static const QString kSamplerFilterType_Mipmap  = "mipmap";
+
+  static const QString kSamplerWrapType_Clamp = "clamp";
+  static const QString kSamplerWrapType_Repeat = "repeat";
 
 
   //

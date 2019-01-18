@@ -32,6 +32,9 @@ Features
   - Cube map
   - Mouse
   - Keyboard
+- Sampler properties:
+  - Filter (mipmap, linear or nearest)
+  - Wrap (repeat or clamp)
 - Can toggle keyboard & mouse input to shaders on or off (off is useful when you want to use keyboard shortcuts, for example).
 - Uses ShaderToy's JSON format (as returned by their API) as the native file format, with some minor extensions.
   - Supports external file references

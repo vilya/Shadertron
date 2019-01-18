@@ -52,8 +52,11 @@ namespace vh {
     QString name;
 
     QOpenGLShaderProgram* program = nullptr;
+
     int inputs[kMaxInputs][2]     = {}; // Front and back textures for each input.
     int outputs[2]                = {}; // Front and back output textures.
+
+    GLuint samplers[kMaxInputs] = {}; // Samplers used for each input.
 
     QString sourceCode;
     QString sourceFile;
