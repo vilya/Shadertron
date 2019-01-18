@@ -279,6 +279,9 @@ namespace vh  {
 
   void RenderWidget::setDisplayOptions(bool fitWidth, bool fitHeight, float scale)
   {
+    float oldW = renderWidth() * _displayScale;
+    float oldH = renderHeight() * _displayScale;
+
     _displayFitWidth = fitWidth;
     _displayFitHeight = fitHeight;
     if (_displayFitWidth) {
@@ -291,6 +294,12 @@ namespace vh  {
       _displayScale = 1.0f;
     }
     _displayScale *= scale;
+
+    float newW = renderWidth()  * _displayScale;
+    float newH = renderHeight() * _displayScale;
+    _displayPanX -= (newW - oldW) * 0.5f;
+    _displayPanY -= (newH - oldH) * 0.5f;
+
     if (!_playbackTimer.running()) {
       update();
     }
