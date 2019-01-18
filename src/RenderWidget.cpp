@@ -154,6 +154,11 @@ namespace vh  {
 //    _mouseReleaseBindings[MouseBinding{ MouseAction::ePanImage,  Qt::LeftButton, Qt::AltModifier     }] = MouseAction::eNone;
 //    _mouseReleaseBindings[MouseBinding{ MouseAction::eZoomImage, Qt::LeftButton, Qt::ControlModifier }]  = MouseAction::eNone;
 
+    _wheelBindings[WheelBinding{ WheelDirection::eUp,   Qt::NoModifier    }] = Action::eZoomImageIn_Coarse;
+    _wheelBindings[WheelBinding{ WheelDirection::eUp,   Qt::ShiftModifier }] = Action::eZoomImageIn_Fine;
+    _wheelBindings[WheelBinding{ WheelDirection::eDown, Qt::NoModifier    }] = Action::eZoomImageOut_Coarse;
+    _wheelBindings[WheelBinding{ WheelDirection::eDown, Qt::ShiftModifier }] = Action::eZoomImageOut_Fine;
+
     _runtimeTimer.start();
   }
 
@@ -255,22 +260,37 @@ namespace vh  {
 
   void RenderWidget::setFixedRenderResolution(int w, int h)
   {
+    int oldDisplayW = displayWidth();
+    int oldDisplayH = displayHeight();
+
+    _useRelativeRenderSize = false;
     _renderWidth = w;
     _renderHeight = h;
-    _useRelativeRenderSize = false;
+
     _resized = true;
+
+    _displayPanX -= float(displayWidth()  - oldDisplayW) * 0.5f;
+    _displayPanY -= float(displayHeight() - oldDisplayH) * 0.5f;
+
     if (!_playbackTimer.running()) {
       update();
     }
   }
 
 
-  void RenderWidget::setRelativeRenderResolution(float wScale, float hScale)
+  void RenderWidget::setRelativeRenderResolution(float windowScale)
   {
-    _renderWidthScale = wScale;
-    _renderHeightScale = hScale;
+    int oldDisplayW = displayWidth();
+    int oldDisplayH = displayHeight();
+
     _useRelativeRenderSize = true;
+    _renderScale = windowScale;
+
     _resized = true;
+
+    _displayPanX -= float(displayWidth()  - oldDisplayW) * 0.5f;
+    _displayPanY -= float(displayHeight() - oldDisplayH) * 0.5f;
+
     if (!_playbackTimer.running()) {
       update();
     }
@@ -279,26 +299,30 @@ namespace vh  {
 
   void RenderWidget::setDisplayOptions(bool fitWidth, bool fitHeight, float scale)
   {
-    float oldW = renderWidth() * _displayScale;
-    float oldH = renderHeight() * _displayScale;
+    int oldDisplayW = displayWidth();
+    int oldDisplayH = displayHeight();
 
     _displayFitWidth = fitWidth;
     _displayFitHeight = fitHeight;
-    if (_displayFitWidth) {
+
+    if (fitWidth) {
       _displayScale = float(width()) / float(renderWidth());
     }
-    else if (_displayFitHeight) {
+    else if (fitHeight) {
       _displayScale = float(height()) / float(renderHeight());
     }
     else {
-      _displayScale = 1.0f;
+      _displayScale = scale;
     }
-    _displayScale *= scale;
 
-    float newW = renderWidth()  * _displayScale;
-    float newH = renderHeight() * _displayScale;
-    _displayPanX -= (newW - oldW) * 0.5f;
-    _displayPanY -= (newH - oldH) * 0.5f;
+    if (fitWidth || fitHeight) {
+      _displayPanX = (width()  - displayWidth()) * 0.5f;
+      _displayPanY = (height() - displayHeight()) * 0.5f;
+    }
+    else {
+      _displayPanX -= (displayWidth()  - oldDisplayW) * 0.5f;
+      _displayPanY -= (displayHeight() - oldDisplayH) * 0.5f;
+    }
 
     if (!_playbackTimer.running()) {
       update();
@@ -360,8 +384,23 @@ namespace vh  {
 
   void RenderWidget::recenterImage()
   {
-    _displayPanX = (float(width())  - float(renderWidth())  * _displayScale) * 0.5f;
-    _displayPanY = (float(height()) - float(renderHeight()) * _displayScale) * 0.5f;
+    _displayPanX = (width() -  displayWidth())  * 0.5f;
+    _displayPanY = (height() - displayHeight()) * 0.5f;
+
+    if (!_playbackTimer.running()) {
+      update();
+    }
+  }
+
+
+  void RenderWidget::zoom(QPoint center, float newScale)
+  {
+    float cx = float(center.x());
+    float cy = float(center.y());
+    float relScale = newScale / _displayScale;
+    _displayPanX = (_displayPanX - cx) * relScale + cx;
+    _displayPanY = (_displayPanY - cy) * relScale + cy;
+    _displayScale = newScale;
 
     if (!_playbackTimer.running()) {
       update();
@@ -423,7 +462,20 @@ namespace vh  {
 //      emit keyboardShaderInputChanged(_keyboardShaderInput);
       break;
     case Action::eCenterImage:
-
+      // Do nothing. The event should bubble up to be handled by the main window.
+      break;
+    case Action::eZoomImageIn_Coarse:
+      zoom(_mousePos, _displayScale * 1.5f);
+      break;
+    case Action::eZoomImageIn_Fine:
+      zoom(_mousePos, _displayScale * 1.05f);
+      break;
+    case Action::eZoomImageOut_Coarse:
+      zoom(_mousePos, _displayScale * 0.5f);
+      break;
+    case Action::eZoomImageOut_Fine:
+      zoom(_mousePos, _displayScale * 0.95f);
+      break;
     default:
       break;
     }
@@ -554,21 +606,21 @@ namespace vh  {
 
   void RenderWidget::mouseMoveEvent(QMouseEvent* event)
   {
-    QPoint mousePos = event->pos();
-    mousePos.setY(height() - mousePos.y());
+    _mousePos = event->pos();
+    _mousePos.setY(height() - _mousePos.y());
 
     switch (_mouseAction) {
     case MouseAction::eSendToShader:
-      updateShaderMousePos(mousePos, false);
+      updateShaderMousePos(_mousePos, false);
       break;
     case MouseAction::ePanImage:
-      _displayPanX = _initialPanX + mousePos.x() - _mouseDown.x();
-      _displayPanY = _initialPanY + mousePos.y() - _mouseDown.y();
+      _displayPanX = _initialPanX + _mousePos.x() - _mouseDown.x();
+      _displayPanY = _initialPanY + _mousePos.y() - _mouseDown.y();
       break;
     case MouseAction::eZoomImage:
       {
         float minScale = 4.0f / qMin(renderWidth(), renderHeight()); // Don't go below 4 pixels wide or tall.
-        _displayScale = qMax(_initialDisplayScale + float(mousePos.x() - _mouseDown.x()) / 200.0f, minScale);
+        _displayScale = qMax(_initialDisplayScale + float(_mousePos.x() - _mouseDown.x()) / 200.0f, minScale);
         float relativeScale = _displayScale /  _initialDisplayScale;
         _displayPanX = (_initialPanX - _mouseDown.x()) * relativeScale + _mouseDown.x();
         _displayPanY = (_initialPanY - _mouseDown.y()) * relativeScale + _mouseDown.y();
@@ -599,6 +651,35 @@ namespace vh  {
     }
 
     _mouseAction = newMouseAction;
+  }
+
+
+  void RenderWidget::wheelEvent(QWheelEvent* event)
+  {
+    // For now, ignore wheel events while there's a mouse action in progress.
+    if (_mouseAction != MouseAction::eNone) {
+      event->ignore();
+      return;
+    }
+
+    // `angleDelta()` is in 8ths of a degree, so we must divide the value by
+    // 8 to get the number of degrees. Most mice increment by 15 degrees per
+    // mouse wheel click.
+    QPoint numDegrees = event->angleDelta();
+    if (numDegrees.isNull() || numDegrees.y() == 0) {
+      return;
+    }
+
+    _mousePos = event->pos();
+    _mousePos.setY(height() - _mousePos.y());
+
+    Action action = _wheelBindings.value(WheelBinding::fromEvent(event), Action::eNoAction);
+    if (action != Action::eNoAction) {
+      doAction(action);
+    }
+    else {
+      event->ignore();
+    }
   }
 
 
@@ -1386,13 +1467,25 @@ namespace vh  {
 
   int RenderWidget::renderWidth() const
   {
-    return _useRelativeRenderSize ? int(width() * _renderWidthScale) : _renderWidth;
+    return _useRelativeRenderSize ? int(width() * _renderScale) : _renderWidth;
   }
 
 
   int RenderWidget::renderHeight() const
   {
-    return _useRelativeRenderSize ? int(height() * _renderHeightScale) : _renderHeight;
+    return _useRelativeRenderSize ? int(height() * _renderScale) : _renderHeight;
+  }
+
+
+  int RenderWidget::displayWidth() const
+  {
+    return int(float(renderWidth()) * _displayScale);
+  }
+
+
+  int RenderWidget::displayHeight() const
+  {
+    return int(float(renderHeight()) * _displayScale);
   }
 
 
@@ -1400,8 +1493,8 @@ namespace vh  {
   {
     dstX = _displayPanX;
     dstY = _displayPanY;
-    dstW = int(renderWidth() * _displayScale);
-    dstH = int(renderHeight() * _displayScale);
+    dstW = displayWidth();
+    dstH = displayHeight();
   }
 
 

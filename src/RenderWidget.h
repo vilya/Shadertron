@@ -44,6 +44,10 @@ namespace vh {
     eRewind_Large,
     eToggleKeyboardInput,
     eCenterImage,
+    eZoomImageIn_Coarse,
+    eZoomImageIn_Fine,
+    eZoomImageOut_Coarse,
+    eZoomImageOut_Fine,
   };
 
 
@@ -98,6 +102,31 @@ namespace vh {
   }
 
 
+  enum class WheelDirection {
+    eUp,
+    eDown,
+  };
+
+  struct WheelBinding {
+    WheelDirection direction;
+    Qt::KeyboardModifiers modifiers;
+
+    inline bool operator == (const WheelBinding& other) const { return direction == other.direction && modifiers == other.modifiers; }
+    inline bool operator != (const WheelBinding& other) const { return direction != other.direction || modifiers != other.modifiers; }
+
+    static WheelBinding fromEvent(const QWheelEvent* event) {
+      WheelDirection direction = (event->angleDelta().y() >= 0) ? WheelDirection::eUp : WheelDirection::eDown;
+      return WheelBinding{ direction, event->modifiers() };
+    }
+  };
+
+
+  inline uint qHash(WheelBinding wb)
+  {
+    return ::qHash(int(wb.direction)) * 17 + ::qHash(wb.modifiers);
+  }
+
+
   //
   // RenderWidget class
   //
@@ -136,12 +165,14 @@ namespace vh {
     void togglePlayback();
 
     void setFixedRenderResolution(int w, int h);
-    void setRelativeRenderResolution(float wScale, float hScale);
+    void setRelativeRenderResolution(float windowScale);
     void setDisplayOptions(bool fitWidth, bool fitHeight, float scale);
     void setDisplayPassByType(PassType passType, int index=0);
     void toggleOverlay();
     void toggleIntermediates();
     void recenterImage();
+
+    void zoom(QPoint center, float newScale);
 
     void setKeyboardShaderInput(bool enabled);
 
@@ -157,6 +188,8 @@ namespace vh {
     virtual void mousePressEvent(QMouseEvent* event);
     virtual void mouseMoveEvent(QMouseEvent* event);
     virtual void mouseReleaseEvent(QMouseEvent* event);
+
+    virtual void wheelEvent(QWheelEvent* event);
 
     virtual void keyPressEvent(QKeyEvent* event);
     virtual void keyReleaseEvent(QKeyEvent* event);
@@ -178,6 +211,8 @@ namespace vh {
 
     int renderWidth() const;
     int renderHeight() const;
+    int displayWidth() const;
+    int displayHeight() const;
     void displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const;
 
     void updateShaderMousePos(QPoint mousePosWithFlippedY, bool setDownPos);
@@ -211,7 +246,7 @@ namespace vh {
 
     int _renderWidth            = 640;
     int _renderHeight           = 360;
-    float _renderWidthScale     = 0.5f;
+    float _renderScale     = 0.5f;
     float _renderHeightScale    = 0.5f;
     bool _useRelativeRenderSize = false;
 
@@ -228,11 +263,13 @@ namespace vh {
     QHash<KeyBinding, Action> _keyReleaseBindings;
     QHash<MouseBinding, MouseAction> _mousePressBindings;
     QHash<MouseBinding, MouseAction> _mouseReleaseBindings;
+    QHash<WheelBinding, Action> _wheelBindings;
 
     FileCache* _cache = nullptr;
 
     MouseAction _mouseAction = MouseAction::eNone;
     QPoint _mouseDown = QPoint();
+    QPoint _mousePos = QPoint();
     float _initialDisplayScale = 1.0f;
     float _initialPanX = 0.0f;
     float _initialPanY = 0.0f;

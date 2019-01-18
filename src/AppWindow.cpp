@@ -425,9 +425,9 @@ namespace vh {
     actions.push_back(menu->addAction("1280x720", [renderWidget](){ renderWidget->setFixedRenderResolution(1280, 720); }));
     actions.push_back(menu->addAction("1920x1080", [renderWidget](){ renderWidget->setFixedRenderResolution(1920, 1080); }));
     menu->addSeparator();
-    actions.push_back(menu->addAction("0.5x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(0.5f, 0.5f); }));
-    actions.push_back(menu->addAction("1.0x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(1.0f, 1.0f); }));
-    actions.push_back(menu->addAction("2.0x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(2.0f, 2.0f); }));
+    actions.push_back(menu->addAction("0.5x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(0.5f); }));
+    actions.push_back(menu->addAction("1.0x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(1.0f); }));
+    actions.push_back(menu->addAction("2.0x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(2.0f); }));
 
     for (QAction* action : actions) {
       group->addAction(action);
@@ -439,26 +439,21 @@ namespace vh {
 
   void AppWindow::setupViewZoomMenu(QMenu* menu)
   {
-    QActionGroup* group = new QActionGroup(menu);
-
     RenderWidget* renderWidget = _renderWidget;
 
-    QList<QAction*> actions;
-    actions.push_back(menu->addAction("Fit &width",  [renderWidget](){ renderWidget->setDisplayOptions(true, false, 1.0f); }));
-    actions.push_back(menu->addAction("Fit &height", [renderWidget](){ renderWidget->setDisplayOptions(false, true, 1.0f); }));
+    menu->addAction("Fit &width",  [renderWidget](){ renderWidget->setDisplayOptions(true, false, 1.0f); });
+    menu->addAction("Fit &height", [renderWidget](){ renderWidget->setDisplayOptions(false, true, 1.0f); });
     menu->addSeparator();
-    actions.push_back(menu->addAction("25%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.25f); }));
-    actions.push_back(menu->addAction("50%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.5f); }));
-    actions.push_back(menu->addAction("75%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.75f); }));
-    actions.push_back(menu->addAction("100%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 1.0f); }, QKeySequence("=")));
-    actions.push_back(menu->addAction("150%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 1.5f); }));
-    actions.push_back(menu->addAction("200%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 2.0f); }));
-
-    for (QAction* action : actions) {
-      group->addAction(action);
-      action->setCheckable(true);
-    }
-    actions.front()->setChecked(true);
+    menu->addAction("25%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.25f); });
+    menu->addAction("50%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.5f); });
+    menu->addAction("67%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.67f); });
+    menu->addAction("75%",  [renderWidget](){ renderWidget->setDisplayOptions(false, false, 0.75f); });
+    menu->addAction("100%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 1.0f); }, QKeySequence("="));
+    menu->addAction("125%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 1.25f); });
+    menu->addAction("150%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 1.5f); });
+    menu->addAction("200%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 2.0f); });
+    menu->addAction("300%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 3.0f); });
+    menu->addAction("400%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 4.0f); });
   }
 
 
