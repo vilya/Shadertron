@@ -38,6 +38,23 @@ namespace vh {
   // Structs
   //
 
+  struct TextureReference {
+    int id;
+    bool srgb;
+    bool flip;
+
+    bool operator == (const TextureReference& other) const { return id == other.id && srgb == other.srgb && flip == other.flip; }
+    bool operator != (const TextureReference& other) const { return id != other.id || srgb != other.srgb || flip != other.flip; }
+  };
+
+
+  inline uint qHash(const TextureReference& tr)
+  {
+    uint h = ::qHash(qMakePair(tr.id, tr.srgb));
+    return ::qHash(qMakePair(h, tr.flip));
+  }
+
+
   struct Texture {
     QOpenGLTexture* obj = nullptr;
     bool isBuffer       = false;  // if true, this will be resized dynamically to match our output resolution.

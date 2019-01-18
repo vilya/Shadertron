@@ -12,9 +12,6 @@ Input sources:
 - Webcam input
 - Microphone input
 - Soundcloud input
-Sampler properties
-- flip (need to handle the same texture with different flip settings)
-- srgb (ditto)
 Assets:
 - Ship with standard shadertoy assets, if their license will allow it
 - Option to download standard ShaderToy assets on first run
@@ -23,6 +20,20 @@ Assets:
 See 
   https://shadertoyunofficial.wordpress.com/2016/07/20/special-shadertoy-features/ 
 for useful info about some of these.
+
+
+TODO: downloading from ShaderToy
+--------------------------------
+- Add a search form
+  - Support built in sort types: name, love, popular, newest & hot
+  - Support built in filter types: vr, soundoutput, soundinput, webcam, multipass, musicstream
+  - Use paging to show results.
+- Cache downloaded shaders.
+- Download and cache all asssets referenced by shaders.
+- Download and cache thumbnails for shaders:
+  - https://www.shadertoy.com/media/shaders/<shader-id>.jpg
+- Figure out how to tell when a cached file is out of date.
+- Show download progress
 
 
 Other TODO

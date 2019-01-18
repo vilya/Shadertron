@@ -206,8 +206,8 @@ namespace vh {
 
     void createRenderPassTexture(Texture& tex);
     void resizeRenderPassTexture(Texture& tex);
-    bool loadImageTexture(const QString& filename, bool flip, Texture& tex);
-    bool loadCubemapTexture(const QString& filename, bool flip, Texture& tex);
+    bool loadImageTexture(const QString& filename, bool flip, bool srgb, Texture& tex);
+    bool loadCubemapTexture(const QString& filename, bool flip, bool srgb, Texture& tex);
 
     int renderWidth() const;
     int renderHeight() const;

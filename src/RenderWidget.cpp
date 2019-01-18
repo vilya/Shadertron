@@ -841,7 +841,7 @@ namespace vh  {
     // corresponding index in the RenderData::textures array. We only use this
     // for static assets & not render pass outputs, since they will actually
     // have TWO textures associated with them.
-    QHash<int, int> assetIDtoTextureIndex;
+    QHash<TextureReference, int> assetIDtoTextureIndex;
     QHash<int, int> assetIDtoRenderpassIndex;
 
     // Calculate the order to process render passes in. Ignoring any passes
@@ -969,8 +969,12 @@ namespace vh  {
         }
 
         // If we've already loaded the asset...
-        if (assetIDtoTextureIndex.contains(input.id)) {
-          int texIndex = assetIDtoTextureIndex[input.id];
+        TextureReference tr;
+        tr.id = input.id;
+        tr.flip = (input.sampler.vflip == "true");
+        tr.srgb = (input.sampler.srgb == "true");
+        if (assetIDtoTextureIndex.contains(tr)) {
+          int texIndex = assetIDtoTextureIndex[tr];
           passOut.inputs[input.channel][0] = texIndex;
           passOut.inputs[input.channel][1] = texIndex;
           continue;
@@ -979,14 +983,13 @@ namespace vh  {
         // If this is a texture we haven't loaded yet...
         if (input.ctype == kInputType_Texture) {
           int texIndex = _renderData.numTextures;
-          bool flip = (input.sampler.vflip == "true");
-          if (loadImageTexture(input.src, flip, _renderData.textures[texIndex])) {
+          if (loadImageTexture(input.src, tr.flip, tr.srgb, _renderData.textures[texIndex])) {
             ++_renderData.numTextures;
           }
           else {
             texIndex = kTexture_PlaceholderImage;
           }
-          assetIDtoTextureIndex[input.id] = texIndex;
+          assetIDtoTextureIndex[tr] = texIndex;
           passOut.inputs[input.channel][0] = texIndex;
           passOut.inputs[input.channel][1] = texIndex;
           continue;
@@ -995,14 +998,13 @@ namespace vh  {
         // If this is a cubemap we haven't loaded yet...
         if (input.ctype == kInputType_CubeMap) {
           int texIndex = _renderData.numTextures;
-          bool flip = (input.sampler.vflip == "true");
-          if (loadCubemapTexture(input.src, flip, _renderData.textures[texIndex])) {
+          if (loadCubemapTexture(input.src, tr.flip, tr.srgb, _renderData.textures[texIndex])) {
             ++_renderData.numTextures;
           }
           else {
             texIndex = kTexture_PlaceholderCubemap;
           }
-          assetIDtoTextureIndex[input.id] = texIndex;
+          assetIDtoTextureIndex[tr] = texIndex;
           passOut.inputs[input.channel][0] = texIndex;
           passOut.inputs[input.channel][1] = texIndex;
           continue;
@@ -1364,7 +1366,7 @@ namespace vh  {
   }
 
 
-  bool RenderWidget::loadImageTexture(const QString& filename, bool flip, Texture& tex)
+  bool RenderWidget::loadImageTexture(const QString& filename, bool flip, bool srgb, Texture& tex)
   {
     QString adjustedFilename = filename;
     if (_cache != nullptr && _cache->isCached(filename)) {
@@ -1376,11 +1378,27 @@ namespace vh  {
       qDebug("failed to load texture %s", qPrintable(filename));
       return false;
     }
+    img = img.convertToFormat(QImage::Format_RGBA8888);
     if (flip) {
       img = img.mirrored();
     }
 
-    tex.obj = new QOpenGLTexture(img);
+    QOpenGLTexture::TextureFormat targetFormat = srgb ? QOpenGLTexture::SRGB8_Alpha8 : QOpenGLTexture::RGBA8_UNorm;
+    QOpenGLTexture::PixelFormat sourceFormat = QOpenGLTexture::RGBA;
+    QOpenGLTexture::PixelType sourceType = QOpenGLTexture::UInt8;
+
+    tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
+    tex.obj->setSize(img.width(), img.height());
+    tex.obj->setFormat(targetFormat);
+    tex.obj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
+    tex.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
+    tex.obj->allocateStorage();
+    for (int i = 0; i < 6; i++) {
+      QOpenGLPixelTransferOptions transferOptions;
+      transferOptions.setAlignment(4);
+
+      tex.obj->setData(sourceFormat, sourceType, img.constBits(), &transferOptions);
+    }
     tex.obj->generateMipMaps();
 
     tex.isBuffer = false;
@@ -1390,7 +1408,7 @@ namespace vh  {
   }
 
 
-  bool RenderWidget::loadCubemapTexture(const QString& filename, bool flip, Texture& tex)
+  bool RenderWidget::loadCubemapTexture(const QString& filename, bool flip, bool srgb, Texture& tex)
   {
     QFileInfo fileInfo(filename);
     QString path = fileInfo.path();
@@ -1441,12 +1459,13 @@ namespace vh  {
       }
     }
 
+    QOpenGLTexture::TextureFormat targetFormat = srgb ? QOpenGLTexture::SRGB8_Alpha8 : QOpenGLTexture::RGBA8_UNorm;
     QOpenGLTexture::PixelFormat sourceFormat = QOpenGLTexture::RGBA;
     QOpenGLTexture::PixelType sourceType = QOpenGLTexture::UInt8;
 
     tex.obj = new QOpenGLTexture(QOpenGLTexture::TargetCubeMap);
     tex.obj->setSize(faces[0].width(), faces[0].height());
-    tex.obj->setFormat(QOpenGLTexture::RGBA8_UNorm);
+    tex.obj->setFormat(targetFormat);
     tex.obj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
     tex.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
     tex.obj->allocateStorage();

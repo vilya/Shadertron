@@ -32,9 +32,11 @@ Features
   - Cube map
   - Mouse
   - Keyboard
-- Sampler properties:
+- Support for all of ShaderToy's sampler properties:
   - Filter (mipmap, linear or nearest)
   - Wrap (repeat or clamp)
+  - sRGB
+  - Flip
 - Can toggle keyboard & mouse input to shaders on or off (off is useful when you want to use keyboard shortcuts, for example).
 - Uses ShaderToy's JSON format (as returned by their API) as the native file format, with some minor extensions.
   - Supports external file references
@@ -50,19 +52,6 @@ Features
 - User-specified rendering resolution
 - Pan and Zoom the output
 - Overlay showing all intermediate images
-
-
-TODO: downloading from ShaderToy
-- Add a search form
-  - Support built in sort types: name, love, popular, newest & hot
-  - Support built in filter types: vr, soundoutput, soundinput, webcam, multipass, musicstream
-  - Use paging to show results.
-- Cache downloaded shaders.
-- Download and cache all asssets referenced by shaders.
-- Download and cache thumbnails for shaders:
-  - https://www.shadertoy.com/media/shaders/<shader-id>.jpg
-- Figure out how to tell when a cached file is out of date.
-- Show download progress
 
 
 A note about driver-level incompatibilities
@@ -114,6 +103,13 @@ Inputs
   - "cubemap" for a static cubemap texture
   - "texture" for a static 2D texture
   - presumably others for audio, 3D textures, etc.
+
+Samplers
+--------
+- Samplers are specified for each input.
+- The ShaderToy website gets a bit confused if you have two inputs that
+  reference the same texture but have different sampler settings. It does
+  *allow* it though, so I need to support it.
 
 Outputs
 -------
