@@ -28,6 +28,18 @@ for useful info about some of these.
 Other TODO
 ----------
 
+- Shader editing
+  - Add/remove passes
+  - Select inputs
+  - Open shader code in external text editor (user configurable)
+  - Modify metadata
+  - Project templates (i.e. create a new shader with N passes & specified code in each pass)
+  	- e.g. a template which raymarches an SDF, where you only have to fill in the scene modelling functions
+  - GLSL snippets
+  	- e.g. library of distance functions, raymarching code, analytic intersection tests, etc.
+  	- user provided snippets
+  	- online snippet sources - google "online code snippet manager" and see what comes up
+- When intermediate outputs are showing, click on one to make that the current display pass.
 - Overlay to display shader metadata 
 - Log window to display messages about shaders which didn't compile, etc.
 - Validate the JSON as we load.
