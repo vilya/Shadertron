@@ -14,8 +14,10 @@ namespace vh {
   static constexpr int kTexture_PlaceholderImage    = 0;
   static constexpr int kTexture_PlaceholderCubemap  = 1;
   static constexpr int kTexture_Keyboard            = 2;
+  static constexpr int kTexture_Video               = 3;
+  static constexpr int kTexture_VideoFlipped        = 4;
 
-  static constexpr int kNumSpecialTextures = kTexture_Keyboard + 1;
+  static constexpr int kNumSpecialTextures = kTexture_VideoFlipped + 1;
 
   static constexpr int kMaxInputs       = 4;
   static constexpr int kMaxRenderpasses = 5;
@@ -112,6 +114,7 @@ namespace vh {
 
     GLuint defaultVAO   = 0;
     GLuint defaultFBO   = 0;
+    GLuint flipFBO      = 0;
 
     uint8_t backBuffer  = 0;
     uint8_t frontBuffer = 1;

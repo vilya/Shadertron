@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
+QT       += core gui network multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -32,7 +32,8 @@ SOURCES += \
     src/ShaderToy.cpp \
     src/RenderData.cpp \
     src/AppWindow.cpp \
-    src/FileCache.cpp
+    src/FileCache.cpp \
+    src/TextureVideoSurface.cpp
 
 HEADERS += \
     src/RenderWidget.h \
@@ -41,7 +42,8 @@ HEADERS += \
     src/ShaderToy.h \
     src/RenderData.h \
     src/AppWindow.h \
-    src/FileCache.h
+    src/FileCache.h \
+    src/TextureVideoSurface.h
 
 #FORMS +=
 

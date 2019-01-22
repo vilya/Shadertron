@@ -68,9 +68,6 @@ vec3 readInput(vec2 uv, int dx, int dy)
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
-	fragColor = texture(iChannel0, fragCoord / iResolution.xy) * fragCoord.y / iResolution.y;
-	return;
-	
     // Fit image to touch screen from outside
     vec2 img_res = iChannelResolution[0].xy;
     vec2 res = iResolution.xy / img_res;

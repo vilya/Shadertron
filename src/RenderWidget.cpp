@@ -7,6 +7,8 @@
 #include <QRegularExpression>
 #include <QTimer>
 
+#include <QMediaPlaylist>
+
 namespace vh  {
 
   //
@@ -203,6 +205,27 @@ namespace vh  {
   {
     bool wasPlayingBack = _playbackTimer.running();
 
+    if (_videoSurface == nullptr) {
+      _videoSurface = new TextureVideoSurface();
+    }
+
+    if (_videoPlayer == nullptr) {
+      _videoPlayer = new QMediaPlayer(this);
+      _videoPlayer->setVideoOutput(_videoSurface);
+      _videoPlayer->setMuted(true);
+
+      QMediaPlaylist* playlist = new QMediaPlaylist(_videoPlayer);
+      playlist->addMedia(QUrl(_cache->pathForCachedFile("/media/a/3405e48f74815c7baa49133bdc835142948381fbe003ad2f12f5087715731153.ogv")));
+      playlist->setPlaybackMode(QMediaPlaylist::Loop);
+      _videoPlayer->setPlaylist(playlist);
+
+      connect(_videoPlayer, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &RenderWidget::videoFrameError);
+    }
+    else {
+      _videoPlayer->stop();
+    }
+    _videoPlayer->play();
+
     _renderData.iTime = 0.0f;
     _renderData.iFrame = 0;
 
@@ -217,12 +240,19 @@ namespace vh  {
 
   void RenderWidget::stopPlayback()
   {
+    if (_videoPlayer != nullptr) {
+      _videoPlayer->pause();
+    }
     _playbackTimer.stop();
   }
 
 
   void RenderWidget::resumePlayback()
   {
+    if (_videoPlayer != nullptr) {
+      _videoPlayer->play();
+    }
+
     bool wasPlayingBack = _playbackTimer.running();
 
     float prevTimeDelta = _renderData.iTime - _prevTime;
@@ -771,6 +801,7 @@ namespace vh  {
 
     glGenVertexArrays(1, &_renderData.defaultVAO);
     glGenFramebuffers(1, &_renderData.defaultFBO);
+    glGenFramebuffers(1, &_renderData.flipFBO);
 
     _renderData.backBuffer = 0;
     _renderData.frontBuffer = 1;
@@ -835,6 +866,33 @@ namespace vh  {
       tex.obj->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, _renderData.keyboardTexData);
       tex.isBuffer = false;
       tex.playbackTime = 0.0f;
+    }
+
+    // Allocate the video textures.
+    {
+      Texture& tex = _renderData.textures[kTexture_Video];
+      tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
+      tex.obj->setSize(400, 300);
+      tex.obj->setFormat(QOpenGLTexture::RGBA8_UNorm);
+      tex.obj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
+      tex.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
+      tex.obj->setAutoMipMapGenerationEnabled(false);
+      tex.obj->allocateStorage();
+
+      tex.isBuffer = false;
+      tex.playbackTime = 0.0;
+
+      Texture& texFlipped = _renderData.textures[kTexture_VideoFlipped];
+      texFlipped.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
+      texFlipped.obj->setSize(400, 300);
+      texFlipped.obj->setFormat(QOpenGLTexture::RGBA8_UNorm);
+      texFlipped.obj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
+      texFlipped.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
+      texFlipped.obj->setAutoMipMapGenerationEnabled(false);
+      texFlipped.obj->allocateStorage();
+
+      texFlipped.isBuffer = false;
+      texFlipped.playbackTime = 0.0;
     }
 
     // This maps from a texture ID in the ShaderToyDocument structures to the
@@ -1010,6 +1068,11 @@ namespace vh  {
           continue;
         }
 
+        if (input.ctype == kInputType_Video) {
+          assetIDtoTextureIndex[tr] = kTexture_VideoFlipped;
+          passOut.inputs[input.channel][0] = kTexture_VideoFlipped;
+          passOut.inputs[input.channel][1] = kTexture_VideoFlipped;
+        }
         // TODO: other input types.
       }
     }
@@ -1085,6 +1148,9 @@ namespace vh  {
 
     glDeleteFramebuffers(1, &_renderData.defaultFBO);
     _renderData.defaultFBO = 0;
+
+    glDeleteFramebuffers(1, &_renderData.flipFBO);
+    _renderData.flipFBO = 0;
 
     // Clear out the common source code.
     _renderData.commonSourceCode = QString();
@@ -1195,6 +1261,27 @@ namespace vh  {
 
   void RenderWidget::renderMain()
   {
+    // Upload the video contents to the video texture.
+    if (_videoSurface != nullptr && _videoSurface->hasCurrentFrame()) {
+      QOpenGLTexture* texObj = _renderData.textures[kTexture_Video].obj;
+      QOpenGLTexture* texFlippedObj = _renderData.textures[kTexture_VideoFlipped].obj;
+
+      _videoSurface->copyToTexture(texObj);
+
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.flipFBO);
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
+
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderData.defaultFBO);
+      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texFlippedObj->textureId(), 0);
+
+      glBlitFramebuffer(0, 0,                            _videoSurface->frameWidth(), _videoSurface->frameHeight(),
+                        0, _videoSurface->frameHeight(), _videoSurface->frameWidth(), 0,
+                        GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    }
+
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_STENCIL_TEST);
@@ -1543,6 +1630,12 @@ namespace vh  {
   {
     qDebug("%s changed, reloading shader", qPrintable(path));
     reloadCurrentShaderToyDocument();
+  }
+
+
+  void RenderWidget::videoFrameError(QMediaPlayer::Error err)
+  {
+    qDebug("video error %d: %s", int(err), qPrintable(_videoPlayer->errorString()));
   }
 
 } // namespace vh

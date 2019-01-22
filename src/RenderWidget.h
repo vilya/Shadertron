@@ -6,6 +6,7 @@
 #include "FPSCounter.h"
 #include "RenderData.h"
 #include "ShaderToy.h"
+#include "TextureVideoSurface.h"
 #include "Timer.h"
 
 #include <QFont>
@@ -22,6 +23,8 @@
 #include <QOpenGLTexture>
 #include <QPen>
 #include <QString>
+
+#include <QMediaPlayer>
 
 namespace vh {
 
@@ -106,6 +109,7 @@ namespace vh {
     eUp,
     eDown,
   };
+
 
   struct WheelBinding {
     WheelDirection direction;
@@ -219,6 +223,7 @@ namespace vh {
 
   private slots:
     void fileChanged(const QString& path);
+    void videoFrameError(QMediaPlayer::Error err);
 
   private:
     Timer _runtimeTimer;
@@ -246,7 +251,7 @@ namespace vh {
 
     int _renderWidth            = 640;
     int _renderHeight           = 360;
-    float _renderScale     = 0.5f;
+    float _renderScale          = 0.5f;
     float _renderHeightScale    = 0.5f;
     bool _useRelativeRenderSize = false;
 
@@ -273,6 +278,10 @@ namespace vh {
     float _initialDisplayScale = 1.0f;
     float _initialPanX = 0.0f;
     float _initialPanY = 0.0f;
+
+    QMediaPlayer* _videoPlayer         = nullptr;
+    TextureVideoSurface* _videoSurface = nullptr;
+
   };
 
 } // namespace vh

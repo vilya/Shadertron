@@ -79,7 +79,6 @@ namespace vh {
   bool ShaderToyInput::isValid() const
   {
     // TODO: validate other fields
-
     if (!sampler.isValid()) {
       return false;
     }
@@ -353,8 +352,10 @@ namespace vh {
 
   bool ShaderToyDocument::isValid() const
   {
-    // TODO: validate the version field.
-
+    if (version != QString("0.1")) {
+      // We only know about version 0.1 so far...
+      return false;
+    }
 
     if (!info.isValid()) {
       return false;
