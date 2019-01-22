@@ -48,6 +48,8 @@ namespace vh {
     QString::fromUtf8("/media/a/ad56fba948dfba9ae698198c109e71f118a54d209c0ea50d77ea546abad89c57.png"),
     QString::fromUtf8("/media/a/cd4c518bc6ef165c39d4405b347b51ba40f8d7a065ab0e8d2e4f422cbc1e8a43.jpg"),
     QString::fromUtf8("/media/a/f735bee5b64ef98879dc618b016ecf7939a5756040c2cde21ccb15e69a6e1cfb.png"),
+
+    QString::fromUtf8("/media/a/3405e48f74815c7baa49133bdc835142948381fbe003ad2f12f5087715731153.ogv"),
   };
 
 
@@ -260,7 +262,8 @@ namespace vh {
     for (int passIdx = 0; passIdx < document->renderpasses.size(); passIdx++) {
       ShaderToyRenderPass& pass = document->renderpasses[passIdx];
       for (int i = 0; i < pass.inputs.size(); i++) {
-        if (pass.inputs[i].ctype == kInputType_Texture) {
+        if (pass.inputs[i].ctype == kInputType_Texture ||
+            pass.inputs[i].ctype == kInputType_Video) {
           requiredAssets.insert(pass.inputs[i].src);
         }
         else if (pass.inputs[i].ctype == kInputType_CubeMap) {

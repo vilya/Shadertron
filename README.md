@@ -54,6 +54,24 @@ Features
 - Overlay showing all intermediate images
 
 
+Video support
+-------------
+
+ShaderToy's videos are in .ogv format. On Windows you may need to install an
+additional codec to be able to play back this format. 
+
+For more information about codecs, including how to find out which ones are
+available on your system, see:
+
+https://support.microsoft.com/en-gb/help/15070/windows-media-player-codecs-frequently-asked-questions
+
+The K-Lite Codec Pack includes support for .ogv and a variety of other video
+formats. It's regularly updated and seems trustworthy. It's available from
+here:
+
+http://www.codecguide.com/about_kl.htm
+
+
 A note about driver-level incompatibilities
 -------------------------------------------
 
