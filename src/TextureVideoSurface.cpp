@@ -250,6 +250,7 @@ namespace vh {
     _frameWidth = format.frameWidth();
     _frameHeight = format.frameHeight();
 //    qDebug("start() returned true");
+    _paused = false;
     return true;
   }
 
@@ -259,6 +260,7 @@ namespace vh {
 //    qDebug("stop()");
     QAbstractVideoSurface::stop();
     _hasFrame = false;
+    _paused = true;
   }
 
 
@@ -278,10 +280,25 @@ namespace vh {
       setError(IncorrectFormatError);
       return false;
     }
-    _frame = srcFrame;
-    _hasFrame = true;
+
+    if (!_paused) {
+      _frame = srcFrame;
+      _hasFrame = true;
+    }
 //    qDebug("present() returned true");
     return true;
+  }
+
+
+  void TextureVideoSurface::pause()
+  {
+    _paused = true;
+  }
+
+
+  void TextureVideoSurface::unpause()
+  {
+    _paused = false;
   }
 
 

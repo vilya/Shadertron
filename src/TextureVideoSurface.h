@@ -23,6 +23,9 @@ namespace vh {
 
     virtual bool present(const QVideoFrame &frame);
 
+    void pause();
+    void unpause();
+
     QVideoFrame& currentFrame();
     bool hasCurrentFrame() const;
     int frameWidth() const;
@@ -36,6 +39,7 @@ namespace vh {
     bool _hasFrame   = false;
     int _frameWidth  = 0;
     int _frameHeight = 0;
+    bool _paused = false;
   };
 
 } // namespace vh

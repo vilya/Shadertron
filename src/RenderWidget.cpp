@@ -207,6 +207,7 @@ namespace vh  {
 
     for (int i = 0; i < _renderData.numVideos; i++) {
       Video& vid = _renderData.videos[i];
+      vid.surface->unpause();
       vid.player->stop();
       vid.player->play();
     }
@@ -227,9 +228,12 @@ namespace vh  {
   {
     for (int i = 0; i < _renderData.numVideos; i++) {
       Video& vid = _renderData.videos[i];
+      vid.surface->pause();
       vid.player->pause();
     }
     _playbackTimer.stop();
+
+    update();
   }
 
 
@@ -239,6 +243,7 @@ namespace vh  {
 
     for (int i = 0; i < _renderData.numVideos; i++) {
       Video& vid = _renderData.videos[i];
+      vid.surface->unpause();
       vid.player->play();
     }
 
