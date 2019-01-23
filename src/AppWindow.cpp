@@ -342,10 +342,11 @@ namespace vh {
     menu->addAction("&Download from ShaderToy...", this, &AppWindow::downloadFromShaderToy);
     menu->addAction("&Close",      this, &AppWindow::closeFile,  QKeySequence(QKeySequence::Close));
     menu->addAction("&Save",       this, &AppWindow::saveFile,   QKeySequence(QKeySequence::Save));
-    menu->addAction("&Save As...", this, &AppWindow::saveFileAs, QKeySequence(QKeySequence::SaveAs));
+    menu->addAction("Save &as...", this, &AppWindow::saveFileAs, QKeySequence(QKeySequence::SaveAs));
+    menu->addAction("&Revert",     this, &AppWindow::reloadFile);
     menu->addSeparator();
-    _recentFilesMenu     = menu->addMenu("&Recent files");
-    _recentDownloadsMenu = menu->addMenu("Recent &downloads");
+    _recentFilesMenu     = menu->addMenu("Recent &files");
+    _recentDownloadsMenu = menu->addMenu("Recent do&wnloads");
     menu->addSeparator();
     menu->addAction("E&xit", this, &QMainWindow::close, QKeySequence(QKeySequence::Quit));
 
