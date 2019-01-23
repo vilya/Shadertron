@@ -74,8 +74,13 @@ Other TODO
 - Make it easy to import custom assets
   - Asset library?
 - Save settings between runs
-  - Last directory used to open a file
   - ...
+
+
+Architecture TODO
+-----------------
+
+- Allow for several OpenGL widget subclasses all accessing the same render data.
 
 
 Blue sky ideas

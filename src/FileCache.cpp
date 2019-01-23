@@ -16,6 +16,8 @@ namespace vh {
   static const QString kShaderToyShaderURL("https://www.shadertoy.com/api/v1/shaders/%1?key=%2");
   static const QString kShaderToyAssetURL("https://www.shadertoy.com/%1?key=%2");
 
+  static const QString kShaderToyShaderPath("api/v1/shaders/%1.json");
+
 
   static const QString kStandardShaderToyAssets[] = {
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785.png"),
@@ -150,10 +152,18 @@ namespace vh {
   // FileCache public slots
   //
 
-  void FileCache::fetchShaderToyByID(const QString &id)
+  void FileCache::fetchShaderToyByID(const QString& id, bool forceDownload)
   {
     if (_networkAccess == nullptr) {
       _networkAccess = new QNetworkAccessManager(this);
+    }
+
+    QString path = kShaderToyShaderPath.arg(id);
+    if (isCached(path) && !forceDownload) {
+      qDebug("Using cached copy of shader with id %s", qPrintable(id));
+      _downloadedShaderFile = pathForCachedFile(path);
+      fetchAssetsForDownloadedShader();
+      return;
     }
 
     QString urlStr = kShaderToyShaderURL.arg(id).arg(kShaderToyAppKey);
@@ -247,6 +257,91 @@ namespace vh {
     qDebug("Successfully downloaded %s", qPrintable(reply->url().toDisplayString()));
     _downloadedShaderFile = pathForCachedFile(path);
 
+    fetchAssetsForDownloadedShader();
+  }
+
+
+  void FileCache::shaderDownloadFailed(QNetworkReply::NetworkError /*err*/)
+  {
+    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
+    reply->deleteLater();
+
+    QWidget* parentForErrorDialogs = qobject_cast<QWidget*>(parent());
+
+    qCritical("Failed to download shader from ShaderToy (url was %s)", qPrintable(reply->url().toDisplayString()));
+    QMessageBox::critical(parentForErrorDialogs, "Download failed", "Failed to download shader from ShaderToy");
+  }
+
+
+  void FileCache::assetDownloaded()
+  {
+    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
+    QString path = reply->url().path();
+
+    bool ready = false;
+    _assetsToDownloadLock.lock();
+    if (_assetsToDownload.remove(path)) {
+      qDebug("Successfully downloaded asset %s", qPrintable(path));
+      ready = _assetsToDownload.isEmpty();
+    }
+    _assetsToDownloadLock.unlock();
+
+    QByteArray data = reply->readAll();
+    reply->deleteLater();
+
+    saveFileToCache(path, data, false);
+
+    if (ready) {
+      if (_downloadedShaderFile.isEmpty()) {
+        emit standardAssetsReady();
+      }
+      else {
+        emit shaderReady(_downloadedShaderFile);
+        _downloadedShaderFile = QString();
+      }
+    }
+  }
+
+
+  void FileCache::assetDownloadFailed(QNetworkReply::NetworkError /*err*/)
+  {
+    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
+    QString path = reply->url().path();
+
+    bool ready = false;
+    _assetsToDownloadLock.lock();
+    if (_assetsToDownload.remove(path)) {
+      ready = _assetsToDownload.isEmpty();
+    }
+    _assetsToDownloadLock.unlock();
+
+    reply->deleteLater();
+    qCritical("Failed to download asset from ShaderToy (url was %s)", qPrintable(reply->url().toDisplayString()));
+
+    if (ready) {
+      if (_downloadedShaderFile.isEmpty()) {
+        emit standardAssetsReady();
+      }
+      else {
+        emit shaderReady(_downloadedShaderFile);
+        _downloadedShaderFile = QString();
+      }
+    }
+  }
+
+
+  //
+  // FileCache private methods
+  //
+
+  void FileCache::fetchAssetsForDownloadedShader()
+  {
+    if (_downloadedShaderFile.isEmpty()) {
+      return;
+    }
+
+    QWidget* parentForErrorDialogs = qobject_cast<QWidget*>(parent());
+
     // Download successful, now let's parse the document so we can also grab
     // any required assets for it.
     ShaderToyDocument* document = nullptr;
@@ -317,75 +412,6 @@ namespace vh {
     if (ready) {
       emit shaderReady(_downloadedShaderFile);
       _downloadedShaderFile = QString();
-    }
-  }
-
-
-  void FileCache::shaderDownloadFailed(QNetworkReply::NetworkError /*err*/)
-  {
-    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
-    reply->deleteLater();
-
-    QWidget* parentForErrorDialogs = qobject_cast<QWidget*>(parent());
-
-    qCritical("Failed to download shader from ShaderToy (url was %s)", qPrintable(reply->url().toDisplayString()));
-    QMessageBox::critical(parentForErrorDialogs, "Download failed", "Failed to download shader from ShaderToy");
-  }
-
-
-  void FileCache::assetDownloaded()
-  {
-    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
-    QString path = reply->url().path();
-
-    bool ready = false;
-    _assetsToDownloadLock.lock();
-    if (_assetsToDownload.remove(path)) {
-      qDebug("Successfully downloaded asset %s", qPrintable(path));
-      ready = _assetsToDownload.isEmpty();
-    }
-    _assetsToDownloadLock.unlock();
-
-    QByteArray data = reply->readAll();
-    reply->deleteLater();
-
-    saveFileToCache(path, data, false);
-
-    if (ready) {
-      if (_downloadedShaderFile.isEmpty()) {
-        emit standardAssetsReady();
-      }
-      else {
-        emit shaderReady(_downloadedShaderFile);
-        _downloadedShaderFile = QString();
-      }
-    }
-  }
-
-
-  void FileCache::assetDownloadFailed(QNetworkReply::NetworkError /*err*/)
-  {
-    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
-    QString path = reply->url().path();
-
-    bool ready = false;
-    _assetsToDownloadLock.lock();
-    if (_assetsToDownload.remove(path)) {
-      ready = _assetsToDownload.isEmpty();
-    }
-    _assetsToDownloadLock.unlock();
-
-    reply->deleteLater();
-    qCritical("Failed to download asset from ShaderToy (url was %s)", qPrintable(reply->url().toDisplayString()));
-
-    if (ready) {
-      if (_downloadedShaderFile.isEmpty()) {
-        emit standardAssetsReady();
-      }
-      else {
-        emit shaderReady(_downloadedShaderFile);
-        _downloadedShaderFile = QString();
-      }
     }
   }
 

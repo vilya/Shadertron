@@ -27,7 +27,7 @@ namespace vh {
     bool isResource(const QString& path);
 
   public slots:
-    void fetchShaderToyByID(const QString& id);
+    void fetchShaderToyByID(const QString& id, bool forceDownload);
     void fetchShaderToyStandardAssets();
     void deleteCache();
 
@@ -41,6 +41,9 @@ namespace vh {
 
     void assetDownloaded();
     void assetDownloadFailed(QNetworkReply::NetworkError err);
+
+  private:
+    void fetchAssetsForDownloadedShader();
 
   private:
     QNetworkAccessManager* _networkAccess = nullptr;

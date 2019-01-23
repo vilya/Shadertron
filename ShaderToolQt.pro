@@ -33,7 +33,8 @@ SOURCES += \
     src/RenderData.cpp \
     src/AppWindow.cpp \
     src/FileCache.cpp \
-    src/TextureVideoSurface.cpp
+    src/TextureVideoSurface.cpp \
+    src/ShaderToyDownloadForm.cpp
 
 HEADERS += \
     src/RenderWidget.h \
@@ -43,7 +44,8 @@ HEADERS += \
     src/RenderData.h \
     src/AppWindow.h \
     src/FileCache.h \
-    src/TextureVideoSurface.h
+    src/TextureVideoSurface.h \
+    src/ShaderToyDownloadForm.h
 
 #FORMS +=
 

@@ -4,6 +4,7 @@
 #include "FileCache.h"
 #include "RenderWidget.h"
 #include "ShaderToy.h"
+#include "ShaderToyDownloadForm.h"
 
 #include <QAction>
 #include <QApplication>
@@ -128,12 +129,16 @@ namespace vh {
 
   void AppWindow::downloadFromShaderToy()
   {
-    bool ok;
-    QString shaderID = QInputDialog::getText(this,
-        "Download from ShaderToy", "Shader ID", QLineEdit::Normal, QString(), &ok);
-    if (!ok || shaderID.isEmpty()) {
+    ShaderToyDownloadForm* downloadForm = new ShaderToyDownloadForm();
+    int option = downloadForm->exec();
+    if (option == QDialog::Rejected || downloadForm->selectedShaderID().isEmpty()) {
+      delete downloadForm;
       return;
     }
+
+    QString shaderID = downloadForm->selectedShaderID();
+    bool forceDownload = downloadForm->forceDownload();
+    delete downloadForm;
 
     bool valid = shaderID.length() == 6;
     if (valid) {
@@ -151,7 +156,7 @@ namespace vh {
       return;
     }
 
-    _cache->fetchShaderToyByID(shaderID);
+    _cache->fetchShaderToyByID(shaderID, forceDownload);
   }
 
 
@@ -713,7 +718,7 @@ namespace vh {
     }
 
     QString id = recentDownloads[idx].id;
-    _cache->fetchShaderToyByID(id);
+    _cache->fetchShaderToyByID(id, false);
   }
 
 
