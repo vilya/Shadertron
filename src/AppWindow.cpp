@@ -31,6 +31,13 @@ namespace vh {
   static const QString kDesktopWindowState = "desktopWindowState";
   static const QString kDesktopWindowVersion = "desktopWindowVersion"; // Used to decide whether to restore saved window geometry & state or not.
 
+  static const QString kRecentFileX         = "recentFile%1";         // Use this with .arg(x), where x is an int from 0 up to kMaxRecentFiles-1.
+  static const QString kRecentDownloadIDX   = "recentDownloadID%1";   // Use this with .arg(x), where x is an int from 0 up to kMaxRecentDownloads-1.
+  static const QString kRecentDownloadNameX = "recentDownloadName%1"; // Use this with .arg(x), where x is an int from 0 up to kMaxRecentDownloads-1.
+
+  static constexpr int kMaxRecentFiles     = 10;
+  static constexpr int kMaxRecentDownloads = 10;
+
 
   // Increment this when you make changes to the set of available windows and
   // dockable panels.
@@ -50,7 +57,7 @@ namespace vh {
     QMainWindow(parent)
   {
     _cache = new FileCache(this);
-    connect(_cache, &FileCache::shaderReady, this, &AppWindow::openNamedFile);
+    connect(_cache, &FileCache::shaderReady, this, &AppWindow::openDownloadedFile);
     connect(_cache, &FileCache::standardAssetsReady, this, &AppWindow::standardAssetsReady);
 
     createWidgets();
@@ -63,6 +70,28 @@ namespace vh {
   AppWindow::~AppWindow()
   {
     delete _document;
+  }
+
+
+  bool AppWindow::openNamedFile(const QString& filename)
+  {
+    // If there's any file currently open, close it.
+    closeFile();
+
+    try {
+      _document = loadShaderToyJSONFile(filename);
+    }
+    catch (const std::runtime_error& err) {
+      qCritical("Unable to load %s: %s", qPrintable(filename), err.what());
+      QMessageBox::critical(this, "Load failed", QString("Unable to load %1: %2").arg(filename).arg(err.what()));
+      // Restore the old document.
+      _document = _oldDocument;
+      _oldDocument = nullptr;
+      return false;
+    }
+
+    _renderWidget->setShaderToyDocument(_document);
+    return true;
   }
 
 
@@ -89,7 +118,11 @@ namespace vh {
       return;
     }
 
-    openNamedFile(filename);
+    if (!openNamedFile(filename)) {
+      return;
+    }
+
+    addRecentFile(filename);
   }
 
 
@@ -161,6 +194,8 @@ namespace vh {
     if (_watcher) {
       _watcher->blockSignals(watcherSignals);
     }
+
+    addRecentFile(_document->src);
   }
 
 
@@ -193,6 +228,8 @@ namespace vh {
     if (_watcher) {
       _watcher->blockSignals(watcherSignals);
     }
+
+    addRecentFile(filename);
 
     _document->src = filename;
   }
@@ -249,27 +286,6 @@ namespace vh {
   }
 
 
-  void AppWindow::openNamedFile(const QString& filename)
-  {
-    // If there's any file currently open, close it.
-    closeFile();
-
-    try {
-      _document = loadShaderToyJSONFile(filename);
-    }
-    catch (const std::runtime_error& err) {
-      qCritical("Unable to load %s: %s", qPrintable(filename), err.what());
-      QMessageBox::critical(this, "Load failed", QString("Unable to load %1: %2").arg(filename).arg(err.what()));
-      // Restore the old document.
-      _document = _oldDocument;
-      _oldDocument = nullptr;
-      return;
-    }
-
-    _renderWidget->setShaderToyDocument(_document);
-  }
-
-
   //
   // AppWindow protected methods
   //
@@ -302,6 +318,7 @@ namespace vh {
     setMenuBar(menubar);
 
     QMenu* fileMenu     = menubar->addMenu("&File");
+    QMenu* editMenu     = menubar->addMenu("&Edit");
     QMenu* playbackMenu = menubar->addMenu("&Playback");
     QMenu* inputMenu    = menubar->addMenu("&Input");
     QMenu* viewMenu     = menubar->addMenu("&View");
@@ -309,6 +326,7 @@ namespace vh {
     QMenu* windowMenu   = menubar->addMenu("&Window");
 
     setupFileMenu(fileMenu);
+    setupEditMenu(editMenu);
     setupPlaybackMenu(playbackMenu);
     setupInputMenu(inputMenu);
     setupViewMenu(viewMenu);
@@ -326,10 +344,20 @@ namespace vh {
     menu->addAction("&Save",       this, &AppWindow::saveFile,   QKeySequence(QKeySequence::Save));
     menu->addAction("&Save As...", this, &AppWindow::saveFileAs, QKeySequence(QKeySequence::SaveAs));
     menu->addSeparator();
-    menu->addAction("&Extract GLSL", this, &AppWindow::extractGLSL);
-    menu->addAction("&Inline GLSL",  this, &AppWindow::inlineGLSL);
+    _recentFilesMenu     = menu->addMenu("&Recent files");
+    _recentDownloadsMenu = menu->addMenu("Recent &downloads");
     menu->addSeparator();
     menu->addAction("E&xit", this, &QMainWindow::close, QKeySequence(QKeySequence::Quit));
+
+    setupRecentFilesMenu(_recentFilesMenu);
+    setupRecentDownloadsMenu(_recentDownloadsMenu);
+  }
+
+
+  void AppWindow::setupEditMenu(QMenu* menu)
+  {
+    menu->addAction("&Extract GLSL", this, &AppWindow::extractGLSL);
+    menu->addAction("&Inline GLSL",  this, &AppWindow::inlineGLSL);
   }
 
 
@@ -417,6 +445,41 @@ namespace vh {
     bool* state = &_saveWindowState;
     connect(saveWindowStateAction, &QAction::toggled, [state](bool value) { *state = value; });
     connect(removeWindowStateAction, &QAction::triggered, [saveWindowStateAction](){ saveWindowStateAction->setChecked(false); });
+  }
+
+
+  void AppWindow::setupRecentFilesMenu(QMenu* menu)
+  {
+    menu->clear();
+
+    QList<QString> recentFiles = loadRecentFileList();
+    if (recentFiles.empty()) {
+      menu->setEnabled(false);
+      return;
+    }
+
+    menu->setEnabled(true);
+    for (int i = 0; i < recentFiles.size(); i++) {
+      menu->addAction(QString("&%1 %2").arg(i).arg(recentFiles[i]), [this, i](){ this->loadRecentFile(i); });
+    }
+  }
+
+
+  void AppWindow::setupRecentDownloadsMenu(QMenu* menu)
+  {
+    menu->clear();
+
+    QList<Download> recentDownloads = loadRecentDownloadList();
+    if (recentDownloads.empty()) {
+      menu->setEnabled(false);
+      return;
+    }
+
+    menu->setEnabled(true);
+    for (int i = 0; i < recentDownloads.size(); i++) {
+      menu->addAction(QString("&%1 %2 (id: %3)").arg(i).arg(recentDownloads[i].name).arg(recentDownloads[i].id),
+                      [this, i](){ this->loadRecentDownload(i); });
+    }
   }
 
 
@@ -614,6 +677,148 @@ namespace vh {
     settings.remove(kDesktopWindowGeometry);
     settings.remove(kDesktopWindowState);
     settings.remove(kDesktopWindowVersion);
+  }
+
+
+  void AppWindow::openDownloadedFile(const QString& filename)
+  {
+    if (openNamedFile(filename)) {
+      QString id = _document->info.id;
+      QString displayName = _document->info.name;
+      addRecentDownload(id, displayName);
+    }
+  }
+
+
+  void AppWindow::loadRecentFile(int idx)
+  {
+    QList<QString> recentFiles = loadRecentFileList();
+    if (idx < 0 || idx > kMaxRecentFiles || idx > recentFiles.size()) {
+      return;
+    }
+
+    QString filename = recentFiles[idx];
+    if (openNamedFile(filename)) {
+      addRecentFile(filename);
+    }
+  }
+
+
+  void AppWindow::loadRecentDownload(int idx)
+  {
+    QList<Download> recentDownloads = loadRecentDownloadList();
+    if (idx < 0 || idx > kMaxRecentDownloads || idx > recentDownloads.size()) {
+      return;
+    }
+
+    QString id = recentDownloads[idx].id;
+    _cache->fetchShaderToyByID(id);
+  }
+
+
+  //
+  // AppWindow private methods
+  //
+
+  QList<QString> AppWindow::loadRecentFileList()
+  {
+    QList<QString> recentFiles;
+
+    QSettings settings;
+    for (int i = 0; i < kMaxRecentFiles; i++) {
+      QString key = kRecentFileX.arg(i);
+      QString filename = settings.value(key).toString();
+      if (filename.isNull() || filename.isEmpty()) {
+        break;
+      }
+      recentFiles.push_back(filename);
+    }
+
+    return recentFiles;
+  }
+
+
+  void AppWindow::saveRecentFileList(const QList<QString>& recentFiles)
+  {
+    QSettings settings;
+    for (int i = 0, end = qMin(recentFiles.size(), kMaxRecentFiles); i < end; i++) {
+      QString key = kRecentFileX.arg(i);
+      settings.setValue(key, recentFiles[i]);
+    }
+  }
+
+
+  void AppWindow::addRecentFile(const QString& filename)
+  {
+    QList<QString> recentFiles = loadRecentFileList();
+
+    if (!recentFiles.isEmpty() && recentFiles.front() == filename) {
+      return;
+    }
+
+    // Make sure that the new filename is the first entry in the list and only appears once.
+    recentFiles.removeAll(filename);
+    recentFiles.push_front(filename);
+    while (recentFiles.size() > kMaxRecentFiles) {
+      recentFiles.pop_back();
+    }
+
+    saveRecentFileList(recentFiles);
+    setupRecentFilesMenu(_recentFilesMenu);
+  }
+
+
+  QList<AppWindow::Download> AppWindow::loadRecentDownloadList()
+  {
+    QList<Download> recentDownloads;
+
+    QSettings settings;
+    for (int i = 0; i < kMaxRecentDownloads; i++) {
+      QString idKey   = kRecentDownloadIDX.arg(i);
+      QString nameKey = kRecentDownloadNameX.arg(i);
+      Download download;
+      download.id   = settings.value(idKey).toString();
+      download.name = settings.value(nameKey).toString();
+      if (download.id.isNull() || download.id.isEmpty() || download.name.isNull() || download.name.isEmpty()) {
+        break;
+      }
+      recentDownloads.push_back(download);
+    }
+
+    return recentDownloads;
+  }
+
+
+  void AppWindow::saveRecentDownloadsList(const QList<Download>& recentDownloads)
+  {
+    QSettings settings;
+    for (int i = 0, end = qMin(recentDownloads.size(), kMaxRecentDownloads); i < end; i++) {
+      QString idKey   = kRecentDownloadIDX.arg(i);
+      QString nameKey = kRecentDownloadNameX.arg(i);
+      settings.setValue(idKey,   recentDownloads[i].id);
+      settings.setValue(nameKey, recentDownloads[i].name);
+    }
+  }
+
+
+  void AppWindow::addRecentDownload(const QString& id, const QString& displayName)
+  {
+    QList<Download> recentDownloads = loadRecentDownloadList();
+
+    Download download = { id, displayName };
+
+    if (!recentDownloads.isEmpty() && recentDownloads.front() == download) {
+      return;
+    }
+
+    recentDownloads.removeAll(download);
+    recentDownloads.push_front(download);
+    while (recentDownloads.size() > kMaxRecentDownloads) {
+      recentDownloads.pop_back();
+    }
+
+    saveRecentDownloadsList(recentDownloads);
+    setupRecentDownloadsMenu(_recentDownloadsMenu);
   }
 
 } // namespace vh

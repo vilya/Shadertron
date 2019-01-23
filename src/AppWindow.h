@@ -35,6 +35,8 @@ namespace vh {
     AppWindow(QWidget* parent=nullptr);
     virtual ~AppWindow();
 
+    bool openNamedFile(const QString& filename);
+
   public slots:
     void newFile();
     void openFile();
@@ -48,7 +50,6 @@ namespace vh {
 
     void deleteCache();
 
-    void openNamedFile(const QString& filename);
     void restoreWindowState();
 
   protected:
@@ -59,11 +60,15 @@ namespace vh {
     void createMenus();
 
     void setupFileMenu(QMenu* menu);
+    void setupEditMenu(QMenu* menu);
     void setupPlaybackMenu(QMenu* menu);
     void setupInputMenu(QMenu* menu);
     void setupViewMenu(QMenu* menu);
     void setupCacheMenu(QMenu* menu);
     void setupWindowMenu(QMenu* menu);
+
+    void setupRecentFilesMenu(QMenu* menu);
+    void setupRecentDownloadsMenu(QMenu* menu);
 
     void setupViewRenderMenu(QMenu* menu);
     void setupViewZoomMenu(QMenu* menu);
@@ -79,8 +84,33 @@ namespace vh {
     void saveWindowState();
     void removeSavedWindowState();
 
+    void openDownloadedFile(const QString& filename);
+
+    void loadRecentFile(int idx);
+    void loadRecentDownload(int idx);
+
+  private:
+    QList<QString> loadRecentFileList();
+    void saveRecentFileList(const QList<QString>& recentFiles);
+    void addRecentFile(const QString& filename);
+
+    struct Download {
+      QString id;
+      QString name;
+
+      bool operator == (const Download& other) const { return id == other.id; }
+      bool operator != (const Download& other) const { return id != other.id; }
+    };
+
+    QList<Download> loadRecentDownloadList();
+    void saveRecentDownloadsList(const QList<Download>& recentDownloads);
+    void addRecentDownload(const QString& id, const QString& displayName);
+
+
   private:
     QMenuBar* _menubar = nullptr;
+    QMenu* _recentFilesMenu = nullptr;
+    QMenu* _recentDownloadsMenu = nullptr;
     RenderWidget* _renderWidget = nullptr;
 
     ShaderToyDocument* _document = nullptr;

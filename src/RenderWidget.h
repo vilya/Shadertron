@@ -33,7 +33,7 @@ namespace vh {
   //
 
   enum class Action {
-    eNoAction,
+    eNone,
     eQuit,
     eToggleHUD,
     eToggleInputs,
@@ -282,7 +282,7 @@ namespace vh {
     float _displayPanX = 0.0f;
     float _displayPanY = 0.0f;
 
-    bool _keyboardShaderInput = true;
+    bool _keyboardShaderInput = false;
 
     QHash<KeyBinding, Action> _keyPressBindings;
     QHash<KeyBinding, Action> _keyReleaseBindings;

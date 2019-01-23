@@ -188,6 +188,10 @@ namespace vh  {
   void RenderWidget::setShaderToyDocument(ShaderToyDocument* newDoc)
   {
     _pendingDoc = newDoc;
+
+    if (!_playbackTimer.running()) {
+      update();
+    }
   }
 
 
@@ -720,8 +724,8 @@ namespace vh  {
     _mousePos = event->pos();
     _mousePos.setY(height() - _mousePos.y());
 
-    Action action = _wheelBindings.value(WheelBinding::fromEvent(event), Action::eNoAction);
-    if (action != Action::eNoAction) {
+    Action action = _wheelBindings.value(WheelBinding::fromEvent(event), Action::eNone);
+    if (action != Action::eNone) {
       doAction(action);
     }
     else {
@@ -735,7 +739,7 @@ namespace vh  {
     // Note: QKeyEvent is implicitly accepted. You have to call event->ignore()
     // if you don't want to accept it.
 
-    Action action = _keyPressBindings.value(KeyBinding::fromEvent(event), Action::eNoAction);
+    Action action = _keyPressBindings.value(KeyBinding::fromEvent(event), Action::eNone);
     if (_keyboardShaderInput) {
       // Even if we're sending keyboard input to the shader, there are still
       // certain actions we should be able to trigger via the keyboard.
@@ -751,7 +755,7 @@ namespace vh  {
       _renderData.keyboardTexData[1][key] = 255;  // The key pressed flag, non-zero only on the frame where the key is first pressed.
       _renderData.keyboardTexData[2][key] ^= 255; // The key toggle. Flips each time the key is pressed.
     }
-    else if (action != Action::eNoAction) {
+    else if (action != Action::eNone) {
       doAction(action);
     }
     else {
@@ -765,7 +769,7 @@ namespace vh  {
     // Note: QKeyEvent is implicitly accepted. You have to call event->ignore()
     // if you don't want to accept it.
 
-    Action action = _keyReleaseBindings.value(KeyBinding::fromEvent(event), Action::eNoAction);
+    Action action = _keyReleaseBindings.value(KeyBinding::fromEvent(event), Action::eNone);
     if (_keyboardShaderInput) {
       // Even if we're sending keyboard input to the shader, there are still
       // certain actions we should be able to trigger via the keyboard.
@@ -782,7 +786,7 @@ namespace vh  {
       int key = (event->text().size() == 1) ? event->text().toUpper().at(0).toLatin1() : event->nativeVirtualKey();
       _renderData.keyboardTexData[0][key] = 0;  // The key down flag
     }
-    else if (action != Action::eNoAction) {
+    else if (action != Action::eNone) {
       doAction(action);
     }
     else {
