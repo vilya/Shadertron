@@ -372,16 +372,20 @@ namespace vh {
     menu->addSeparator();
     QMenu* viewPassMenu   = menu->addMenu("&Pass");
     menu->addSeparator();
-    QAction* toggleOverlayAction       = menu->addAction("Show &Overlay",       renderWidget, &RenderWidget::toggleOverlay);
-    QAction* toggleIntermediatesAction = menu->addAction("Show &Intermediates", renderWidget, &RenderWidget::toggleIntermediates);
+    QAction* toggleHUDAction     = menu->addAction("Show &HUD",     renderWidget, &RenderWidget::toggleHUD);
+    QAction* toggleInputsAction  = menu->addAction("Show &Inputs",  renderWidget, &RenderWidget::toggleInputs);
+    QAction* toggleOutputsAction = menu->addAction("Show &Outputs", renderWidget, &RenderWidget::toggleOutputs);
     menu->addSeparator();
     menu->addAction("&Center", renderWidget, &RenderWidget::recenterImage);
 
-    toggleOverlayAction->setCheckable(true);
-    toggleOverlayAction->setChecked(true);
+    toggleHUDAction->setCheckable(true);
+    toggleHUDAction->setChecked(true);
 
-    toggleIntermediatesAction->setCheckable(true);
-    toggleIntermediatesAction->setChecked(false);
+    toggleInputsAction->setCheckable(true);
+    toggleInputsAction->setChecked(false);
+
+    toggleOutputsAction->setCheckable(true);
+    toggleOutputsAction->setChecked(false);
 
     setupViewRenderMenu(viewRenderMenu);
     setupViewZoomMenu(viewZoomMenu);

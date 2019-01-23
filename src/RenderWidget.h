@@ -35,8 +35,9 @@ namespace vh {
   enum class Action {
     eNoAction,
     eQuit,
-    eToggleOverlay,
-    eToggleIntermediates,
+    eToggleHUD,
+    eToggleInputs,
+    eToggleOutputs,
     eTogglePlayback,
     eRestartPlayback,
     eFastForward_Small,
@@ -172,8 +173,9 @@ namespace vh {
     void setRelativeRenderResolution(float windowScale);
     void setDisplayOptions(bool fitWidth, bool fitHeight, float scale);
     void setDisplayPassByType(PassType passType, int index=0);
-    void toggleOverlay();
-    void toggleIntermediates();
+    void toggleHUD();
+    void toggleInputs();
+    void toggleOutputs();
     void recenterImage();
 
     void zoom(QPoint center, float newScale);
@@ -235,12 +237,13 @@ namespace vh {
     float _prevTime = 0.0f;
     FPSCounter _fpsCounter;
 
-    bool _showOverlay = true;
-    QFont _overlayFont;
-    QPen _overlayPen;
+    bool _showHUD = true;
+    QFont _hudFont;
+    QPen _hudPen;
     int _lineHeight;
 
-    bool _showIntermediates = false;
+    bool _showInputs = false;
+    bool _showOutputs = false;
 
     ShaderToyDocument* _currentDoc = nullptr;
     ShaderToyDocument* _pendingDoc = nullptr;

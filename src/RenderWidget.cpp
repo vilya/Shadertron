@@ -124,18 +124,18 @@ namespace vh  {
 
   RenderWidget::RenderWidget(QWidget* parent) :
     QOpenGLWidget(parent),
-    _overlayFont("Consolas", 16, QFont::Bold),
-    _overlayPen()
+    _hudFont("Consolas", 16, QFont::Bold),
+    _hudPen()
   {
     setFocusPolicy(Qt::ClickFocus);
 
-    _overlayPen.setStyle(Qt::DashLine);
-    _overlayPen.setColor(Qt::red);
+    _hudPen.setStyle(Qt::DashLine);
+    _hudPen.setColor(Qt::red);
 
-    _lineHeight = QFontMetrics(_overlayFont).height();
+    _lineHeight = QFontMetrics(_hudFont).height();
 
     _keyPressBindings[KeyBinding{ Qt::Key_Escape, 0 }] = Action::eQuit;
-    _keyPressBindings[KeyBinding{ Qt::Key_Tab,    0 }] = Action::eToggleOverlay;
+    _keyPressBindings[KeyBinding{ Qt::Key_Tab,    0 }] = Action::eToggleHUD;
     _keyPressBindings[KeyBinding{ Qt::Key_Space,  0 }] = Action::eTogglePlayback;
     _keyPressBindings[KeyBinding{ Qt::Key_Enter,  0 }] = Action::eRestartPlayback;
     _keyPressBindings[KeyBinding{ Qt::Key_Return, 0 }] = Action::eRestartPlayback;
@@ -391,9 +391,9 @@ namespace vh  {
   }
 
 
-  void RenderWidget::toggleOverlay()
+  void RenderWidget::toggleHUD()
   {
-    _showOverlay = !_showOverlay;
+    _showHUD = !_showHUD;
 
     if (!_playbackTimer.running()) {
       update();
@@ -401,9 +401,19 @@ namespace vh  {
   }
 
 
-  void RenderWidget::toggleIntermediates()
+  void RenderWidget::toggleInputs()
   {
-    _showIntermediates = !_showIntermediates;
+    _showInputs = !_showInputs;
+
+    if (!_playbackTimer.running()) {
+      update();
+    }
+  }
+
+
+  void RenderWidget::toggleOutputs()
+  {
+    _showOutputs = !_showOutputs;
 
     if (!_playbackTimer.running()) {
       update();
@@ -455,11 +465,14 @@ namespace vh  {
     case Action::eQuit:
       emit closeRequested();
       break;
-    case Action::eToggleOverlay:
-      toggleOverlay();
+    case Action::eToggleHUD:
+      toggleHUD();
       break;
-    case Action::eToggleIntermediates:
-      toggleIntermediates();
+    case Action::eToggleInputs:
+      toggleInputs();
+      break;
+    case Action::eToggleOutputs:
+      toggleOutputs();
       break;
     case Action::eTogglePlayback:
       togglePlayback();
@@ -540,9 +553,7 @@ namespace vh  {
     updateRenderData();
     if (_currentDoc != nullptr) {
       renderMain();
-      if (_showIntermediates) {
-        renderIntermediates();
-      }
+      renderIntermediates(); // returns early if nothing to be drawn.
     }
     else {
       renderEmpty();
@@ -550,10 +561,10 @@ namespace vh  {
 
     painter.endNativePainting();
 
-    if (_showOverlay) {
+    if (_showHUD) {
       // Draw the current frame time and number as an overlay.
-      painter.setFont(_overlayFont);
-      painter.setPen(_overlayPen);
+      painter.setFont(_hudFont);
+      painter.setPen(_hudPen);
       int y = _lineHeight + 8;
       painter.drawText(10, y, QString("Frame #%1").arg(_renderData.iFrame));
       y += _lineHeight;
@@ -1450,6 +1461,10 @@ namespace vh  {
 
   void RenderWidget::renderIntermediates()
   {
+    if (!_showOutputs && !_showInputs) {
+      return;
+    }
+
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
 
@@ -1465,12 +1480,27 @@ namespace vh  {
     int h = rh * w / rw;
     int level = 0;
 
-    int x = width() - w;
-    int y = height() - h;
-    for (int i = 0; i < kMaxRenderpasses; i++) {
-      const RenderPass& pass = _renderData.renderpasses[i];
-      if (pass.type == PassType::eBuffer || pass.type == PassType::eImage) {
-        QOpenGLTexture* texObj = _renderData.textures[pass.outputs[_renderData.frontBuffer]].obj;
+    if (_showOutputs) {
+      int x = width() - w;
+      int y = height() - h;
+      for (int i = 0; i < kMaxRenderpasses; i++) {
+        const RenderPass& pass = _renderData.renderpasses[i];
+        if (pass.type == PassType::eBuffer || pass.type == PassType::eImage) {
+          QOpenGLTexture* texObj = _renderData.textures[pass.outputs[_renderData.frontBuffer]].obj;
+          glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
+          glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), level);
+          glBlitFramebuffer(0, 0, rw, rh, x, y, x + w, y + h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+          y -= h;
+        }
+      }
+    }
+    if (_showInputs) {
+      int x = 0;
+      int y = height() - h;
+      const RenderPass& pass = _renderData.renderpasses[_displayPass];
+      for (int i = 0; i < kMaxInputs; i++) {
+        int texIndex = pass.inputs[i][_renderData.frontBuffer];
+        QOpenGLTexture* texObj = _renderData.textures[texIndex].obj;
         glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), level);
         glBlitFramebuffer(0, 0, rw, rh, x, y, x + w, y + h, GL_COLOR_BUFFER_BIT, GL_LINEAR);

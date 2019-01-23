@@ -1,7 +1,7 @@
 Run ShaderToy scripts on your local computer, instead of in a web browser. 
 
 The goal is to be 100% compatible with the complete ShaderToy feature set.
-This is still in progress; see below for what is & isn't supported so far.
+This is still in progress; see TODO.md for what is & isn't supported so far.
 
 We also provide some useful extensions to ShaderToy's capabilities: 
 * GLSL code can be stored in external files
@@ -50,10 +50,12 @@ Features
 - Playback controls:
   - Play, pause, restart
   - Fast forward/rewind in small, medium or large increments
-- Overlay showing playback and performance stats
+- Overlays showing additional info:
+  - Playback and performance stats
+  - Outputs from all intermediate render passes
+  - Inputs to the render pass currently being displayed.
 - User-specified rendering resolution
 - Pan and Zoom the output
-- Overlay showing all intermediate images
 
 
 Video support

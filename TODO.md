@@ -61,7 +61,6 @@ Other TODO
 - Overlay to display shader metadata 
 - Log window to display messages about shaders which didn't compile, etc.
 - Validate the JSON as we load.
-- Overlay to display render pass inputs.
 - Save screenshots.
 - Save high quality renders.
 - Save video.
