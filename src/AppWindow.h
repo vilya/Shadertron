@@ -68,6 +68,7 @@ namespace vh {
     void setupViewRenderMenu(QMenu* menu);
     void setupViewZoomMenu(QMenu* menu);
     void setupViewPassMenu(QMenu* menu);
+    void setupViewHUDContentsMenu(QMenu* menu);
 
   private slots:
     void reloadFile();

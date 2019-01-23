@@ -63,6 +63,17 @@ namespace vh {
   };
 
 
+  static constexpr uint kHUD_FrameNum       = 1u << 0;
+  static constexpr uint kHUD_Time           = 1u << 1;
+  static constexpr uint kHUD_MillisPerFrame = 1u << 2;
+  static constexpr uint kHUD_FramesPerSec   = 1u << 3;
+  static constexpr uint kHUD_MousePos       = 1u << 4;
+  static constexpr uint kHUD_MouseDownPos   = 1u << 5;
+
+  static constexpr uint kHUD_All = kHUD_FrameNum | kHUD_Time | kHUD_MillisPerFrame |
+                                   kHUD_FramesPerSec | kHUD_MousePos | kHUD_MouseDownPos;
+
+
   //
   // Structs
   //
@@ -152,7 +163,8 @@ namespace vh {
     void setShaderToyDocument(ShaderToyDocument* newDoc);
 
     bool keyboardShaderInput() const;
-    bool mouseShaderInput() const;
+
+    uint hudFlags() const;
 
   signals:
     void closeRequested();
@@ -173,6 +185,7 @@ namespace vh {
     void setRelativeRenderResolution(float windowScale);
     void setDisplayOptions(bool fitWidth, bool fitHeight, float scale);
     void setDisplayPassByType(PassType passType, int index=0);
+    void toggleHUDFlag(uint flag);
     void toggleHUD();
     void toggleInputs();
     void toggleOutputs();
@@ -209,6 +222,7 @@ namespace vh {
     void renderMain();
     void renderIntermediates();
     void renderEmpty();
+    void renderHUD(QPainter& painter);
 
     void createRenderPassTexture(Texture& tex);
     void resizeRenderPassTexture(Texture& tex);
@@ -269,7 +283,6 @@ namespace vh {
     float _displayPanY = 0.0f;
 
     bool _keyboardShaderInput = true;
-    bool _mouseShaderInput = true;
 
     QHash<KeyBinding, Action> _keyPressBindings;
     QHash<KeyBinding, Action> _keyReleaseBindings;
@@ -285,6 +298,8 @@ namespace vh {
     float _initialDisplayScale = 1.0f;
     float _initialPanX = 0.0f;
     float _initialPanY = 0.0f;
+
+    uint _hudFlags = kHUD_All; // A bit field. See the kHUD_<foo> constants above for what each bit means.
   };
 
 } // namespace vh

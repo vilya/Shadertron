@@ -22,7 +22,6 @@ PixelBakery, PixelToy, FragmentToy, Pixery, Pixelhouse, Pixelhaus, Shaderhaus,
 Shaderhouse, Nightshade, N-Shade, V-Shade,
 
 
-
 Features
 --------
 
@@ -51,7 +50,7 @@ Features
   - Play, pause, restart
   - Fast forward/rewind in small, medium or large increments
 - Overlays showing additional info:
-  - Playback and performance stats
+  - HUD showing a customisable set of playback and performance stats
   - Outputs from all intermediate render passes
   - Inputs to the render pass currently being displayed.
 - User-specified rendering resolution
@@ -61,17 +60,18 @@ Features
 Video support
 -------------
 
-ShaderToy's videos are in .ogv format. On Windows you may need to install an
-additional codec to be able to play back this format. 
+Some of ShaderToy's videos are in .ogv format & others are in .webm. On
+Windows you may need to install additional codecs to be able to play back
+these formats.
 
 For more information about codecs, including how to find out which ones are
 available on your system, see:
 
 https://support.microsoft.com/en-gb/help/15070/windows-media-player-codecs-frequently-asked-questions
 
-The K-Lite Codec Pack includes support for .ogv and a variety of other video
-formats. It's regularly updated and seems trustworthy. It's available from
-here:
+The K-Lite Codec Pack includes support for .ogv and .webm as well as a variety
+of other video formats. It's regularly updated and seems trustworthy. It's
+available from here:
 
 http://www.codecguide.com/about_kl.htm
 

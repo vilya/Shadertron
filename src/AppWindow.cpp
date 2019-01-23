@@ -371,6 +371,7 @@ namespace vh {
     QMenu* viewZoomMenu   = menu->addMenu("&Zoom");
     menu->addSeparator();
     QMenu* viewPassMenu   = menu->addMenu("&Pass");
+    QMenu* viewHUDContentsMenu = menu->addMenu("HUD &Contents");
     menu->addSeparator();
     QAction* toggleHUDAction     = menu->addAction("Show &HUD",     renderWidget, &RenderWidget::toggleHUD);
     QAction* toggleInputsAction  = menu->addAction("Show &Inputs",  renderWidget, &RenderWidget::toggleInputs);
@@ -390,6 +391,7 @@ namespace vh {
     setupViewRenderMenu(viewRenderMenu);
     setupViewZoomMenu(viewZoomMenu);
     setupViewPassMenu(viewPassMenu);
+    setupViewHUDContentsMenu(viewHUDContentsMenu);
   }
 
 
@@ -482,6 +484,26 @@ namespace vh {
       action->setCheckable(true);
     }
     actions.front()->setChecked(true);
+  }
+
+
+  void AppWindow::setupViewHUDContentsMenu(QMenu* menu)
+  {
+    RenderWidget* renderWidget = _renderWidget;
+    uint hudFlags = renderWidget->hudFlags();
+
+    QList<QAction*> actions;
+    actions.push_back(menu->addAction("Frame &number",           [renderWidget](){ renderWidget->toggleHUDFlag(kHUD_FrameNum); }));
+    actions.push_back(menu->addAction("&Time",                   [renderWidget](){ renderWidget->toggleHUDFlag(kHUD_Time); }));
+    actions.push_back(menu->addAction("&Milliseconds per frame", [renderWidget](){ renderWidget->toggleHUDFlag(kHUD_MillisPerFrame); }));
+    actions.push_back(menu->addAction("&Frames per second",      [renderWidget](){ renderWidget->toggleHUDFlag(kHUD_FramesPerSec); }));
+    actions.push_back(menu->addAction("&Mouse position",         [renderWidget](){ renderWidget->toggleHUDFlag(kHUD_MousePos); }));
+    actions.push_back(menu->addAction("&Mouse down position",    [renderWidget](){ renderWidget->toggleHUDFlag(kHUD_MouseDownPos); }));
+
+    for (int i = 0; i < actions.size(); i++) {
+      actions[i]->setCheckable(true);
+      actions[i]->setChecked((hudFlags & (1u << i)) != 0);
+    }
   }
 
 

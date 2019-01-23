@@ -197,6 +197,12 @@ namespace vh  {
   }
 
 
+  uint RenderWidget::hudFlags() const
+  {
+    return _hudFlags;
+  }
+
+
   //
   // RenderWidget public slots
   //
@@ -391,6 +397,21 @@ namespace vh  {
   }
 
 
+  void RenderWidget::toggleHUDFlag(uint flag)
+  {
+    flag &= kHUD_All;
+    if (flag == 0) {
+      return;
+    }
+
+    _hudFlags ^= flag;
+
+    if (!_playbackTimer.running()) {
+      update();
+    }
+  }
+
+
   void RenderWidget::toggleHUD()
   {
     _showHUD = !_showHUD;
@@ -562,21 +583,7 @@ namespace vh  {
     painter.endNativePainting();
 
     if (_showHUD) {
-      // Draw the current frame time and number as an overlay.
-      painter.setFont(_hudFont);
-      painter.setPen(_hudPen);
-      int y = _lineHeight + 8;
-      painter.drawText(10, y, QString("Frame #%1").arg(_renderData.iFrame));
-      y += _lineHeight;
-      painter.drawText(10, y, QString("Time %1").arg(_renderData.iTime, 0, 'f', 2));
-      y += _lineHeight;
-      painter.drawText(10, y, QString("%1 ms/frame").arg(_fpsCounter.msPerFrame(), 0, 'f', 2));
-      y += _lineHeight;
-      painter.drawText(10, y, QString("%1 FPS").arg(_fpsCounter.framesPerSec(), 0, 'f', 2));
-      y += _lineHeight;
-      painter.drawText(10, y, QString("Mouse Pos %1,%2").arg(_renderData.iMouse[0], 0, 'f', 2).arg(_renderData.iMouse[1], 0, 'f', 2));
-      y += _lineHeight;
-      painter.drawText(10, y, QString("Mouse Down %1,%2").arg(_renderData.iMouse[2], 0, 'f', 2).arg(_renderData.iMouse[3], 0, 'f', 2));
+      renderHUD(painter);
     }
 
     if (_currentDoc != nullptr) {
@@ -1517,6 +1524,44 @@ namespace vh  {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());
     glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+  }
+
+
+  void RenderWidget::renderHUD(QPainter& painter)
+  {
+    if (!_showHUD) {
+      return;
+    }
+
+    painter.setFont(_hudFont);
+    painter.setPen(_hudPen);
+
+    int x = 10;
+    int y = _lineHeight + 8;
+    if (_hudFlags & kHUD_FrameNum) {
+      painter.drawText(x, y, QString("Frame #%1").arg(_renderData.iFrame));
+      y += _lineHeight;
+    }
+    if (_hudFlags & kHUD_Time) {
+      painter.drawText(x, y, QString("Time %1").arg(_renderData.iTime, 0, 'f', 2));
+      y += _lineHeight;
+    }
+    if (_hudFlags & kHUD_MillisPerFrame) {
+      painter.drawText(x, y, QString("%1 ms/frame").arg(_fpsCounter.msPerFrame(), 0, 'f', 2));
+      y += _lineHeight;
+    }
+    if (_hudFlags & kHUD_FramesPerSec) {
+      painter.drawText(x, y, QString("%1 FPS").arg(_fpsCounter.framesPerSec(), 0, 'f', 2));
+      y += _lineHeight;
+    }
+    if (_hudFlags & kHUD_MousePos) {
+      painter.drawText(x, y, QString("Mouse Pos %1,%2").arg(_renderData.iMouse[0], 0, 'f', 2).arg(_renderData.iMouse[1], 0, 'f', 2));
+      y += _lineHeight;
+    }
+    if (_hudFlags & kHUD_MouseDownPos) {
+      painter.drawText(x, y, QString("Mouse Down %1,%2").arg(_renderData.iMouse[2], 0, 'f', 2).arg(_renderData.iMouse[3], 0, 'f', 2));
+      y += _lineHeight;
+    }
   }
 
 
