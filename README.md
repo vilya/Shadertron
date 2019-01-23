@@ -30,6 +30,7 @@ Features
 - Common source for all passes
 - Input sources:
   - Texture
+  - Video
   - Cube map
   - Mouse
   - Keyboard

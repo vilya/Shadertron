@@ -22,6 +22,16 @@ See
 for useful info about some of these.
 
 
+TODO: video input support
+-------------------------
+- Widgets to control playback for each video stream
+- Option to unmute/mute each video.
+- Add support for more pixel formats instead of forcing the video to ARGB32.
+- Bug: if you pause shader playback, video still updates for a few frames when you use the menu
+  - Possible fix #1: make the TextureVideoSurface discard new frames while paused.
+  - Possible fix #2: keep redrawing until we get the paused signal.
+
+
 TODO: downloading from ShaderToy
 --------------------------------
 - Add a search form
