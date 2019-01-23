@@ -49,7 +49,8 @@ namespace vh {
     QString::fromUtf8("/media/a/cd4c518bc6ef165c39d4405b347b51ba40f8d7a065ab0e8d2e4f422cbc1e8a43.jpg"),
     QString::fromUtf8("/media/a/f735bee5b64ef98879dc618b016ecf7939a5756040c2cde21ccb15e69a6e1cfb.png"),
 
-    QString::fromUtf8("/media/a/3405e48f74815c7baa49133bdc835142948381fbe003ad2f12f5087715731153.ogv"),
+    QString::fromUtf8("/media/a/3405e48f74815c7baa49133bdc835142948381fbe003ad2f12f5087715731153.ogv"),   // "Lustre-Cream" ad
+    QString::fromUtf8("/media/a/e81e818ac76a8983d746784b423178ee9f6cdcdf7f8e8d719341a6fe2d2ab303.webm"),  // Britney Spears green-screen clip
   };
 
 

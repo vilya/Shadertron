@@ -205,26 +205,11 @@ namespace vh  {
   {
     bool wasPlayingBack = _playbackTimer.running();
 
-    if (_videoSurface == nullptr) {
-      _videoSurface = new TextureVideoSurface();
+    for (int i = 0; i < _renderData.numVideos; i++) {
+      Video& vid = _renderData.videos[i];
+      vid.player->stop();
+      vid.player->play();
     }
-
-    if (_videoPlayer == nullptr) {
-      _videoPlayer = new QMediaPlayer(this);
-      _videoPlayer->setVideoOutput(_videoSurface);
-      _videoPlayer->setMuted(true);
-
-      QMediaPlaylist* playlist = new QMediaPlaylist(_videoPlayer);
-      playlist->addMedia(QUrl(_cache->pathForCachedFile("/media/a/3405e48f74815c7baa49133bdc835142948381fbe003ad2f12f5087715731153.ogv")));
-      playlist->setPlaybackMode(QMediaPlaylist::Loop);
-      _videoPlayer->setPlaylist(playlist);
-
-      connect(_videoPlayer, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &RenderWidget::videoFrameError);
-    }
-    else {
-      _videoPlayer->stop();
-    }
-    _videoPlayer->play();
 
     _renderData.iTime = 0.0f;
     _renderData.iFrame = 0;
@@ -240,8 +225,9 @@ namespace vh  {
 
   void RenderWidget::stopPlayback()
   {
-    if (_videoPlayer != nullptr) {
-      _videoPlayer->pause();
+    for (int i = 0; i < _renderData.numVideos; i++) {
+      Video& vid = _renderData.videos[i];
+      vid.player->pause();
     }
     _playbackTimer.stop();
   }
@@ -249,11 +235,12 @@ namespace vh  {
 
   void RenderWidget::resumePlayback()
   {
-    if (_videoPlayer != nullptr) {
-      _videoPlayer->play();
-    }
-
     bool wasPlayingBack = _playbackTimer.running();
+
+    for (int i = 0; i < _renderData.numVideos; i++) {
+      Video& vid = _renderData.videos[i];
+      vid.player->play();
+    }
 
     float prevTimeDelta = _renderData.iTime - _prevTime;
     _playbackTimer.resume();
@@ -268,6 +255,13 @@ namespace vh  {
   void RenderWidget::adjustPlaybackTime(double amountMS)
   {
     bool wasPlayingBack = _playbackTimer.running();
+
+    for (int i = 0; i < _renderData.numVideos; i++) {
+      Video& vid = _renderData.videos[i];
+      if (vid.player->isSeekable()) {
+        vid.player->setPosition(vid.player->position() + qint64(amountMS));
+      }
+    }
 
     _playbackTimer.adjustTimeMS(amountMS);
 
@@ -868,37 +862,11 @@ namespace vh  {
       tex.playbackTime = 0.0f;
     }
 
-    // Allocate the video textures.
-    {
-      Texture& tex = _renderData.textures[kTexture_Video];
-      tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
-      tex.obj->setSize(400, 300);
-      tex.obj->setFormat(QOpenGLTexture::RGBA8_UNorm);
-      tex.obj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
-      tex.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
-      tex.obj->setAutoMipMapGenerationEnabled(false);
-      tex.obj->allocateStorage();
-
-      tex.isBuffer = false;
-      tex.playbackTime = 0.0;
-
-      Texture& texFlipped = _renderData.textures[kTexture_VideoFlipped];
-      texFlipped.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
-      texFlipped.obj->setSize(400, 300);
-      texFlipped.obj->setFormat(QOpenGLTexture::RGBA8_UNorm);
-      texFlipped.obj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
-      texFlipped.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
-      texFlipped.obj->setAutoMipMapGenerationEnabled(false);
-      texFlipped.obj->allocateStorage();
-
-      texFlipped.isBuffer = false;
-      texFlipped.playbackTime = 0.0;
-    }
-
     // This maps from a texture ID in the ShaderToyDocument structures to the
     // corresponding index in the RenderData::textures array. We only use this
     // for static assets & not render pass outputs, since they will actually
     // have TWO textures associated with them.
+    QHash<int, int> assetIDtoVideoIndex;
     QHash<TextureReference, int> assetIDtoTextureIndex;
     QHash<int, int> assetIDtoRenderpassIndex;
 
@@ -1026,15 +994,33 @@ namespace vh  {
           continue;
         }
 
-        // If we've already loaded the asset...
         TextureReference tr;
         tr.id = input.id;
         tr.flip = (input.sampler.vflip == "true");
         tr.srgb = (input.sampler.srgb == "true");
+        if (input.ctype == kInputType_Video) {
+          tr.srgb = false; // We ignore this setting for videos.
+        }
+
+        // If we've already loaded the asset...
         if (assetIDtoTextureIndex.contains(tr)) {
           int texIndex = assetIDtoTextureIndex[tr];
           passOut.inputs[input.channel][0] = texIndex;
           passOut.inputs[input.channel][1] = texIndex;
+          continue;
+        }
+
+        // If we're asking for the flipped version of a video asset which
+        // we've already loaded...
+        if (input.ctype == kInputType_Video && assetIDtoVideoIndex.contains(tr.id) && tr.flip) {
+          int vidIndex = assetIDtoVideoIndex[tr.id];
+          Video& vid = _renderData.videos[vidIndex];
+          if (vid.flippedTexOutput < 0) {
+            vid.flippedTexOutput = allocVideoTexture();
+          }
+          assetIDtoTextureIndex[tr] = vid.flippedTexOutput;
+          passOut.inputs[input.channel][0] = vid.flippedTexOutput;
+          passOut.inputs[input.channel][1] = vid.flippedTexOutput;
           continue;
         }
 
@@ -1068,11 +1054,33 @@ namespace vh  {
           continue;
         }
 
+        // If this is a video we haven't loaded yet...
         if (input.ctype == kInputType_Video) {
-          assetIDtoTextureIndex[tr] = kTexture_VideoFlipped;
-          passOut.inputs[input.channel][0] = kTexture_VideoFlipped;
-          passOut.inputs[input.channel][1] = kTexture_VideoFlipped;
+          int vidIndex = _renderData.numVideos;
+          int texIndex = kTexture_PlaceholderImage;
+          if (loadVideo(input.src, tr.flip, vidIndex)) {
+            ++_renderData.numVideos;
+            Video& vid = _renderData.videos[vidIndex];
+            assetIDtoVideoIndex[tr.id] = vidIndex;
+
+            if (tr.flip) {
+              texIndex = vid.flippedTexOutput;
+              assetIDtoTextureIndex[tr] = vid.flippedTexOutput;
+
+              // Add reference for the unflipped texture too, since we have to load that as well.
+              tr.flip = false;
+              assetIDtoTextureIndex[tr] = vid.texOutput;
+            }
+            else {
+              texIndex = vid.texOutput;
+              assetIDtoTextureIndex[tr] = vid.texOutput;
+            }
+          }
+          passOut.inputs[input.channel][0] = texIndex;
+          passOut.inputs[input.channel][1] = texIndex;
+          continue;
         }
+
         // TODO: other input types.
       }
     }
@@ -1194,16 +1202,31 @@ namespace vh  {
     }
     _renderData.numRenderpasses = 0;
 
+    // Delete all videos.
+    for (int vidIdx = 0; vidIdx < _renderData.numVideos; vidIdx++) {
+      Video& vid = _renderData.videos[vidIdx];
+      if (vid.player) {
+        vid.player->stop();
+      }
+      delete vid.player;
+      // vid.surface is parented to vid.player, so gets deleted automatically.
+      vid.player = nullptr;
+      vid.surface = nullptr;
+      vid.texOutput = -1;
+      vid.flippedTexOutput = -1;
+    }
+    _renderData.numVideos = 0;
+
     // Delete all textures.
     for (int texIdx = 0; texIdx < _renderData.numTextures; texIdx++) {
       Texture& tex = _renderData.textures[texIdx];
-
       delete tex.obj;
       tex.obj = nullptr;
 
       tex.isBuffer = false;
       tex.playbackTime = 0.0;
     }
+    _renderData.numTextures = 0;
 
     // Delete utility shaders.
     delete _renderData.texturedQuadShader.program;
@@ -1255,33 +1278,73 @@ namespace vh  {
       if (_renderData.iFrame == 0) {
         _clearTextures = true;
       }
+
+      // Upload the current frame for each active video to its corresponding texture.
+      bool videoWasFlipped = false;
+      for (int i = 0; i < _renderData.numVideos; i++) {
+        Video& vid = _renderData.videos[i];
+        if (vid.surface == nullptr || !vid.surface->hasCurrentFrame() || vid.texOutput < kNumSpecialTextures) {
+          continue;
+        }
+
+        float playbackTime = float(vid.player->position()) / 1000.0f;
+
+        QOpenGLTexture* texObj = _renderData.textures[vid.texOutput].obj;
+
+        int texIndexes[2] = { vid.texOutput, vid.flippedTexOutput };
+        for (int ti = 0; ti < 2; ti++) {
+          int texIndex = texIndexes[ti];
+          if (texIndex < 0) {
+            continue;
+          }
+          QOpenGLTexture* texObj = _renderData.textures[texIndex].obj;
+          if (vid.surface->frameWidth() != texObj->width() || vid.surface->frameHeight() != texObj->height()) {
+            texObj->destroy();
+            texObj->setSize(vid.surface->frameWidth(), vid.surface->frameHeight());
+            texObj->setFormat(QOpenGLTexture::RGBA8_UNorm);
+            texObj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
+            texObj->setWrapMode(QOpenGLTexture::ClampToEdge);
+            texObj->setAutoMipMapGenerationEnabled(true);
+            texObj->setSwizzleMask(
+                  QOpenGLTexture::BlueValue,
+                  QOpenGLTexture::GreenValue,
+                  QOpenGLTexture::RedValue,
+                  QOpenGLTexture::AlphaValue
+            );
+            texObj->allocateStorage();
+          }
+        }
+
+        vid.surface->copyToTexture(texObj);
+        _renderData.textures[vid.texOutput].playbackTime = playbackTime;
+
+        if (vid.flippedTexOutput) {
+          QOpenGLTexture* flippedTexObj = _renderData.textures[vid.flippedTexOutput].obj;
+
+          glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.flipFBO);
+          glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
+
+          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderData.defaultFBO);
+          glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, flippedTexObj->textureId(), 0);
+
+          glBlitFramebuffer(0, 0,                          vid.surface->frameWidth(), vid.surface->frameHeight(),
+                            0, vid.surface->frameHeight(), vid.surface->frameWidth(), 0,
+                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+          _renderData.textures[vid.flippedTexOutput].playbackTime = playbackTime;
+          videoWasFlipped = true;
+        }
+      }
+      if (videoWasFlipped) {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+      }
     }
   }
 
 
   void RenderWidget::renderMain()
   {
-    // Upload the video contents to the video texture.
-    if (_videoSurface != nullptr && _videoSurface->hasCurrentFrame()) {
-      QOpenGLTexture* texObj = _renderData.textures[kTexture_Video].obj;
-      QOpenGLTexture* texFlippedObj = _renderData.textures[kTexture_VideoFlipped].obj;
-
-      _videoSurface->copyToTexture(texObj);
-
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.flipFBO);
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderData.defaultFBO);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texFlippedObj->textureId(), 0);
-
-      glBlitFramebuffer(0, 0,                            _videoSurface->frameWidth(), _videoSurface->frameHeight(),
-                        0, _videoSurface->frameHeight(), _videoSurface->frameWidth(), 0,
-                        GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-      glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    }
-
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_STENCIL_TEST);
@@ -1326,6 +1389,7 @@ namespace vh  {
       glBindSamplers(0, GLuint(kMaxInputs), pass.samplers);
 
       float iChannelResolution[4][3];
+      float iChannelTime[4];
       for (int inputIdx = 0; inputIdx < kMaxInputs; inputIdx++) {
         int texIdx = pass.inputs[inputIdx][_renderData.frontBuffer];
         QOpenGLTexture* tex = _renderData.textures[texIdx].obj;
@@ -1334,8 +1398,11 @@ namespace vh  {
         iChannelResolution[inputIdx][0] = static_cast<float>(tex->width());
         iChannelResolution[inputIdx][1] = static_cast<float>(tex->height());
         iChannelResolution[inputIdx][2] = static_cast<float>(tex->depth());
+
+        iChannelTime[inputIdx] = _renderData.textures[texIdx].playbackTime;
       }
       pass.program->setUniformValueArray(pass.iChannelResolutionLoc, reinterpret_cast<float*>(iChannelResolution), 4, 3);
+      pass.program->setUniformValueArray(pass.iChannelTimeLoc, iChannelTime, 4, 1);
 
       glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -1571,6 +1638,53 @@ namespace vh  {
   }
 
 
+  bool RenderWidget::loadVideo(const QString& filename, bool flip, int vidIndex)
+  {
+    Video& vid = _renderData.videos[vidIndex];
+
+    QString adjustedFilename = filename;
+    if (_cache != nullptr && _cache->isCached(filename)) {
+      adjustedFilename = _cache->pathForCachedFile(adjustedFilename);
+    }
+
+    vid.player = new QMediaPlayer(this);
+    vid.surface = new TextureVideoSurface(vid.player);
+
+    vid.player->setVideoOutput(vid.surface);
+    vid.player->setMuted(true);
+
+    QMediaPlaylist* playlist = new QMediaPlaylist(vid.player);
+    playlist->addMedia(QUrl(adjustedFilename));
+    playlist->setPlaybackMode(QMediaPlaylist::Loop);
+    vid.player->setPlaylist(playlist);
+
+    connect(vid.player, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), [this, vidIndex](QMediaPlayer::Error err){ this->videoError(err, vidIndex); });
+
+    // Neither of these textures have any storage allocated yet because we
+    // don't know what size the frames will be until we start playing the
+    // video.
+    vid.texOutput = allocVideoTexture();
+    vid.flippedTexOutput = flip ? allocVideoTexture() : -1;
+    return true;
+  }
+
+
+  int RenderWidget::allocVideoTexture()
+  {
+    int texIndex = _renderData.numTextures++;
+
+    Texture& tex = _renderData.textures[texIndex];
+
+    tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
+    tex.obj->setFormat(QOpenGLTexture::RGBA8_UNorm);
+
+    tex.isBuffer = false;
+    tex.playbackTime = 0.0f;
+
+    return texIndex;
+  }
+
+
   int RenderWidget::renderWidth() const
   {
     return _useRelativeRenderSize ? int(width() * _renderScale) : _renderWidth;
@@ -1633,9 +1747,10 @@ namespace vh  {
   }
 
 
-  void RenderWidget::videoFrameError(QMediaPlayer::Error err)
+  void RenderWidget::videoError(QMediaPlayer::Error err, int vidIndex)
   {
-    qDebug("video error %d: %s", int(err), qPrintable(_videoPlayer->errorString()));
+    Video& vid = _renderData.videos[vidIndex];
+    qDebug("video %d error %d: %s", vidIndex, int(err), qPrintable(vid.player->errorString()));
   }
 
 } // namespace vh

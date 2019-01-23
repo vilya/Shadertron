@@ -14,7 +14,8 @@ We also provide some useful extensions to ShaderToy's capabilities:
 Project name
 ------------
 
-Still undecided. ShaderToolQt is a working title only, it's pretty crap. 
+Still undecided. ShaderToolQt is a working title only, it's pretty crap. I do
+still like plain old ShaderTool though.
 
 Other ideas: ShaderTide, ShaderKitchen, ShaderBakery, PixelKitchen,
 PixelBakery, PixelToy, FragmentToy, Pixery, Pixelhouse, Pixelhaus, Shaderhaus,
@@ -72,11 +73,12 @@ here:
 http://www.codecguide.com/about_kl.htm
 
 
-A note about driver-level incompatibilities
--------------------------------------------
+A note about GLSL vs. ESSL incompatibilities
+--------------------------------------------
 
-There are some driver-level incompatibilities which can trip us up. I've hit
-two examples so far:
+There are some language- and driver-level incompatibilities between WebGL and
+native GL running locally which can trip us up. I've hit these examples so
+far:
 
 - KifsOctahedron had arguments to `clamp` in the wrong order, leading to
   undefined behaviour. Intel & WebGL shader compilers accept this, the Nvidia
@@ -86,6 +88,9 @@ two examples so far:
   GLSL. Nvidia shader compiler treats this as a compile error, the WebGL 
   compiler accepts it.
 
+- NeuralNetVideoSample had a 'precision mediump float;' declaration, which is
+  valid in ESSL but not in GLSL.
+
 It's not really practical to catch all of these cases. Maybe using GLES
 instead would give a more compatible result? It's kind of nice to have GL 4.5
 though...
@@ -94,7 +99,7 @@ though...
 ShaderToy JSON Notes
 --------------------
 
-Renderpasses
+**Renderpasses**
 
 - The list of renderpasses is sparse and (maybe?) isn't guaranteed to be in order. 
 - Use the `name` field to identify renderpasses
@@ -108,8 +113,8 @@ Renderpasses
   - This renderpass has no inputs or outputs.
   - This is the *only* renderpass that does not have any outputs.
 
-Inputs
-------
+**Inputs**
+
 - The list of inputs is sparse and not guaranteed to be in order.
 - The `channel` field identifies which input it is.
 - The `id` field is used to identify the input source.
@@ -122,15 +127,15 @@ Inputs
   - "texture" for a static 2D texture
   - presumably others for audio, 3D textures, etc.
 
-Samplers
---------
+**Samplers**
+
 - Samplers are specified for each input.
 - The ShaderToy website gets a bit confused if you have two inputs that
   reference the same texture but have different sampler settings. It does
   *allow* it though, so I need to support it.
 
-Outputs
--------
+**Outputs**
+
 - It looks like maybe there was a plan to allow for multiple outputs, but it has not been implemented?
   - Or perhaps it's used for shader types that I haven't encountered yet?
 - The list of outputs always has length 1, except for the common code pass where it has length 0.

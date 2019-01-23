@@ -213,6 +213,10 @@ namespace vh {
     bool loadImageTexture(const QString& filename, bool flip, bool srgb, Texture& tex);
     bool loadCubemapTexture(const QString& filename, bool flip, bool srgb, Texture& tex);
 
+    bool loadVideo(const QString& filename, bool flip, int vidIndex);
+
+    int allocVideoTexture(); // Texture has no storage yet, because we don't know the width & height until after this is called.
+
     int renderWidth() const;
     int renderHeight() const;
     int displayWidth() const;
@@ -223,7 +227,7 @@ namespace vh {
 
   private slots:
     void fileChanged(const QString& path);
-    void videoFrameError(QMediaPlayer::Error err);
+    void videoError(QMediaPlayer::Error err, int vidIndex);
 
   private:
     Timer _runtimeTimer;
@@ -278,10 +282,6 @@ namespace vh {
     float _initialDisplayScale = 1.0f;
     float _initialPanX = 0.0f;
     float _initialPanY = 0.0f;
-
-    QMediaPlayer* _videoPlayer         = nullptr;
-    TextureVideoSurface* _videoSurface = nullptr;
-
   };
 
 } // namespace vh

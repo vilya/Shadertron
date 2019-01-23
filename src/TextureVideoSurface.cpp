@@ -225,9 +225,9 @@ namespace vh {
   }
 
 
-  QList<QVideoFrame::PixelFormat> TextureVideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType type) const
+  QList<QVideoFrame::PixelFormat> TextureVideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType /*type*/) const
   {
-    qDebug("supportedPixelFormats(%s)", qPrintable(handleTypeName(type)));
+//    qDebug("supportedPixelFormats(%s)", qPrintable(handleTypeName(type)));
 
     QList<QVideoFrame::PixelFormat> formats;
     formats.push_back(QVideoFrame::Format_ARGB32);
@@ -237,26 +237,26 @@ namespace vh {
 
   bool TextureVideoSurface::start(const QVideoSurfaceFormat& format)
   {
-    qDebug("start(width=%d, height=%d, handleType=%s)", format.frameWidth(), format.frameHeight(), qPrintable(handleTypeName(format.handleType())));
+//    qDebug("start(width=%d, height=%d, handleType=%s)", format.frameWidth(), format.frameHeight(), qPrintable(handleTypeName(format.handleType())));
 
     if (!QAbstractVideoSurface::start(format)) {
-      qDebug("start() retuned false, superclass start call failed");
+//      qDebug("start() retuned false, superclass start call failed");
       return false;
     }
     if (format.pixelFormat() != QVideoFrame::Format_ARGB32) {
-      qDebug("start() returned false, format is not ARGB32");
+//      qDebug("start() returned false, format is not ARGB32");
       return false;
     }
     _frameWidth = format.frameWidth();
     _frameHeight = format.frameHeight();
-    qDebug("start() returned true");
+//    qDebug("start() returned true");
     return true;
   }
 
 
   void TextureVideoSurface::stop()
   {
-    qDebug("stop()");
+//    qDebug("stop()");
     QAbstractVideoSurface::stop();
     _hasFrame = false;
   }
@@ -264,17 +264,17 @@ namespace vh {
 
   bool TextureVideoSurface::present(const QVideoFrame& srcFrame)
   {
-    qDebug("present(width=%d, height=%d, handleType=%s, pixelFormat=%s)",
-           srcFrame.width(),
-           srcFrame.height(),
-           qPrintable(handleTypeName(srcFrame.handleType())),
-           qPrintable(pixelFormatName(srcFrame.pixelFormat()))
-    );
+//    qDebug("present(width=%d, height=%d, handleType=%s, pixelFormat=%s)",
+//           srcFrame.width(),
+//           srcFrame.height(),
+//           qPrintable(handleTypeName(srcFrame.handleType())),
+//           qPrintable(pixelFormatName(srcFrame.pixelFormat()))
+//    );
 
     if (srcFrame.width()       != _frameWidth ||
         srcFrame.height()      != _frameHeight ||
         srcFrame.pixelFormat() != QVideoFrame::Format_ARGB32) {
-      qDebug("present returned false, image size or pixel format didn't match");
+//      qDebug("present returned false, image size or pixel format didn't match");
       setError(IncorrectFormatError);
       return false;
     }

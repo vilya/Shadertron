@@ -2,8 +2,11 @@
 #ifndef VH_RENDERDATA_H
 #define VH_RENDERDATA_H
 
+#include <QMediaPlayer>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
+
+#include "TextureVideoSurface.h"
 
 namespace vh {
 
@@ -14,14 +17,13 @@ namespace vh {
   static constexpr int kTexture_PlaceholderImage    = 0;
   static constexpr int kTexture_PlaceholderCubemap  = 1;
   static constexpr int kTexture_Keyboard            = 2;
-  static constexpr int kTexture_Video               = 3;
-  static constexpr int kTexture_VideoFlipped        = 4;
 
-  static constexpr int kNumSpecialTextures = kTexture_VideoFlipped + 1;
+  static constexpr int kNumSpecialTextures = kTexture_Keyboard + 1;
 
   static constexpr int kMaxInputs       = 4;
   static constexpr int kMaxRenderpasses = 5;
-  static constexpr int kMaxTextures     = kMaxRenderpasses * (2 + kMaxInputs) + kNumSpecialTextures;
+  static constexpr int kMaxVideos       = 4;
+  static constexpr int kMaxTextures     = kMaxRenderpasses * (2 + kMaxInputs) + (kMaxVideos * 2) + kNumSpecialTextures;
 
 
   //
@@ -66,6 +68,14 @@ namespace vh {
   };
 
 
+  struct Video {
+    QMediaPlayer* player         = nullptr;
+    TextureVideoSurface* surface = nullptr;
+    int texOutput                = -1;      // Index of the texture that the un-flipped video will be written into.
+    int flippedTexOutput         = -1;      // Index of the texture that the flipped video will be written into.
+  };
+
+
   struct RenderPass {
     PassType type;
     QString name;
@@ -107,8 +117,10 @@ namespace vh {
 
 
   struct RenderData {
+    Video videos[kMaxVideos]                  = {};
     Texture textures[kMaxTextures]            = {}; // Element 0 will be a special "no texture" value.
     RenderPass renderpasses[kMaxRenderpasses] = {}; // In order: all of the intermediate buffers followed by the final output.
+    int numVideos       = 0;
     int numTextures     = 0;
     int numRenderpasses = 0;
 
