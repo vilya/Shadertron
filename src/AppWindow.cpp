@@ -21,6 +21,8 @@
 #include <QStandardPaths>
 #include <QUrl>
 
+#include <QTreeWidgetItem>
+
 namespace vh {
 
   //
@@ -314,6 +316,15 @@ namespace vh {
 
     QObject::connect(_renderWidget, &RenderWidget::closeRequested, this, &QMainWindow::close);
     QObject::connect(_renderWidget, &RenderWidget::currentShaderToyDocumentChanged, this, &AppWindow::renderWidgetDocumentChanged);
+
+    _docTree = new QTreeWidget();
+    _docTreeDockable = new QDockWidget("Doc Tree", this);
+    _docTreeDockable->setObjectName("docTreeDockable");
+    _docTreeDockable->setAllowedAreas(Qt::AllDockWidgetAreas);
+    _docTreeDockable->setWidget(_docTree);
+    addDockWidget(Qt::RightDockWidgetArea, _docTreeDockable);
+    _docTreeDockable->setVisible(true);
+    _docTreeDockable->setFloating(false);
   }
 
 
@@ -447,6 +458,8 @@ namespace vh {
 
   void AppWindow::setupWindowMenu(QMenu* menu)
   {
+    menu->addAction(_docTreeDockable->toggleViewAction());
+    menu->addSeparator();
     QAction* saveWindowStateAction = menu->addAction("&Save window state on exit");
     QAction* removeWindowStateAction = menu->addAction("&Remove saved window state", this, &AppWindow::removeSavedWindowState);
 
@@ -583,6 +596,80 @@ namespace vh {
   }
 
 
+  void AppWindow::populateDocTree()
+  {
+    // Populate the doc tree
+    _docTree->clear();
+    _docTree->setColumnCount(2);
+    _docTree->setHeaderLabels(QStringList() << QString("Item") << QString("Value"));
+
+    QTreeWidgetItem* shaderItem = new QTreeWidgetItem(_docTree, QStringList() << _document->info.name);
+
+    QTreeWidgetItem* infoItem = new QTreeWidgetItem(shaderItem, QStringList() << QString("Info"));
+    {
+      new QTreeWidgetItem(infoItem, QStringList() << QString("ID")          << _document->info.id);
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Date")        << _document->info.date);
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Viewed")      << QString("%1").arg(_document->info.viewed));
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Name")        << _document->info.name);
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Username")    << _document->info.username);
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Description") << _document->info.description);
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Likes")       << QString("%1").arg(_document->info.likes));
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Published")   << QString("%1").arg(_document->info.published));
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Flags")       << QString("%1").arg(_document->info.flags));
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Tags")        << _document->info.tags.join(", "));
+      new QTreeWidgetItem(infoItem, QStringList() << QString("Has liked?")  << QString("%1").arg(_document->info.hasliked));
+    }
+
+    QTreeWidgetItem* renderpassesItem = new QTreeWidgetItem(shaderItem, QStringList() << QString("Render passes"));
+
+    for (int passIdx = 0; passIdx < _document->renderpasses.size(); passIdx++) {
+      const ShaderToyRenderPass& pass = _document->renderpasses[passIdx];
+
+      QTreeWidgetItem* passItem = new QTreeWidgetItem(renderpassesItem, QStringList() << pass.name);
+
+      new QTreeWidgetItem(passItem, QStringList() << QString("Name")        << pass.name);
+      new QTreeWidgetItem(passItem, QStringList() << QString("Description") << pass.description);
+      new QTreeWidgetItem(passItem, QStringList() << QString("Type")        << pass.type);
+
+      QTreeWidgetItem* inputsItem  = new QTreeWidgetItem(passItem, QStringList() << QString("Inputs"));
+      for (int inputIdx = 0; inputIdx < pass.inputs.size(); inputIdx++) {
+        const ShaderToyInput& input = pass.inputs[inputIdx];
+
+        QTreeWidgetItem* inputItem = new QTreeWidgetItem(inputsItem, QStringList() << QString("Input %1").arg(input.channel));
+
+        new QTreeWidgetItem(inputItem, QStringList() << QString("ID")           << QString("%1").arg(input.id));
+        new QTreeWidgetItem(inputItem, QStringList() << QString("Source")       << input.src);
+        new QTreeWidgetItem(inputItem, QStringList() << QString("Channel type") << input.ctype);
+        new QTreeWidgetItem(inputItem, QStringList() << QString("Channel type") << QString("%1").arg(input.channel));
+        new QTreeWidgetItem(inputItem, QStringList() << QString("Published")    << QString("%1").arg(input.published));
+
+        const ShaderToySampler& sampler = input.sampler;
+
+        QTreeWidgetItem* samplerItem = new QTreeWidgetItem(inputItem, QStringList() << QString("Sampler"));
+
+        new QTreeWidgetItem(samplerItem, QStringList() << QString("Filter")        << sampler.filter);
+        new QTreeWidgetItem(samplerItem, QStringList() << QString("Wrap")          << sampler.wrap);
+        new QTreeWidgetItem(samplerItem, QStringList() << QString("Vertical flip") << sampler.vflip);
+        new QTreeWidgetItem(samplerItem, QStringList() << QString("sRGB")          << sampler.srgb);
+        new QTreeWidgetItem(samplerItem, QStringList() << QString("Internal")      << sampler.internal);
+      }
+
+      QTreeWidgetItem* outputsItem = new QTreeWidgetItem(passItem, QStringList() << QString("Outputs"));
+      for (int outputIdx = 0; outputIdx < pass.outputs.size(); outputIdx++) {
+        const ShaderToyOutput& output = pass.outputs[outputIdx];
+
+        QTreeWidgetItem* outputItem = new QTreeWidgetItem(outputsItem, QStringList() << QString("Output %1").arg(output.channel));
+
+        new QTreeWidgetItem(outputItem, QStringList() << QString("ID") << QString("%1").arg(output.id));
+        new QTreeWidgetItem(outputItem, QStringList() << QString("Channel") << QString("%1").arg(output.channel));
+      }
+    }
+
+    _docTree->expandAll();
+    _docTree->resizeColumnToContents(0);
+  }
+
+
   //
   // AppWindow private slots
   //
@@ -610,6 +697,8 @@ namespace vh {
     }
 
     if (_document != nullptr) {
+      populateDocTree();
+
       _watcher = new QFileSystemWatcher(this);
       watchAllFiles(_document, *_watcher);
       connect(_watcher, &QFileSystemWatcher::fileChanged, this, &AppWindow::watchedfileChanged);

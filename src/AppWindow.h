@@ -11,6 +11,9 @@
 #include <QSet>
 #include <QString>
 
+#include <QTreeWidget>
+#include <QDockWidget>
+
 namespace vh {
 
   //
@@ -76,6 +79,8 @@ namespace vh {
     void setupViewPassMenu(QMenu* menu);
     void setupViewHUDContentsMenu(QMenu* menu);
 
+    void populateDocTree();
+
   private slots:
     void reloadFile();
     void renderWidgetDocumentChanged();
@@ -107,12 +112,14 @@ namespace vh {
     void saveRecentDownloadsList(const QList<Download>& recentDownloads);
     void addRecentDownload(const QString& id, const QString& displayName);
 
-
   private:
     QMenuBar* _menubar = nullptr;
     QMenu* _recentFilesMenu = nullptr;
     QMenu* _recentDownloadsMenu = nullptr;
     RenderWidget* _renderWidget = nullptr;
+
+    QTreeWidget* _docTree = nullptr;
+    QDockWidget* _docTreeDockable = nullptr;
 
     ShaderToyDocument* _document = nullptr;
     QFileSystemWatcher* _watcher = nullptr;
