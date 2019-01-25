@@ -211,13 +211,13 @@ namespace vh  {
 
   int RenderWidget::renderWidth() const
   {
-    return _useRelativeRenderSize ? int(width() * _renderScale) : _renderWidth;
+    return _useRelativeRenderSize ? int(framebufferWidth() * _renderScale) : _renderWidth;
   }
 
 
   int RenderWidget::renderHeight() const
   {
-    return _useRelativeRenderSize ? int(height() * _renderScale) : _renderHeight;
+    return _useRelativeRenderSize ? int(framebufferHeight() * _renderScale) : _renderHeight;
   }
 
 
@@ -393,18 +393,18 @@ namespace vh  {
     _displayFitHeight = fitHeight;
 
     if (fitWidth) {
-      _displayScale = float(width()) / float(renderWidth());
+      _displayScale = float(framebufferWidth()) / float(renderWidth());
     }
     else if (fitHeight) {
-      _displayScale = float(height()) / float(renderHeight());
+      _displayScale = float(framebufferHeight()) / float(renderHeight());
     }
     else {
       _displayScale = scale;
     }
 
     if (fitWidth || fitHeight) {
-      _displayPanX = (width()  - displayWidth()) * 0.5f;
-      _displayPanY = (height() - displayHeight()) * 0.5f;
+      _displayPanX = (framebufferWidth()  - displayWidth()) * 0.5f;
+      _displayPanY = (framebufferHeight() - displayHeight()) * 0.5f;
     }
     else {
       _displayPanX -= (displayWidth()  - oldDisplayW) * 0.5f;
@@ -496,8 +496,8 @@ namespace vh  {
 
   void RenderWidget::recenterImage()
   {
-    _displayPanX = (width() -  displayWidth())  * 0.5f;
-    _displayPanY = (height() - displayHeight()) * 0.5f;
+    _displayPanX = (framebufferWidth()  -  displayWidth()) * 0.5f;
+    _displayPanY = (framebufferHeight() - displayHeight()) * 0.5f;
 
     if (!_playbackTimer.running()) {
       update();
@@ -667,10 +667,10 @@ namespace vh  {
 
     _initialDisplayScale = _displayScale;
     if (_displayFitWidth) {
-      _displayScale = float(width()) / float(renderWidth());
+      _displayScale = float(framebufferWidth()) / float(renderWidth());
     }
     else if (_displayFitHeight) {
-      _displayScale = float(height()) / float(renderHeight());
+      _displayScale = float(framebufferHeight()) / float(renderHeight());
     }
 
     recenterImage();
@@ -679,8 +679,8 @@ namespace vh  {
 
   void RenderWidget::mousePressEvent(QMouseEvent* event)
   {
-    _mouseDown = event->pos();
-    _mouseDown.setY(height() - _mouseDown.y());
+    _mouseDown = framebufferPos(event->pos());
+    _mouseDown.setY(framebufferHeight() - _mouseDown.y());
 
     // Figure out what action we're performing.
     _mouseAction = _mousePressBindings.value(MouseBinding::fromEvent(_mouseAction, event), MouseAction::eNone);
@@ -707,8 +707,8 @@ namespace vh  {
 
   void RenderWidget::mouseMoveEvent(QMouseEvent* event)
   {
-    _mousePos = event->pos();
-    _mousePos.setY(height() - _mousePos.y());
+    _mousePos = framebufferPos(event->pos());
+    _mousePos.setY(framebufferHeight() - _mousePos.y());
 
     switch (_mouseAction) {
     case MouseAction::eSendToShader:
@@ -721,7 +721,8 @@ namespace vh  {
     case MouseAction::eZoomImage:
       {
         float minScale = 4.0f / qMin(renderWidth(), renderHeight()); // Don't go below 4 pixels wide or tall.
-        _displayScale = qMax(_initialDisplayScale + float(_mousePos.x() - _mouseDown.x()) / 200.0f, minScale);
+        float newScale = _initialDisplayScale + float(_mousePos.x() - _mouseDown.x()) / (200.0f * devicePixelRatioF());
+        _displayScale = qMax(newScale, minScale);
         float relativeScale = _displayScale /  _initialDisplayScale;
         _displayPanX = (_initialPanX - _mouseDown.x()) * relativeScale + _mouseDown.x();
         _displayPanY = (_initialPanY - _mouseDown.y()) * relativeScale + _mouseDown.y();
@@ -771,8 +772,8 @@ namespace vh  {
       return;
     }
 
-    _mousePos = event->pos();
-    _mousePos.setY(height() - _mousePos.y());
+    _mousePos = framebufferPos(event->pos());
+    _mousePos.setY(framebufferHeight() - _mousePos.y());
 
     Action action = _wheelBindings.value(WheelBinding::fromEvent(event), Action::eNone);
     if (action != Action::eNone) {
@@ -1588,18 +1589,18 @@ namespace vh  {
     glBindVertexArray(_renderData.defaultVAO);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());
 
-    glViewport(0, 0, width(), height());
+    glViewport(0, 0, framebufferWidth(), framebufferHeight());
 
     // Calculate the dimensions for each intermediate, preserving their aspect ratio.
     int rw = renderWidth();
     int rh = renderHeight();
-    int w = width() / 4;
+    int w = framebufferWidth() / 4;
     int h = rh * w / rw;
     int level = 0;
 
     if (_showOutputs) {
-      int x = width() - w;
-      int y = height() - h;
+      int x = framebufferWidth()  - w;
+      int y = framebufferHeight() - h;
       for (int i = 0; i < kMaxRenderpasses; i++) {
         const RenderPass& pass = _renderData.renderpasses[i];
         if (pass.type == PassType::eBuffer || pass.type == PassType::eImage) {
@@ -1926,6 +1927,25 @@ namespace vh  {
       _renderData.iMouse[2] = _renderData.iMouse[0];
       _renderData.iMouse[3] = _renderData.iMouse[1];
     }
+  }
+
+
+  float RenderWidget::framebufferWidth() const
+  {
+    return width() * devicePixelRatioF();
+  }
+
+
+  float RenderWidget::framebufferHeight() const
+  {
+    return height() * devicePixelRatioF();
+  }
+
+
+  QPoint RenderWidget::framebufferPos(const QPoint& widgetPos) const
+  {
+    return QPoint(int(widgetPos.x() * devicePixelRatioF()),
+                  int(widgetPos.y() * devicePixelRatioF()));
   }
 
 

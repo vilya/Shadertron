@@ -686,8 +686,8 @@ namespace vh {
 
   void AppWindow::resizeToRenderWidgetDisplayRect()
   {
-    int w = _renderWidget->displayWidth();
-    int h = _renderWidget->displayHeight() + menuBar()->height();
+    int w = int(_renderWidget->displayWidth() / _renderWidget->devicePixelRatioF());
+    int h = int(_renderWidget->displayHeight() / _renderWidget->devicePixelRatioF()) + menuBar()->height();
     resize(w, h);
   }
 

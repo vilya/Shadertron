@@ -253,6 +253,10 @@ namespace vh {
 
     void updateShaderMousePos(QPoint mousePosWithFlippedY, bool setDownPos);
 
+    float framebufferWidth() const;
+    float framebufferHeight() const;
+    QPoint framebufferPos(const QPoint& widgetPos) const;
+
   private slots:
     void fileChanged(const QString& path);
     void videoError(QMediaPlayer::Error err, int vidIndex);
