@@ -38,6 +38,9 @@ namespace vh {
   static const QString kRecentDownloadIDX   = "recentDownloadID%1";   // Use this with .arg(x), where x is an int from 0 up to kMaxRecentDownloads-1.
   static const QString kRecentDownloadNameX = "recentDownloadName%1"; // Use this with .arg(x), where x is an int from 0 up to kMaxRecentDownloads-1.
 
+  static const QString kLastOpenDir = "lastOpenDir";
+  static const QString kLastSaveDir = "lastSaveDir";
+
   static constexpr int kMaxRecentFiles     = 10;
   static constexpr int kMaxRecentDownloads = 10;
 
@@ -114,12 +117,36 @@ namespace vh {
 
   void AppWindow::openFile()
   {
-    QString initialDir = ".";
-    QString filename =  QFileDialog::getOpenFileName(this,
-        "Open ShaderToy", initialDir, "ShaderToy JSON Files (*.json)");
-    if (filename.isNull()) {
+    // Get the initial directory
+    QSettings settings;
+    QString initialDir = settings.value(kLastOpenDir).toString();
+    if (initialDir.isEmpty()) {
+      initialDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    }
+
+    QFileDialog* fileDialog = new QFileDialog(this, "Open file", initialDir,
+                                              "ShaderToy JSON Files (*.json)");
+    fileDialog->setAcceptMode(QFileDialog::AcceptOpen);
+    fileDialog->setFileMode(QFileDialog::ExistingFile);
+    int action = fileDialog->exec();
+    if (action != QFileDialog::Accepted) {
+      // Cancelled
       return;
     }
+
+    QStringList filenames = fileDialog->selectedFiles();
+    if (filenames.empty()) {
+      // Shouldn't be possible with fileMode set to ExistingFile, but...
+      return;
+    }
+
+    QString filename = fileDialog->selectedFiles().front();
+    if (filename.isNull()) {
+      // Again, shouldn't be possible with thie file mode, but...
+      return;
+    }
+
+    settings.setValue(kLastOpenDir, fileDialog->directory().absolutePath());
 
     if (!openNamedFile(filename)) {
       return;
