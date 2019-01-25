@@ -10,10 +10,6 @@ Input sources:
 - Audio stream/file
 - Microphone input
 - Soundcloud input
-Assets:
-- Option to download standard ShaderToy assets on first run
-- Have a list of URLs, grab any that aren't already in the cache.
-  ... if this is allowed by their license?
 
 
 See 
@@ -74,12 +70,6 @@ Other TODO
   - ...
 
 
-Architecture TODO
------------------
-
-- Allow for several OpenGL widget subclasses all accessing the same render data.
-
-
 Blue sky ideas
 --------------
 
@@ -90,9 +80,5 @@ Blue sky ideas
 - Custom vertex shaders
 - Buffers as input (i.e. SSBOs and/or tex buffers)
 - Compute shaders generating an arbitrary output buffer.
-
-- For each render pass, specify whether its graphics, compute or raytracing
-- For graphics, allow user to specify the complete pipeline:
-  - input geometry (procedural or user-supplied meshes) 
-  - custom shaders for each stage (vertex, geometry, tesselation, fragment)
-- Similarly for raytracing
+- Switch from OpenGL to Vulkan
+- Support for Vulkan raytracing, if the hardware supports it.
