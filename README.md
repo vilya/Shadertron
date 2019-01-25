@@ -29,8 +29,9 @@ Features
 - Common source for all passes
 - Input sources:
   - Texture
-  - Video
   - Cube map
+  - Video
+  - Webcam
   - Mouse
   - Keyboard
 - Support for all of ShaderToy's sampler properties:

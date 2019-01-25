@@ -39,6 +39,7 @@ namespace vh {
     bool _hasFrame   = false;
     int _frameWidth  = 0;
     int _frameHeight = 0;
+    QVideoFrame::PixelFormat _pixelFormat = QVideoFrame::Format_ARGB32;
     bool _paused = false;
   };
 

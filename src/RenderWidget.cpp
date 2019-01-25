@@ -222,6 +222,10 @@ namespace vh  {
       vid.player->play();
     }
 
+    if (_camera != nullptr) {
+      _camera->start();
+    }
+
     _renderData.iTime = 0.0f;
     _renderData.iFrame = 0;
 
@@ -241,6 +245,11 @@ namespace vh  {
       vid.surface->pause();
       vid.player->pause();
     }
+
+    if (_camera != nullptr) {
+      _camera->stop();
+    }
+
     _playbackTimer.stop();
 
     update();
@@ -255,6 +264,10 @@ namespace vh  {
       Video& vid = _renderData.videos[i];
       vid.surface->unpause();
       vid.player->play();
+    }
+
+    if (_camera != nullptr) {
+      _camera->start();
     }
 
     float prevTimeDelta = _renderData.iTime - _prevTime;
@@ -1108,6 +1121,23 @@ namespace vh  {
           continue;
         }
 
+        // If this is a webcam input...
+        if (input.ctype == kInputType_Webcam) {
+          if (_camera == nullptr) {
+            _camera = new QCamera(this);
+            _cameraSurface = new TextureVideoSurface(_camera);
+            _camera->setViewfinder(_cameraSurface);
+            _cameraOutput = allocVideoTexture();
+          }
+
+          assetIDtoTextureIndex[tr] = _cameraOutput;
+          tr.flip = false;
+          assetIDtoTextureIndex[tr] = _cameraOutput;
+
+          passOut.inputs[input.channel][0] = _cameraOutput;
+          passOut.inputs[input.channel][1] = _cameraOutput;
+        }
+
         // TODO: other input types.
       }
     }
@@ -1229,6 +1259,17 @@ namespace vh  {
     }
     _renderData.numRenderpasses = 0;
 
+    // Delete the camera
+    if (_camera != nullptr) {
+      _camera->stop();
+    }
+    delete _camera;
+    // _cameraSurface is parented to _camera, so gets deleted automatically.
+    _camera = nullptr;
+    _cameraSurface = nullptr;
+    _cameraOutput = -1;
+//    _cameraFlippedOutput = -1;
+
     // Delete all videos.
     for (int vidIdx = 0; vidIdx < _renderData.numVideos; vidIdx++) {
       Video& vid = _renderData.videos[vidIdx];
@@ -1317,51 +1358,31 @@ namespace vh  {
         float playbackTime = float(vid.player->position()) / 1000.0f;
 
         QOpenGLTexture* texObj = _renderData.textures[vid.texOutput].obj;
-
-        int texIndexes[2] = { vid.texOutput, vid.flippedTexOutput };
-        for (int ti = 0; ti < 2; ti++) {
-          int texIndex = texIndexes[ti];
-          if (texIndex < 0) {
-            continue;
-          }
-          QOpenGLTexture* texObj = _renderData.textures[texIndex].obj;
-          if (vid.surface->frameWidth() != texObj->width() || vid.surface->frameHeight() != texObj->height()) {
-            texObj->destroy();
-            texObj->setSize(vid.surface->frameWidth(), vid.surface->frameHeight());
-            texObj->setFormat(QOpenGLTexture::RGBA8_UNorm);
-            texObj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
-            texObj->setWrapMode(QOpenGLTexture::ClampToEdge);
-            texObj->setAutoMipMapGenerationEnabled(true);
-            texObj->setSwizzleMask(
-                  QOpenGLTexture::BlueValue,
-                  QOpenGLTexture::GreenValue,
-                  QOpenGLTexture::RedValue,
-                  QOpenGLTexture::AlphaValue
-            );
-            texObj->allocateStorage();
-          }
-        }
-
+        resizeTextureForVideo(vid.surface, texObj);
         vid.surface->copyToTexture(texObj);
         _renderData.textures[vid.texOutput].playbackTime = playbackTime;
 
-        if (vid.flippedTexOutput) {
+        if (vid.flippedTexOutput >= kNumSpecialTextures) {
           QOpenGLTexture* flippedTexObj = _renderData.textures[vid.flippedTexOutput].obj;
-
-          glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.flipFBO);
-          glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
-
-          glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderData.defaultFBO);
-          glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, flippedTexObj->textureId(), 0);
-
-          glBlitFramebuffer(0, 0,                          vid.surface->frameWidth(), vid.surface->frameHeight(),
-                            0, vid.surface->frameHeight(), vid.surface->frameWidth(), 0,
-                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
+          resizeTextureForVideo(vid.surface, flippedTexObj);
+          flipTexture(texObj, flippedTexObj);
           _renderData.textures[vid.flippedTexOutput].playbackTime = playbackTime;
           videoWasFlipped = true;
         }
       }
+
+      // Upload the current camera frame to its corresponding texture.
+      for (int i = 0; i < 1; i++) {
+        if (_cameraSurface == nullptr || !_cameraSurface->hasCurrentFrame() || _cameraOutput < kNumSpecialTextures) {
+          continue;
+        }
+
+        QOpenGLTexture* texObj = _renderData.textures[_cameraOutput].obj;
+        resizeTextureForVideo(_cameraSurface, texObj);
+        _cameraSurface->copyToTexture(texObj);
+        _renderData.textures[_cameraOutput].playbackTime = _renderData.iTime;
+      }
+
       if (videoWasFlipped) {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -1766,6 +1787,42 @@ namespace vh  {
     tex.playbackTime = 0.0f;
 
     return texIndex;
+  }
+
+
+  void RenderWidget::resizeTextureForVideo(TextureVideoSurface* surface, QOpenGLTexture* texObj)
+  {
+    if (surface->frameWidth() != texObj->width() || surface->frameHeight() != texObj->height()) {
+      texObj->destroy();
+      texObj->setSize(surface->frameWidth(), surface->frameHeight());
+      texObj->setFormat(QOpenGLTexture::RGBA8_UNorm);
+      texObj->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
+      texObj->setWrapMode(QOpenGLTexture::ClampToEdge);
+      texObj->setAutoMipMapGenerationEnabled(true);
+      texObj->setSwizzleMask(QOpenGLTexture::BlueValue,
+                             QOpenGLTexture::GreenValue,
+                             QOpenGLTexture::RedValue,
+                             QOpenGLTexture::AlphaValue);
+      texObj->allocateStorage();
+    }
+  }
+
+
+  void RenderWidget::flipTexture(QOpenGLTexture* texObj, QOpenGLTexture* flippedTexObj)
+  {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.flipFBO);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderData.defaultFBO);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, flippedTexObj->textureId(), 0);
+
+    int srcW = texObj->width();
+    int srcH = texObj->height();
+    int dstW = texObj->width();
+    int dstH = texObj->height();
+    glBlitFramebuffer(0, 0,    srcW, srcH,
+                      0, dstH, dstW, 0,
+                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
   }
 
 

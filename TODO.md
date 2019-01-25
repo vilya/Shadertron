@@ -7,15 +7,14 @@ Shader types:
 - VR
 Input sources:
 - 3D texture
-- Video stream/file
 - Audio stream/file
-- Webcam input
 - Microphone input
 - Soundcloud input
 Assets:
-- Ship with standard shadertoy assets, if their license will allow it
 - Option to download standard ShaderToy assets on first run
-  - Have a list of URLs, grab any that aren't already in the cache.
+- Have a list of URLs, grab any that aren't already in the cache.
+  ... if this is allowed by their license?
+
 
 See 
   https://shadertoyunofficial.wordpress.com/2016/07/20/special-shadertoy-features/ 
@@ -35,8 +34,6 @@ TODO: downloading from ShaderToy
   - Support built in sort types: name, love, popular, newest & hot
   - Support built in filter types: vr, soundoutput, soundinput, webcam, multipass, musicstream
   - Use paging to show results.
-- Cache downloaded shaders.
-- Download and cache all asssets referenced by shaders.
 - Download and cache thumbnails for shaders:
   - https://www.shadertoy.com/media/shaders/<shader-id>.jpg
 - Figure out how to tell when a cached file is out of date.
@@ -93,3 +90,9 @@ Blue sky ideas
 - Custom vertex shaders
 - Buffers as input (i.e. SSBOs and/or tex buffers)
 - Compute shaders generating an arbitrary output buffer.
+
+- For each render pass, specify whether its graphics, compute or raytracing
+- For graphics, allow user to specify the complete pipeline:
+  - input geometry (procedural or user-supplied meshes) 
+  - custom shaders for each stage (vertex, geometry, tesselation, fragment)
+- Similarly for raytracing

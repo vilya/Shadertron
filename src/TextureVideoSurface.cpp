@@ -231,6 +231,7 @@ namespace vh {
 
     QList<QVideoFrame::PixelFormat> formats;
     formats.push_back(QVideoFrame::Format_ARGB32);
+    formats.push_back(QVideoFrame::Format_RGB32);
     return formats;
   }
 
@@ -243,12 +244,14 @@ namespace vh {
 //      qDebug("start() retuned false, superclass start call failed");
       return false;
     }
-    if (format.pixelFormat() != QVideoFrame::Format_ARGB32) {
+    if (format.pixelFormat() != QVideoFrame::Format_ARGB32 &&
+        format.pixelFormat() != QVideoFrame::Format_RGB32) {
 //      qDebug("start() returned false, format is not ARGB32");
       return false;
     }
     _frameWidth = format.frameWidth();
     _frameHeight = format.frameHeight();
+    _pixelFormat = format.pixelFormat();
 //    qDebug("start() returned true");
     _paused = false;
     return true;
@@ -275,7 +278,7 @@ namespace vh {
 
     if (srcFrame.width()       != _frameWidth ||
         srcFrame.height()      != _frameHeight ||
-        srcFrame.pixelFormat() != QVideoFrame::Format_ARGB32) {
+        srcFrame.pixelFormat() != _pixelFormat) {
 //      qDebug("present returned false, image size or pixel format didn't match");
       setError(IncorrectFormatError);
       return false;

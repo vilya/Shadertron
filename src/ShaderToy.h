@@ -28,11 +28,12 @@ namespace vh {
   static const QString kRenderPassType_CubeMap = "cubemap";
   static const QString kRenderPassType_Sound   = "sound";
 
-  static const QString kInputType_Buffer  = "buffer";
-  static const QString kInputType_CubeMap = "cubemap";
-  static const QString kInputType_Texture = "texture";
-  static const QString kInputType_Video = "video";
-  static const QString kInputType_Keyboard = "keyboard";
+  static const QString kInputType_Buffer    = "buffer";
+  static const QString kInputType_CubeMap   = "cubemap";
+  static const QString kInputType_Keyboard  = "keyboard";
+  static const QString kInputType_Texture   = "texture";
+  static const QString kInputType_Video     = "video";
+  static const QString kInputType_Webcam    = "webcam";
 
   static const QString kSamplerFilterType_Nearest = "nearest";
   static const QString kSamplerFilterType_Linear  = "linear";

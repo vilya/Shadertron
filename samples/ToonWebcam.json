@@ -1,0 +1,81 @@
+{
+    "Shader": {
+        "info": {
+            "date": "1539641704",
+            "description": "Cartoon renderer for webcams",
+            "flags": 34,
+            "hasliked": 0,
+            "id": "MtcBDN",
+            "likes": 0,
+            "name": "Toon webcam",
+            "published": 3,
+            "tags": [
+                "webcam",
+                "cartoonrenderer"
+            ],
+            "username": "BenWheatley",
+            "viewed": 301
+        },
+        "renderpass": [
+            {
+                "code": "/*\n * \"Toon webcam\" by Ben Wheatley - 2018\n * License MIT License\n * Contact: github.com/BenWheatley\n */\n\n\nmat3 k1 = mat3( -1,  -1,  -1,\n                -1, 8,  -1,\n                -1,  -1,  -1);\n\nvec3 posterize(vec3 col, int rCount, int gCount, int bCount) {\n    float fColR = float(rCount);\n    float fColG = float(gCount);\n    float fColB = float(bCount);\n    int r = int(fColR*col.r);\n    int g = int(fColG*col.g);\n    int b = int(fColB*col.b);\n    return vec3( float(r)/fColR, float(g)/fColG, float(b)/fColB );\n}\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    float time = iTime;\n    vec2 uv = fragCoord.xy / iResolution.xy;\n    \n    vec2 pixelSize = vec2(1,1) / iResolution.xy;\n    \n    vec3 sum = vec3(0,0,0);\n    \n    mat3 kernel = k1;\n    \n    for (int dy = -1; dy<=1; dy++) {\n\t    for (int dx = -1; dx<=1; ++dx) {\n            vec2 pixelOff = pixelSize * vec2(dx, dy);\n            vec2 tex_uv = uv + pixelOff;\n            vec3 textureValue = texture(iChannel0, tex_uv).rgb;\n            sum += (kernel[dx+1][dy+1] * textureValue);\n        }\n    }\n    \n    vec3 edge = sum;\n    vec3 cam = posterize(texture(iChannel0, uv).rgb, 4, 4, 2);\n    \n    fragColor = vec4(cam + 5.0*edge,1.);\n}",
+                "description": "",
+                "filename": "ToonWebcam-Image.frag",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "buffer",
+                        "id": 257,
+                        "published": 1,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/media/previz/buffer00.png"
+                    }
+                ],
+                "name": "Image",
+                "outputs": [
+                    {
+                        "channel": 0,
+                        "id": 37
+                    }
+                ],
+                "type": "image"
+            },
+            {
+                "code": "/*\n * \"Toon webcam\" by Ben Wheatley - 2018\n * License MIT License\n * Contact: github.com/BenWheatley\n */\n\n\nmat3 k1 = mat3( 1, 2, 1,\n                2, 4, 2,\n                1, 2, 1)/16.0;\n\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n    float time = iTime;\n    vec2 uv = fragCoord.xy / iResolution.xy;\n    \n    vec2 pixelSize = vec2(1,1) / iResolution.xy;\n    \n    vec3 sum = vec3(0,0,0);\n    \n    mat3 kernel = k1;\n    \n    for (int dy = -1; dy<=1; dy++) {\n\t    for (int dx = -1; dx<=1; ++dx) {\n            vec2 pixelOff = pixelSize * vec2(dx, dy);\n            vec2 tex_uv = uv + pixelOff;\n            vec3 textureValue = texture(iChannel0, tex_uv).rgb;\n            sum += (kernel[dx+1][dy+1] * textureValue);\n        }\n    }\n    \n    fragColor = vec4(sum, 1.);\n}",
+                "description": "",
+                "filename": "ToonWebcam-BufA.frag",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "webcam",
+                        "id": 31,
+                        "published": 1,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/presets/webcam.png"
+                    }
+                ],
+                "name": "Buf A",
+                "outputs": [
+                    {
+                        "channel": 0,
+                        "id": 257
+                    }
+                ],
+                "type": "buffer"
+            }
+        ],
+        "ver": "0.1"
+    }
+}

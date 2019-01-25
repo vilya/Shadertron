@@ -24,6 +24,7 @@
 #include <QPen>
 #include <QString>
 
+#include <QCamera>
 #include <QMediaPlayer>
 
 namespace vh {
@@ -232,6 +233,8 @@ namespace vh {
     bool loadVideo(const QString& filename, bool flip, int vidIndex);
 
     int allocVideoTexture(); // Texture has no storage yet, because we don't know the width & height until after this is called.
+    void resizeTextureForVideo(TextureVideoSurface* surface, QOpenGLTexture* texObj);
+    void flipTexture(QOpenGLTexture* texObj, QOpenGLTexture* flippedTexObj);
 
     int renderWidth() const;
     int renderHeight() const;
@@ -300,6 +303,10 @@ namespace vh {
     float _initialPanY = 0.0f;
 
     uint _hudFlags = kHUD_All; // A bit field. See the kHUD_<foo> constants above for what each bit means.
+
+    QCamera* _camera = nullptr;
+    TextureVideoSurface* _cameraSurface = nullptr;
+    int _cameraOutput = -1; // Index of the texture that the camera will be streamed to.
   };
 
 } // namespace vh
