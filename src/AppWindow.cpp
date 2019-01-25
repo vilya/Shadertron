@@ -534,6 +534,8 @@ namespace vh {
     menu->addAction("200%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 2.0f); });
     menu->addAction("300%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 3.0f); });
     menu->addAction("400%", [renderWidget](){ renderWidget->setDisplayOptions(false, false, 4.0f); });
+    menu->addSeparator();
+    menu->addAction("Resi&ze window", this, &AppWindow::resizeToRenderWidgetDisplayRect);
   }
 
 
@@ -679,6 +681,14 @@ namespace vh {
       }
     }
     restoreState(settings.value(kDesktopWindowState).toByteArray());
+  }
+
+
+  void AppWindow::resizeToRenderWidgetDisplayRect()
+  {
+    int w = _renderWidget->displayWidth();
+    int h = _renderWidget->displayHeight() + menuBar()->height();
+    resize(w, h);
   }
 
 

@@ -167,6 +167,12 @@ namespace vh {
 
     uint hudFlags() const;
 
+    int renderWidth() const;
+    int renderHeight() const;
+    int displayWidth() const;
+    int displayHeight() const;
+    void displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const;
+
   signals:
     void closeRequested();
 
@@ -235,12 +241,6 @@ namespace vh {
     int allocVideoTexture(); // Texture has no storage yet, because we don't know the width & height until after this is called.
     void resizeTextureForVideo(TextureVideoSurface* surface, QOpenGLTexture* texObj);
     void flipTexture(QOpenGLTexture* texObj, QOpenGLTexture* flippedTexObj);
-
-    int renderWidth() const;
-    int renderHeight() const;
-    int displayWidth() const;
-    int displayHeight() const;
-    void displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const;
 
     void updateShaderMousePos(QPoint mousePosWithFlippedY, bool setDownPos);
 

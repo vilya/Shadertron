@@ -51,6 +51,7 @@ namespace vh {
     void deleteCache();
 
     void restoreWindowState();
+    void resizeToRenderWidgetDisplayRect();
 
   protected:
     virtual void closeEvent(QCloseEvent* event);

@@ -207,6 +207,39 @@ namespace vh  {
   }
 
 
+  int RenderWidget::renderWidth() const
+  {
+    return _useRelativeRenderSize ? int(width() * _renderScale) : _renderWidth;
+  }
+
+
+  int RenderWidget::renderHeight() const
+  {
+    return _useRelativeRenderSize ? int(height() * _renderScale) : _renderHeight;
+  }
+
+
+  int RenderWidget::displayWidth() const
+  {
+    return int(float(renderWidth()) * _displayScale);
+  }
+
+
+  int RenderWidget::displayHeight() const
+  {
+    return int(float(renderHeight()) * _displayScale);
+  }
+
+
+  void RenderWidget::displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const
+  {
+    dstX = _displayPanX;
+    dstY = _displayPanY;
+    dstW = displayWidth();
+    dstH = displayHeight();
+  }
+
+
   //
   // RenderWidget public slots
   //
@@ -1851,39 +1884,6 @@ namespace vh  {
     glBlitFramebuffer(0, 0,    srcW, srcH,
                       0, dstH, dstW, 0,
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
-  }
-
-
-  int RenderWidget::renderWidth() const
-  {
-    return _useRelativeRenderSize ? int(width() * _renderScale) : _renderWidth;
-  }
-
-
-  int RenderWidget::renderHeight() const
-  {
-    return _useRelativeRenderSize ? int(height() * _renderScale) : _renderHeight;
-  }
-
-
-  int RenderWidget::displayWidth() const
-  {
-    return int(float(renderWidth()) * _displayScale);
-  }
-
-
-  int RenderWidget::displayHeight() const
-  {
-    return int(float(renderHeight()) * _displayScale);
-  }
-
-
-  void RenderWidget::displayRect(int& dstX, int& dstY, int& dstW, int& dstH) const
-  {
-    dstX = _displayPanX;
-    dstY = _displayPanY;
-    dstW = displayWidth();
-    dstH = displayHeight();
   }
 
 
