@@ -28,13 +28,17 @@ int main(int argc, char *argv[])
 {
   QSurfaceFormat format;
   format.setMajorVersion(4);
+#ifdef SHADERTOOL_USE_GL41
+  format.setMinorVersion(1);
+#else
   format.setMinorVersion(5);
   format.setOption(QSurfaceFormat::DebugContext);
+#endif // SHADERTOOL_USE_GL41
   format.setProfile(QSurfaceFormat::CoreProfile);
   QSurfaceFormat::setDefaultFormat(format);
 
   QApplication app(argc, argv);
-  app.setApplicationName("ShaderToolQt");
+  app.setApplicationName("ShaderTool");
   app.setApplicationVersion("");
   app.setOrganizationName("The ShaderTool Developers");
   app.setOrganizationDomain("shader.tool");
