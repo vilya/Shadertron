@@ -405,11 +405,11 @@ namespace vh {
     QMenu* viewZoomMenu   = menu->addMenu("&Zoom");
     menu->addSeparator();
     QMenu* viewPassMenu   = menu->addMenu("&Pass");
-    QMenu* viewHUDContentsMenu = menu->addMenu("HUD &Contents");
-    menu->addSeparator();
-    QAction* toggleHUDAction     = menu->addAction("Show &HUD",     renderWidget, &RenderWidget::toggleHUD);
     QAction* toggleInputsAction  = menu->addAction("Show &Inputs",  renderWidget, &RenderWidget::toggleInputs);
     QAction* toggleOutputsAction = menu->addAction("Show &Outputs", renderWidget, &RenderWidget::toggleOutputs);
+    menu->addSeparator();
+    QMenu* viewHUDContentsMenu = menu->addMenu("HUD &Contents");
+    QAction* toggleHUDAction     = menu->addAction("Show &HUD",     renderWidget, &RenderWidget::toggleHUD);
     menu->addSeparator();
     menu->addAction("&Center", renderWidget, &RenderWidget::recenterImage);
 
@@ -434,7 +434,12 @@ namespace vh {
     FileCache* cache = _cache;
 
     menu->addAction("Download ShaderToy standard assets", cache, &FileCache::fetchShaderToyStandardAssets);
-    menu->addAction("Open cache directory...", [cache](){ QDesktopServices::openUrl(cache->cacheDir().absolutePath()); });
+    menu->addAction("Open cache directory...", [cache](){
+      QUrl url;
+      url.setScheme("file");
+      url.setPath(cache->cacheDir().absolutePath());
+      QDesktopServices::openUrl(url);
+    });
     menu->addSeparator();
     menu->addAction("Clear cache...", this, &AppWindow::deleteCache);
   }
