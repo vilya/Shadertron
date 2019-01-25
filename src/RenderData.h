@@ -2,6 +2,7 @@
 #ifndef VH_RENDERDATA_H
 #define VH_RENDERDATA_H
 
+#include <QCamera>
 #include <QMediaPlayer>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
@@ -23,6 +24,7 @@ namespace vh {
   static constexpr int kMaxInputs       = 4;
   static constexpr int kMaxRenderpasses = 5;
   static constexpr int kMaxVideos       = 4;
+  static constexpr int kMaxCameras      = 1;
   static constexpr int kMaxTextures     = kMaxRenderpasses * (2 + kMaxInputs) + (kMaxVideos * 2) + kNumSpecialTextures;
 
 
@@ -76,6 +78,14 @@ namespace vh {
   };
 
 
+  struct Camera {
+    QCamera* obj                 = nullptr;
+    TextureVideoSurface* surface = nullptr;
+    int texOutput                = -1;      // Index of the texture that the un-flipped video will be written into.
+    int flippedTexOutput         = -1;      // Index of the texture that the flipped video will be written into.
+  };
+
+
   struct RenderPass {
     PassType type;
     QString name;
@@ -123,6 +133,9 @@ namespace vh {
     int numVideos       = 0;
     int numTextures     = 0;
     int numRenderpasses = 0;
+
+    Camera camera   = {};
+    bool hasCamera  = false;
 
     GLuint defaultVAO   = 0;
     GLuint defaultFBO   = 0;

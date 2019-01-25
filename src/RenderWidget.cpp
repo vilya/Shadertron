@@ -222,8 +222,8 @@ namespace vh  {
       vid.player->play();
     }
 
-    if (_camera != nullptr) {
-      _camera->start();
+    if (_renderData.hasCamera) {
+      _renderData.camera.obj->start();
     }
 
     _renderData.iTime = 0.0f;
@@ -246,8 +246,8 @@ namespace vh  {
       vid.player->pause();
     }
 
-    if (_camera != nullptr) {
-      _camera->stop();
+    if (_renderData.hasCamera) {
+      _renderData.camera.obj->stop();
     }
 
     _playbackTimer.stop();
@@ -266,8 +266,8 @@ namespace vh  {
       vid.player->play();
     }
 
-    if (_camera != nullptr) {
-      _camera->start();
+    if (_renderData.hasCamera) {
+      _renderData.camera.obj->start();
     }
 
     float prevTimeDelta = _renderData.iTime - _prevTime;
@@ -1123,19 +1123,39 @@ namespace vh  {
 
         // If this is a webcam input...
         if (input.ctype == kInputType_Webcam) {
-          if (_camera == nullptr) {
-            _camera = new QCamera(this);
-            _cameraSurface = new TextureVideoSurface(_camera);
-            _camera->setViewfinder(_cameraSurface);
-            _cameraOutput = allocVideoTexture();
+          // ShaderToy seemingly provides unflipped video from the webcam,
+          // whereas Qt presents us with flipped video, so for us it's only
+          // when flip is *false* that we should flip the video.
+          tr.flip = !tr.flip;
+
+          Camera& cam = _renderData.camera;
+          int texIndex = kTexture_PlaceholderImage;
+          if (!_renderData.hasCamera) {
+            cam.obj = new QCamera(this);
+            cam.surface = new TextureVideoSurface(cam.obj);
+            cam.obj->setViewfinder(cam.surface);
+            cam.texOutput = allocVideoTexture();
+            _renderData.hasCamera = true;
+          }
+          if (tr.flip && _renderData.camera.flippedTexOutput < kNumSpecialTextures) {
+            cam.flippedTexOutput = allocVideoTexture();
           }
 
-          assetIDtoTextureIndex[tr] = _cameraOutput;
-          tr.flip = false;
-          assetIDtoTextureIndex[tr] = _cameraOutput;
+          if (tr.flip) {
+            texIndex = cam.flippedTexOutput;
+            assetIDtoTextureIndex[tr] = cam.flippedTexOutput;
 
-          passOut.inputs[input.channel][0] = _cameraOutput;
-          passOut.inputs[input.channel][1] = _cameraOutput;
+            // Add reference for the unflipped texture too, since we have to load that as well.
+            tr.flip = false;
+            assetIDtoTextureIndex[tr] = cam.texOutput;
+          }
+          else {
+            texIndex = cam.texOutput;
+            assetIDtoTextureIndex[tr] = cam.texOutput;
+          }
+          passOut.inputs[input.channel][0] = texIndex;
+          passOut.inputs[input.channel][1] = texIndex;
+          continue;
         }
 
         // TODO: other input types.
@@ -1260,15 +1280,16 @@ namespace vh  {
     _renderData.numRenderpasses = 0;
 
     // Delete the camera
-    if (_camera != nullptr) {
-      _camera->stop();
+    if (_renderData.camera.obj != nullptr) {
+      _renderData.camera.obj->stop();
     }
-    delete _camera;
-    // _cameraSurface is parented to _camera, so gets deleted automatically.
-    _camera = nullptr;
-    _cameraSurface = nullptr;
-    _cameraOutput = -1;
-//    _cameraFlippedOutput = -1;
+    delete _renderData.camera.obj;
+    // camera.surface is parented to camera.obj, so gets deleted automatically.
+    _renderData.camera.obj = nullptr;
+    _renderData.camera.surface = nullptr;
+    _renderData.camera.texOutput = -1;
+    _renderData.camera.flippedTexOutput = -1;
+    _renderData.hasCamera = false;
 
     // Delete all videos.
     for (int vidIdx = 0; vidIdx < _renderData.numVideos; vidIdx++) {
@@ -1372,15 +1393,22 @@ namespace vh  {
       }
 
       // Upload the current camera frame to its corresponding texture.
-      for (int i = 0; i < 1; i++) {
-        if (_cameraSurface == nullptr || !_cameraSurface->hasCurrentFrame() || _cameraOutput < kNumSpecialTextures) {
-          continue;
-        }
+      if (_renderData.hasCamera) {
+        Camera& cam = _renderData.camera;
+        if (cam.surface != nullptr && cam.surface->hasCurrentFrame() && cam.texOutput >= kNumSpecialTextures) {
+          QOpenGLTexture* texObj = _renderData.textures[cam.texOutput].obj;
+          resizeTextureForVideo(cam.surface, texObj);
+          cam.surface->copyToTexture(texObj);
+          _renderData.textures[cam.texOutput].playbackTime = _renderData.iTime;
 
-        QOpenGLTexture* texObj = _renderData.textures[_cameraOutput].obj;
-        resizeTextureForVideo(_cameraSurface, texObj);
-        _cameraSurface->copyToTexture(texObj);
-        _renderData.textures[_cameraOutput].playbackTime = _renderData.iTime;
+          if (cam.flippedTexOutput >= kNumSpecialTextures) {
+            QOpenGLTexture* flippedTexObj = _renderData.textures[cam.flippedTexOutput].obj;
+            resizeTextureForVideo(cam.surface, flippedTexObj);
+            flipTexture(texObj, flippedTexObj);
+            _renderData.textures[cam.flippedTexOutput].playbackTime = _renderData.iTime;
+            videoWasFlipped = true;
+          }
+        }
       }
 
       if (videoWasFlipped) {

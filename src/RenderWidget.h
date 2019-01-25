@@ -303,10 +303,6 @@ namespace vh {
     float _initialPanY = 0.0f;
 
     uint _hudFlags = kHUD_All; // A bit field. See the kHUD_<foo> constants above for what each bit means.
-
-    QCamera* _camera = nullptr;
-    TextureVideoSurface* _cameraSurface = nullptr;
-    int _cameraOutput = -1; // Index of the texture that the camera will be streamed to.
   };
 
 } // namespace vh
