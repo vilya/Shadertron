@@ -27,87 +27,72 @@ along the right of the window and the HUD is showing on the left (both can be
 turned off, of course).
 
 
+Features
+--------
+
+- Supports a large subset of ShaderToy's feature set.
+  - Can already run the majority of shaders verbatim.
+  - Working towards 100% support, see below for details.
+- Download shaders and assets directly from ShaderToy.
+- Live editing of shaders
+  - Shaders reload automatically when changed on disk.
+- View the results of intermediate renderpasses too
+  - Display the output of any image renderpass
+  - View the outputs of all renderpasses simultaneously as thumbnails
+- Playback controls, including fast forward and rewind
+- Pan and zoom the shader output
+- Choice of rendering resolutions, doesn't have to match the window size (very useful for slow shaders!)
+
+
 ShaderToy Compatibility
 -----------------------
 
-*Working*
-
-- Shaders
-  - Buf A through Buf D
-  - Common
-  - Image
-- Input sources
-  - 2D texture
-  - cube map
-  - render pass
-  - keyboard
-  - video
-  - webcam
-- All standard uniforms
-- All input sampler properties (filter mode, wrap mode, srgb/linear and vflip)
-- All ShaderToy assets (provided they've been downloaded and placed in the cache - see below)
-
-*Not yet working*
-
-- Shaders
-  - Cube A
-  - Sound
-- Input Sources
-  - Audio
-  - Microphone
-  - SoundCloud
-  - Volume texture
-- The VR shader entry point.
+- [ ] Shaders
+  - [x] Buf A through Buf D
+  - [x] Common
+  - [x] Image
+  - [ ] Cube A
+  - [ ] Sound
+- [x] Input sources
+  - [x] 2D texture
+  - [x] Cube map
+  - [x] Render pass
+  - [x] Keyboard
+  - [x] Video
+  - [x] Webcam
+  - [ ] Audio
+  - [ ] Microphone
+  - [ ] SoundCloud
+  - [ ] Volume texture
+- [x] All standard uniforms
+- [x] All input sampler properties (filter mode, wrap mode, srgb/linear and vflip)
+- [x] All ShaderToy assets (provided they've been downloaded and placed in the cache - see below)
+- [ ] The VR shader entry point
 
 
 ShaderToy Integration
 ---------------------
 
-*Done*
-
-- Download and run shaders directly from ShaderToy, given their ID.
-- Assets referenced by downloaded shaders are saved to a local cache.
-- There is a an option to download and cache all the standard assets in one
-  go (useful if you want to create shaders while offline).
-
-*Still to do*
-
-- Search for shaders on ShaderToy:
-  - Support built in sort types: name, love, popular, newest & hot
-  - Support built in filter types: vr, soundoutput, soundinput, webcam, multipass, musicstream
-- Download and cache thumbnails for shaders.
-- Show download progress.
-
-
-Additional Features
--------------------
-
-- Can toggle keyboard input to shaders on or off (off is useful when you want
-  to use keyboard shortcuts, for example).
-- Uses ShaderToy's JSON format (as returned by their API) as the native file format, with some minor extensions.
-  - Supports external file references
-  - Can automatically extract GLSL into external files
-  - Can automatically inline GLSL from external files back into the JSON.
-- Playback controls:
-  - Play, pause, restart
-  - Fast forward/rewind in small, medium or large increments
-- Overlays showing additional info:
-  - HUD showing a customisable set of playback and performance stats
-  - Outputs from all intermediate render passes
-  - Inputs to the render pass currently being displayed.
-- User-specified rendering resolution
-- Pan and Zoom the output
+- [x] Download and run shaders directly from ShaderToy given their ID.
+- [x] Assets referenced by downloaded shaders are saved to a local cache.
+- [x] There is a an option to download and cache all the standard assets in one go (useful if you want to create shaders while offline).
+- [ ] Search for shaders on ShaderToy:
+  - [ ] Support built in sort types: name, love, popular, newest & hot
+  - [ ] Support built in filter types: vr, soundoutput, soundinput, webcam, multipass, musicstream
+- [ ] Download and cache thumbnails for shaders.
+- [ ] Display thumbnails for shaders in the search results.
+- [ ] Show download progress.
 
 
 Video support
 -------------
 
-Some of ShaderToy's videos are in .ogv format & others are in .webm. On
-Windows you may need to install additional codecs to be able to play back
-these formats.
+Some of ShaderToy's videos are in .ogv format & others are in .webm.
+ShaderTool uses whatever video codecs are installed on your system; you may
+need to install additional codecs to be able to play back these formats.
 
-For more information about codecs, including how to find out which ones are
-available on your system, see:
+On Windows, for more information about codecs, including how to find out which
+ones are available on your system, see:
 
 https://support.microsoft.com/en-gb/help/15070/windows-media-player-codecs-frequently-asked-questions
 
@@ -116,6 +101,8 @@ of other video formats. It's regularly updated and seems trustworthy. It's
 available from here:
 
 http://www.codecguide.com/about_kl.htm
+
+I don't know what the equivalent is for macOS or Linux yet.
 
 
 GLSL vs. ESSL incompatibilities
