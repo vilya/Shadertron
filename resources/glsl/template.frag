@@ -1,4 +1,4 @@
-#version 450 core
+#macro GLSL_VERSION
 
 #macro SAMPLER_0_TYPE
 #macro SAMPLER_1_TYPE

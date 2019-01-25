@@ -289,7 +289,7 @@ namespace vh {
     QByteArray data = reply->readAll();
     reply->deleteLater();
 
-    saveFileToCache(path, data, false);
+    saveFileToCache(path, data, nullptr);
 
     if (ready) {
       if (_downloadedShaderFile.isEmpty()) {

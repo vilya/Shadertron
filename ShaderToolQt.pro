@@ -24,6 +24,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 CONFIG += c++14
 
+macx {
+  CONFIG += gl41
+}
+
+gl41 {
+  DEFINES += SHADERTOOL_USE_GL41
+}
+
+
 SOURCES += \
     src/main.cpp \
     src/RenderWidget.cpp \

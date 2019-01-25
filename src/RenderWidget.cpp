@@ -32,6 +32,7 @@ namespace vh  {
   // Private helper functions
   //
 
+#ifndef SHADERTOOL_USE_GL41
   static void handleGLError(GLenum source,
                             GLenum type,
                             GLuint /*id*/,
@@ -84,6 +85,7 @@ namespace vh  {
       qWarning("OpenGL message [source=%s, type=%s, severity=%s]: %s", sourceStr, typeStr, severityStr, message);
     }
   }
+#endif
 
 
   static QString preprocessShaderSource(const QString& filename, const QMap<QString, QString>& macros)
@@ -603,6 +605,7 @@ namespace vh  {
   {
     initializeOpenGLFunctions();
 
+  #ifndef SHADERTOOL_USE_GL41
     // Set up OpenGL debugging
     glDebugMessageCallback(handleGLError, nullptr);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);                      // Enable all messages
@@ -611,6 +614,7 @@ namespace vh  {
     glDebugMessageControl(GL_DONT_CARE, GL_DEBUG_TYPE_PERFORMANCE, GL_DEBUG_SEVERITY_LOW, 0, NULL, GL_FALSE);     // Disable messages with type='performance' and severity='low'
     glDebugMessageControl(GL_DEBUG_SOURCE_APPLICATION, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);       // Enable all messages with source='application'
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+  #endif // SHADERTOOL_USE_GL41
   }
 
 
@@ -1200,6 +1204,11 @@ namespace vh  {
       RenderPass& passOut = _renderData.renderpasses[i];
 
       QMap<QString, QString> macros;
+#ifdef SHADERTOOL_USE_GL41
+      macros["GLSL_VERSION"]   =  "#version 410 core";
+#else
+      macros["GLSL_VERSION"]   =  "#version 450 core";
+#endif // SHADERTOOL_USE_GL41
       macros["SAMPLER_0_TYPE"] =  _renderData.textures[passOut.inputs[0][0]].samplerType(0);
       macros["SAMPLER_1_TYPE"] =  _renderData.textures[passOut.inputs[1][0]].samplerType(1);
       macros["SAMPLER_2_TYPE"] =  _renderData.textures[passOut.inputs[2][0]].samplerType(2);
@@ -1208,11 +1217,12 @@ namespace vh  {
       macros["USER_CODE"] = passOut.sourceCode;
       macros["MAIN"] = kMainFunc_Image;
 
-      QString fullSource = preprocessShaderSource(":/glsl/template.frag", macros);
+      QString vertShaderSource = preprocessShaderSource(":/glsl/fullscreen.vert", macros);
+      QString fragShaderSource = preprocessShaderSource(":/glsl/template.frag",   macros);
 
       passOut.program = new QOpenGLShaderProgram(this);
-      passOut.program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/glsl/fullscreen.vert");
-      passOut.program->addShaderFromSourceCode(QOpenGLShader::Fragment, fullSource);
+      passOut.program->addShaderFromSourceCode(QOpenGLShader::Vertex,   vertShaderSource);
+      passOut.program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragShaderSource);
       passOut.program->link();
 
       passOut.iResolutionLoc        = passOut.program->uniformLocation("iResolution");
@@ -1239,10 +1249,20 @@ namespace vh  {
 
     // Compile the shader for drawing textured quads in the viewport.
     {
+      QMap<QString, QString> macros;
+#ifdef SHADERTOOL_USE_GL41
+      macros["GLSL_VERSION"]   =  "#version 410 core";
+#else
+      macros["GLSL_VERSION"]   =  "#version 450 core";
+#endif // SHADERTOOL_USE_GL41
+
+      QString vertShaderSource = preprocessShaderSource(":/glsl/textured-quad.vert", macros);
+      QString fragShaderSource = preprocessShaderSource(":/glsl/textured-quad.frag", macros);
+
       TexturedQuadShader& quadShader = _renderData.texturedQuadShader;
       quadShader.program = new QOpenGLShaderProgram(this);
-      quadShader.program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/glsl/textured-quad.vert");
-      quadShader.program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/glsl/textured-quad.frag");
+      quadShader.program->addShaderFromSourceCode(QOpenGLShader::Vertex,   vertShaderSource);
+      quadShader.program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragShaderSource);
       quadShader.program->link();
 
       quadShader.iResolutionLoc = quadShader.program->uniformLocation("iResolution");
@@ -1495,7 +1515,9 @@ namespace vh  {
       pass.program->setUniformValue(pass.iFrameLoc, _renderData.iFrame);
       pass.program->setUniformValueArray(pass.iMouseLoc, _renderData.iMouse, 1, 4);
 
-      glBindSamplers(0, GLuint(kMaxInputs), pass.samplers);
+      for (int inputIdx = 0; inputIdx < kMaxInputs; inputIdx++) {
+        glBindSampler(GLuint(inputIdx), pass.samplers[inputIdx]);
+      }
 
       float iChannelResolution[4][3];
       float iChannelTime[4];
@@ -1526,7 +1548,9 @@ namespace vh  {
       _renderData.textures[pass.outputs[_renderData.backBuffer]].obj->generateMipMaps();
     }
 
-    glBindSamplers(0, GLuint(kMaxInputs), nullptr);
+    for (int inputIdx = 0; inputIdx < kMaxInputs; inputIdx++) {
+      glBindSampler(GLuint(inputIdx), 0);
+    }
 
     int displayTexIdx = _renderData.renderpasses[_displayPass].outputs[_renderData.backBuffer];
     QOpenGLTexture* texObj = _renderData.textures[displayTexIdx].obj;

@@ -1,4 +1,4 @@
-#version 450 core
+#macro GLSL_VERSION
 
 // Vertex shader that generates a textured quad with pixel coordinates
 // specified by the `iShape` uniform. Call 

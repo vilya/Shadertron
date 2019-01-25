@@ -1,4 +1,4 @@
-#version 450 core
+#macro GLSL_VERSION
 
 // Fragment shader that renders a textured quad.
 

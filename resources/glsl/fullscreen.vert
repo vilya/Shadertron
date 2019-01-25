@@ -1,4 +1,4 @@
-#version 450 core
+#macro GLSL_VERSION
 
 // Vertex shader that generates a full-screen triangle.
 uniform vec3 iResolution;

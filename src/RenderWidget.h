@@ -16,7 +16,6 @@
 #include <QMap>
 #include <QMouseEvent>
 #include <QOpenGLFramebufferObject>
-#include <QOpenGLFunctions_4_5_Core>
 #include <QOpenGLWidget>
 #include <QOpenGLShader>
 #include <QOpenGLShaderProgram>
@@ -26,6 +25,12 @@
 
 #include <QCamera>
 #include <QMediaPlayer>
+
+#ifdef SHADERTOOL_USE_GL41
+#include <QOpenGLFunctions_4_1_Core>
+#else
+#include <QOpenGLFunctions_4_5_Core>
+#endif
 
 namespace vh {
 
@@ -100,11 +105,11 @@ namespace vh {
 
   struct MouseBinding {
     MouseAction activeAction; // The action that this binding applies for.
-    int button;               // The button that triggers the actionn, i.e. Qt::LeftButton.
+    Qt::MouseButton button;               // The button that triggers the actionn, i.e. Qt::LeftButton.
     Qt::KeyboardModifiers modifiers;  // The modifier keys that must be active when the button is pressed for the action to trigger.
 
     inline bool operator == (const MouseBinding& other) const { return activeAction == other.activeAction && button == other.button && modifiers == other.modifiers; }
-    inline bool operator != (const MouseBinding& other) const { return activeAction == other.activeAction && button != other.button || modifiers != other.modifiers; }
+    inline bool operator != (const MouseBinding& other) const { return activeAction != other.activeAction || button != other.button || modifiers != other.modifiers; }
 
     static MouseBinding fromEvent(MouseAction activeAction, const QMouseEvent* event) {
       return MouseBinding{ activeAction, event->button(), event->modifiers() };
@@ -150,7 +155,11 @@ namespace vh {
 
   class RenderWidget :
       public QOpenGLWidget,
+    #ifdef SHADERTOOL_USE_GL41
+      protected QOpenGLFunctions_4_1_Core
+    #else
       protected QOpenGLFunctions_4_5_Core
+    #endif // SHADERTOOL_USE_GL41
   {
     Q_OBJECT
 
