@@ -397,6 +397,20 @@ namespace vh {
   }
 
 
+  int ShaderToyDocument::findRenderPassByOutputID(int outputID) const
+  {
+    for (int passIdx = 0; passIdx < renderpasses.size(); passIdx++) {
+      const ShaderToyRenderPass& pass = renderpasses[passIdx];
+      for (int i = 0; i < pass.outputs.size(); i++) {
+        if (pass.outputs[i].id == outputID) {
+          return passIdx;
+        }
+      }
+    }
+    return -1;
+  }
+
+
   int ShaderToyDocument::findRenderPassByName(const QString& name, int startIndex) const
   {
     for (int i = startIndex; i < renderpasses.size(); i++) {

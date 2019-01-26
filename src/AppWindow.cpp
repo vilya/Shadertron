@@ -586,14 +586,14 @@ namespace vh {
     RenderWidget* renderWidget = _renderWidget;
 
     QList<QAction*> actions;
-    actions.push_back(menu->addAction("&Image", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eImage); }));
+    actions.push_back(menu->addAction("&Image", [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_Image); }));
     menu->addSeparator();
-    actions.push_back(menu->addAction("Buf &A", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 0); }));
-    actions.push_back(menu->addAction("Buf &B", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 1); }));
-    actions.push_back(menu->addAction("Buf &C", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 2); }));
-    actions.push_back(menu->addAction("Buf &D", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eBuffer, 3); }));
+    actions.push_back(menu->addAction("Buf &A", [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_BufA); }));
+    actions.push_back(menu->addAction("Buf &B", [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_BufB); }));
+    actions.push_back(menu->addAction("Buf &C", [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_BufC); }));
+    actions.push_back(menu->addAction("Buf &D", [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_BufD); }));
     menu->addSeparator();
-    actions.push_back(menu->addAction("C&ube A", [renderWidget](){ renderWidget->setDisplayPassByType(PassType::eCubemap); }));
+    actions.push_back(menu->addAction("C&ube A", [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_CubeA); }));
 
     for (QAction* action : actions) {
       group->addAction(action);

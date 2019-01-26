@@ -417,22 +417,13 @@ namespace vh  {
   }
 
 
-  void RenderWidget::setDisplayPassByType(PassType passType, int index)
+  void RenderWidget::setDisplayPassByOutputID(int outputID)
   {
-    if (passType == PassType::eSound || passType == PassType::eCubemap) {
-      return;
-    }
-
     int newPassIndex = _displayPass;
     for (int i = 0; i < _renderData.numRenderpasses; i++) {
-      if (_renderData.renderpasses[i].type == passType) {
-        if (index == 0) {
-          newPassIndex = i;
-          break;
-        }
-        else {
-          --index;
-        }
+      if (_renderData.renderpasses[i].outputID == outputID) {
+        newPassIndex = i;
+        break;
       }
     }
 
@@ -935,7 +926,7 @@ namespace vh  {
         }
       }
 
-      tex.obj->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, _renderData.keyboardTexData);
+      tex.obj->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, reinterpret_cast<const void*>(_renderData.keyboardTexData));
       tex.isBuffer = false;
       tex.playbackTime = 0.0f;
     }
@@ -952,19 +943,27 @@ namespace vh  {
     // which aren't present, this should be: Buf A -> Buf B -> Buf C -> Buf D -> Cube A -> Image
     int renderPassOrder[kMaxRenderpasses];
     int numRenderPasses = 0;
-    for (int i = 0; i < _currentDoc->renderpasses.size(); i++) {
-      if (_currentDoc->renderpasses[i].type == kRenderPassType_Buffer) {
-        renderPassOrder[numRenderPasses++] = i;
-        if (numRenderPasses == 4) {
-          break;
-        }
-      }
-    }
-    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByType(kRenderPassType_CubeMap);
+    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByOutputID(kOutputID_BufA);
     if (renderPassOrder[numRenderPasses] != -1) {
       ++numRenderPasses;
     }
-    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByType(kRenderPassType_Image);
+    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByOutputID(kOutputID_BufB);
+    if (renderPassOrder[numRenderPasses] != -1) {
+      ++numRenderPasses;
+    }
+    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByOutputID(kOutputID_BufC);
+    if (renderPassOrder[numRenderPasses] != -1) {
+      ++numRenderPasses;
+    }
+    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByOutputID(kOutputID_BufD);
+    if (renderPassOrder[numRenderPasses] != -1) {
+      ++numRenderPasses;
+    }
+    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByOutputID(kOutputID_CubeA);
+    if (renderPassOrder[numRenderPasses] != -1) {
+      ++numRenderPasses;
+    }
+    renderPassOrder[numRenderPasses] = _currentDoc->findRenderPassByOutputID(kOutputID_Image);
     if (renderPassOrder[numRenderPasses] != -1) {
       ++numRenderPasses;
     }
@@ -975,12 +974,13 @@ namespace vh  {
       ShaderToyRenderPass& passIn = _currentDoc->renderpasses[passIdx];
 
       RenderPass& passOut = _renderData.renderpasses[_renderData.numRenderpasses];
-      if (passIn.outputs.length() > 0) {
+      if (!passIn.outputs.isEmpty()) {
         assetIDtoRenderpassIndex[passIn.outputs[0].id] = _renderData.numRenderpasses;
       }
       _renderData.numRenderpasses++;
 
       passOut.name = passIn.name;
+      passOut.outputID = passIn.outputs[0].id;
       if (passIn.type == kRenderPassType_Buffer) {
         passOut.type = PassType::eBuffer;
       }
@@ -1416,7 +1416,7 @@ namespace vh  {
       _renderData.iTime = static_cast<float>(_playbackTimer.elapsedSecs());
       _renderData.iTimeDelta = _renderData.iTime - _prevTime;
 
-      _renderData.textures[kTexture_Keyboard].obj->setData(QOpenGLTexture::Red,  QOpenGLTexture::UInt8, _renderData.keyboardTexData);
+      _renderData.textures[kTexture_Keyboard].obj->setData(QOpenGLTexture::Red,  QOpenGLTexture::UInt8, reinterpret_cast<const void*>(_renderData.keyboardTexData));
 
       if (_renderData.iFrame == 0) {
         _clearTextures = true;

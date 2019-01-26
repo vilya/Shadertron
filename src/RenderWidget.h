@@ -200,7 +200,7 @@ namespace vh {
     void setFixedRenderResolution(int w, int h);
     void setRelativeRenderResolution(float windowScale);
     void setDisplayOptions(bool fitWidth, bool fitHeight, float scale);
-    void setDisplayPassByType(PassType passType, int index=0);
+    void setDisplayPassByOutputID(int outputID);
     void toggleHUDFlag(uint flag);
     void toggleHUD();
     void toggleInputs();

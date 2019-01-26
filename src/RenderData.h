@@ -89,6 +89,7 @@ namespace vh {
   struct RenderPass {
     PassType type;
     QString name;
+    int outputID; // The ID for the output of this render pass, taken from the ShaderToy file.
 
     QOpenGLShaderProgram* program = nullptr;
 

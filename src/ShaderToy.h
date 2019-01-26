@@ -43,6 +43,17 @@ namespace vh {
   static const QString kSamplerWrapType_Repeat = "repeat";
 
 
+  // IDs of the output associated with each of the standard passes. The common
+  // pass doesn't have any outputs, so has no output ID.
+  static const int kOutputID_Image = 37;
+  static const int kOutputID_Sound = 38;
+  static const int kOutputID_CubeA = 41;
+  static const int kOutputID_BufA = 257;
+  static const int kOutputID_BufB = 258;
+  static const int kOutputID_BufC = 259;
+  static const int kOutputID_BufD = 260;
+
+
   //
   // Structs
   //
@@ -144,6 +155,7 @@ namespace vh {
 
     bool isValid() const;
 
+    int findRenderPassByOutputID(int outputID) const;
     int findRenderPassByName(const QString& name, int startIndex=0) const;
     int findRenderPassByType(const QString& type, int startIndex=0) const;
 
