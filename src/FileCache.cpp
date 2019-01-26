@@ -20,37 +20,46 @@ namespace vh {
 
 
   static const QString kStandardShaderToyAssets[] = {
+    // Images
+    QString::fromUtf8("/media/a/08b42b43ae9d3c0605da11d0eac86618ea888e62cdd9518ee8b9097488b31560.png"),
+    QString::fromUtf8("/media/a/0a40562379b63dfb89227e6d172f39fdce9022cba76623f1054a2c83d6c0ba5d.png"),
+    QString::fromUtf8("/media/a/0c7bf5fe9462d5bffbd11126e82908e39be3ce56220d900f633d58fb432e56f5.png"),
+    QString::fromUtf8("/media/a/92d7758c402f0927011ca8d0a7e40251439fba3a1dac26f5b8b62026323501aa.jpg"),
+    QString::fromUtf8("/media/a/ad56fba948dfba9ae698198c109e71f118a54d209c0ea50d77ea546abad89c57.png"),
+    QString::fromUtf8("/media/a/cd4c518bc6ef165c39d4405b347b51ba40f8d7a065ab0e8d2e4f422cbc1e8a43.jpg"),
+    QString::fromUtf8("/media/a/e6e5631ce1237ae4c05b3563eda686400a401df4548d0f9fad40ecac1659c46c.jpg"),
+    QString::fromUtf8("/media/a/f735bee5b64ef98879dc618b016ecf7939a5756040c2cde21ccb15e69a6e1cfb.png"),
+
+    // Cubemaps
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785.png"),
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_1.png"),
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_2.png"),
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_3.png"),
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_4.png"),
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_5.png"),
-    QString::fromUtf8("/media/a/0a40562379b63dfb89227e6d172f39fdce9022cba76623f1054a2c83d6c0ba5d.png"),
-    QString::fromUtf8("/media/a/0c7bf5fe9462d5bffbd11126e82908e39be3ce56220d900f633d58fb432e56f5.png"),
+
     QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58.jpg"),
     QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_1.jpg"),
     QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_2.jpg"),
     QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_3.jpg"),
     QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_4.jpg"),
     QString::fromUtf8("/media/a/585f9546c092f53ded45332b343144396c0b2d70d9965f585ebc172080d8aa58_5.jpg"),
+
     QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232.png"),
     QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_1.png"),
     QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_2.png"),
     QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_3.png"),
     QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_4.png"),
     QString::fromUtf8("/media/a/793a105653fbdadabdc1325ca08675e1ce48ae5f12e37973829c87bea4be3232_5.png"),
-    QString::fromUtf8("/media/a/92d7758c402f0927011ca8d0a7e40251439fba3a1dac26f5b8b62026323501aa.jpg"),
+
     QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0.png"),
     QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_1.png"),
     QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_2.png"),
     QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_3.png"),
     QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_4.png"),
     QString::fromUtf8("/media/a/94284d43be78f00eb6b298e6d78656a1b34e2b91b34940d02f1ca8b22310e8a0_5.png"),
-    QString::fromUtf8("/media/a/ad56fba948dfba9ae698198c109e71f118a54d209c0ea50d77ea546abad89c57.png"),
-    QString::fromUtf8("/media/a/cd4c518bc6ef165c39d4405b347b51ba40f8d7a065ab0e8d2e4f422cbc1e8a43.jpg"),
-    QString::fromUtf8("/media/a/f735bee5b64ef98879dc618b016ecf7939a5756040c2cde21ccb15e69a6e1cfb.png"),
 
+    // Videos
     QString::fromUtf8("/media/a/3405e48f74815c7baa49133bdc835142948381fbe003ad2f12f5087715731153.ogv"),   // "Lustre-Cream" ad
     QString::fromUtf8("/media/a/e81e818ac76a8983d746784b423178ee9f6cdcdf7f8e8d719341a6fe2d2ab303.webm"),  // Britney Spears green-screen clip
   };
