@@ -56,6 +56,8 @@ namespace vh {
     void restoreWindowState();
     void resizeToRenderWidgetDisplayRect();
 
+    void showAboutDialog();
+
   protected:
     virtual void closeEvent(QCloseEvent* event);
 
@@ -70,6 +72,7 @@ namespace vh {
     void setupViewMenu(QMenu* menu);
     void setupCacheMenu(QMenu* menu);
     void setupWindowMenu(QMenu* menu);
+    void setupHelpMenu(QMenu* menu);
 
     void setupRecentFilesMenu(QMenu* menu);
     void setupRecentDownloadsMenu(QMenu* menu);

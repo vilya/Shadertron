@@ -1,6 +1,7 @@
 // Copyright 2019 Vilya Harvey
 #include "AppWindow.h"
 
+#include "AboutDialog.h"
 #include "FileCache.h"
 #include "RenderWidget.h"
 #include "ShaderToy.h"
@@ -320,6 +321,61 @@ namespace vh {
   }
 
 
+  void AppWindow::restoreWindowState()
+  {
+    qDebug("Restoring window state");
+
+    QSettings settings;
+    int savedWindowStateVersion = settings.value(kDesktopWindowVersion, -1).toInt();
+    bool shouldRestore = (savedWindowStateVersion == kDesktopUIVersion);
+    bool restored = false;
+    if (!shouldRestore) {
+      settings.remove(kDesktopWindowGeometry);
+      settings.remove(kDesktopWindowState);
+      settings.remove(kDesktopWindowVersion);
+    }
+    else {
+      restored = restoreGeometry(settings.value(kDesktopWindowGeometry).toByteArray());
+    }
+
+    if (!restored) {
+      qDebug("Window state was not restored, calculating default window rectangle");
+
+      // If this is the first run, or the user has deleted their settings,
+      // there may not be any geometry to restore. In this case, fall back
+      // to making the window an exact multiple of 640x360 (the default render
+      // resolution) and centering it on the screen.
+      QScreen* screen = QApplication::primaryScreen();
+      if (screen != nullptr) {
+        QRect rect = screen->availableGeometry();
+        int menuBarHeight = menuBar()->height();
+        int scale = qMin(rect.width() / 640, (rect.height() - menuBarHeight) / 360);
+        int w = 640 * scale;
+        int h = 360 * scale + menuBarHeight;
+        int x = rect.x() + (rect.width() - w) / 2;
+        int y = rect.y() + (rect.height() - h) / 2;
+        setGeometry(x, y, w, h);
+      }
+    }
+    restoreState(settings.value(kDesktopWindowState).toByteArray());
+  }
+
+
+  void AppWindow::resizeToRenderWidgetDisplayRect()
+  {
+    int w = int(_renderWidget->displayWidth() / _renderWidget->devicePixelRatioF());
+    int h = int(_renderWidget->displayHeight() / _renderWidget->devicePixelRatioF()) + menuBar()->height();
+    resize(w, h);
+  }
+
+
+  void AppWindow::showAboutDialog()
+  {
+    AboutDialog* aboutDialog = new AboutDialog();
+    aboutDialog->exec();
+  }
+
+
   //
   // AppWindow protected methods
   //
@@ -367,6 +423,7 @@ namespace vh {
     QMenu* viewMenu     = menubar->addMenu("&View");
     QMenu* cacheMenu    = menubar->addMenu("&Cache");
     QMenu* windowMenu   = menubar->addMenu("&Window");
+    QMenu* helpMenu     = menubar->addMenu("&Help");
 
     setupFileMenu(fileMenu);
     setupEditMenu(editMenu);
@@ -375,6 +432,7 @@ namespace vh {
     setupViewMenu(viewMenu);
     setupCacheMenu(cacheMenu);
     setupWindowMenu(windowMenu);
+    setupHelpMenu(helpMenu);
   }
 
 
@@ -496,6 +554,13 @@ namespace vh {
     bool* state = &_saveWindowState;
     connect(saveWindowStateAction, &QAction::toggled, [state](bool value) { *state = value; });
     connect(removeWindowStateAction, &QAction::triggered, [saveWindowStateAction](){ saveWindowStateAction->setChecked(false); });
+  }
+
+
+  void AppWindow::setupHelpMenu(QMenu* menu)
+  {
+    menu->addAction("About &Qt...", QApplication::instance(), &QApplication::aboutQt);
+    menu->addAction(QString("About %1...").arg(QApplication::instance()->applicationName()), this, &AppWindow::showAboutDialog);
   }
 
 
@@ -757,54 +822,6 @@ namespace vh {
     settings.setValue(kDesktopWindowGeometry, saveGeometry());
     settings.setValue(kDesktopWindowState, saveState());
     settings.setValue(kDesktopWindowVersion, kDesktopUIVersion);
-  }
-
-
-  void AppWindow::restoreWindowState()
-  {
-    qDebug("Restoring window state");
-
-    QSettings settings;
-    int savedWindowStateVersion = settings.value(kDesktopWindowVersion, -1).toInt();
-    bool shouldRestore = (savedWindowStateVersion == kDesktopUIVersion);
-    bool restored = false;
-    if (!shouldRestore) {
-      settings.remove(kDesktopWindowGeometry);
-      settings.remove(kDesktopWindowState);
-      settings.remove(kDesktopWindowVersion);
-    }
-    else {
-      restored = restoreGeometry(settings.value(kDesktopWindowGeometry).toByteArray());
-    }
-
-    if (!restored) {
-      qDebug("Window state was not restored, calculating default window rectangle");
-
-      // If this is the first run, or the user has deleted their settings,
-      // there may not be any geometry to restore. In this case, fall back
-      // to making the window an exact multiple of 640x360 (the default render
-      // resolution) and centering it on the screen.
-      QScreen* screen = QApplication::primaryScreen();
-      if (screen != nullptr) {
-        QRect rect = screen->availableGeometry();
-        int menuBarHeight = menuBar()->height();
-        int scale = qMin(rect.width() / 640, (rect.height() - menuBarHeight) / 360);
-        int w = 640 * scale;
-        int h = 360 * scale + menuBarHeight;
-        int x = rect.x() + (rect.width() - w) / 2;
-        int y = rect.y() + (rect.height() - h) / 2;
-        setGeometry(x, y, w, h);
-      }
-    }
-    restoreState(settings.value(kDesktopWindowState).toByteArray());
-  }
-
-
-  void AppWindow::resizeToRenderWidgetDisplayRect()
-  {
-    int w = int(_renderWidget->displayWidth() / _renderWidget->devicePixelRatioF());
-    int h = int(_renderWidget->displayHeight() / _renderWidget->devicePixelRatioF()) + menuBar()->height();
-    resize(w, h);
   }
 
 

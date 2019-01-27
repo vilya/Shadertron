@@ -4,5 +4,6 @@
         <file>glsl/template.frag</file>
         <file>glsl/textured-quad.frag</file>
         <file>glsl/textured-quad.vert</file>
+        <file>images/logo-background.jpg</file>
     </qresource>
 </RCC>
