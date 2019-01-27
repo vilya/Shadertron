@@ -350,7 +350,7 @@ namespace vh {
 //           _frame.width(), _frame.height(), _frame.planeCount(), qPrintable(pixelFormatName(_frame.pixelFormat())));
 //    qDebug("video has %d bytes per line, expecting %d bytes per line",
 //           _frame.bytesPerLine(), tex->width() * 4);
-    tex->setData(sourceFormat, sourceType, _frame.bits(), &options);
+    tex->setData(sourceFormat, sourceType, const_cast<const uchar*>(_frame.bits()), &options);
 
     _frame.unmap();
   }

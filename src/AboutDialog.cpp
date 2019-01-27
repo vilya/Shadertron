@@ -16,8 +16,8 @@ namespace vh {
   // AboutDialog public methods
   //
 
-  AboutDialog::AboutDialog(QWidget* parent) :
-    QDialog(parent)
+  AboutDialog::AboutDialog() :
+    QDialog()
   {
     setObjectName("AboutDialog");
     setWindowFlags(Qt::FramelessWindowHint);
@@ -75,6 +75,7 @@ namespace vh {
 
   AboutDialog::~AboutDialog()
   {
+    qDebug("Deleting about dialog");
   }
 
 
@@ -117,6 +118,12 @@ namespace vh {
       return true;
     }
     return false;
+  }
+
+
+  void AboutDialog::closeEvent(QCloseEvent* /*event*/)
+  {
+    deleteLater();
   }
 
 

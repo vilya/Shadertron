@@ -18,12 +18,14 @@ namespace vh {
     Q_OBJECT
 
   public:
-    explicit AboutDialog(QWidget* parent = nullptr);
+    explicit AboutDialog();
     virtual ~AboutDialog();
 
     virtual void resizeEvent(QResizeEvent* event);
     virtual void paintEvent(QPaintEvent* event);
     virtual bool eventFilter(QObject* target, QEvent* event);
+
+    virtual void closeEvent(QCloseEvent* event);
 
   private:
     QString buildDateText() const;
