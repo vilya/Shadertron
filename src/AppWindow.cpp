@@ -63,6 +63,11 @@ namespace vh {
   AppWindow::AppWindow(QWidget* parent) :
     QMainWindow(parent)
   {
+    QString title = QString("%2 %3")
+                    .arg(QApplication::instance()->applicationName())
+                    .arg(QApplication::instance()->applicationVersion());
+    setWindowTitle(title);
+
     _cache = new FileCache(this);
     connect(_cache, &FileCache::shaderReady, this, &AppWindow::openDownloadedFile);
     connect(_cache, &FileCache::standardAssetsReady, this, &AppWindow::standardAssetsReady);
@@ -789,11 +794,23 @@ namespace vh {
     }
 
     if (_document != nullptr) {
+      QString title = QString("%1 - %2 %3")
+                      .arg(_document->info.name)
+                      .arg(QApplication::instance()->applicationName())
+                      .arg(QApplication::instance()->applicationVersion());
+      setWindowTitle(title);
+
       populateDocTree();
 
       _watcher = new QFileSystemWatcher(this);
       watchAllFiles(_document, *_watcher);
       connect(_watcher, &QFileSystemWatcher::fileChanged, this, &AppWindow::watchedfileChanged);
+    }
+    else {
+      QString title = QString("%2 %3")
+                      .arg(QApplication::instance()->applicationName())
+                      .arg(QApplication::instance()->applicationVersion());
+      setWindowTitle(title);
     }
   }
 

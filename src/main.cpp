@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
   QApplication app(argc, argv);
   app.setApplicationName("ShaderTool");
-  app.setApplicationVersion("");
+  app.setApplicationVersion("0.1");
   app.setOrganizationName("The ShaderTool Developers");
   app.setOrganizationDomain("shader.tool");
   app.setQuitOnLastWindowClosed(true);
