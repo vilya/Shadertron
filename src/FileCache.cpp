@@ -17,6 +17,7 @@ namespace vh {
   static const QString kShaderToyAssetURL("https://www.shadertoy.com/%1?key=%2");
 
   static const QString kShaderToyShaderPath("api/v1/shaders/%1.json");
+  static const QString kShaderToyThumbnailPath("/media/shaders/%1.jpg");
 
 
   static const QString kStandardShaderToyAssets[] = {
@@ -364,6 +365,10 @@ namespace vh {
     }
 
     QSet<QString> requiredAssets;
+
+    // The thumbnail for this shader
+    requiredAssets.insert(kShaderToyThumbnailPath.arg(document->info.id));
+
     for (int passIdx = 0; passIdx < document->renderpasses.size(); passIdx++) {
       ShaderToyRenderPass& pass = document->renderpasses[passIdx];
       for (int i = 0; i < pass.inputs.size(); i++) {
