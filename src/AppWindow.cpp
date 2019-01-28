@@ -927,7 +927,7 @@ namespace vh {
         filters << filterString;
       }
 
-      qSort(filters);
+      std::sort(filters.begin(), filters.end());
 
       filters << anyFilter; // Added after sorting, so that it's always the last item in the list.
     }
