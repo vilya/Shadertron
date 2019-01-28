@@ -63,6 +63,7 @@ namespace vh {
     // Videos
     QString::fromUtf8("/media/a/3405e48f74815c7baa49133bdc835142948381fbe003ad2f12f5087715731153.ogv"),   // "Lustre-Cream" ad
     QString::fromUtf8("/media/a/e81e818ac76a8983d746784b423178ee9f6cdcdf7f8e8d719341a6fe2d2ab303.webm"),  // Britney Spears green-screen clip
+    QString::fromUtf8("/media/a/35c87bcb8d7af24c54d41122dadb619dd920646a0bd0e477e7bdc6d12876df17.webm"), // Jean Claude Van Damme green-screen clip
   };
 
 
