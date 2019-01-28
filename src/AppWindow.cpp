@@ -12,10 +12,12 @@
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QFileDialog>
+#include <QImageWriter>
 #include <QInputDialog>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMimeDatabase>
 #include <QRect>
 #include <QScreen>
 #include <QSettings>
@@ -41,6 +43,7 @@ namespace vh {
 
   static const QString kLastOpenDir = "lastOpenDir";
   static const QString kLastSaveDir = "lastSaveDir";
+  static const QString kLastScreenshotDir = "lastScreenshotDir";
 
   static constexpr int kMaxRecentFiles     = 10;
   static constexpr int kMaxRecentDownloads = 10;
@@ -402,8 +405,9 @@ namespace vh {
     _renderWidget->setFileCache(_cache);
     setCentralWidget(_renderWidget);
 
-    QObject::connect(_renderWidget, &RenderWidget::closeRequested, this, &QMainWindow::close);
-    QObject::connect(_renderWidget, &RenderWidget::currentShaderToyDocumentChanged, this, &AppWindow::renderWidgetDocumentChanged);
+    connect(_renderWidget, &RenderWidget::closeRequested, this, &QMainWindow::close);
+    connect(_renderWidget, &RenderWidget::currentShaderToyDocumentChanged, this, &AppWindow::renderWidgetDocumentChanged);
+    connect(_renderWidget, &RenderWidget::frameCaptured, this, &AppWindow::saveScreenshot);
 
     _docTree = new QTreeWidget();
     _docTreeDockable = new QDockWidget("Doc Tree", this);
@@ -421,18 +425,20 @@ namespace vh {
     QMenuBar* menubar = new QMenuBar();
     setMenuBar(menubar);
 
-    QMenu* fileMenu     = menubar->addMenu("&File");
-    QMenu* editMenu     = menubar->addMenu("&Edit");
-    QMenu* playbackMenu = menubar->addMenu("&Playback");
-    QMenu* inputMenu    = menubar->addMenu("&Input");
-    QMenu* viewMenu     = menubar->addMenu("&View");
-    QMenu* cacheMenu    = menubar->addMenu("&Cache");
-    QMenu* windowMenu   = menubar->addMenu("&Window");
-    QMenu* helpMenu     = menubar->addMenu("&Help");
+    QMenu* fileMenu      = menubar->addMenu("&File");
+    QMenu* editMenu      = menubar->addMenu("&Edit");
+    QMenu* playbackMenu  = menubar->addMenu("&Playback");
+    QMenu* recordingMenu = menubar->addMenu("&Recording");
+    QMenu* inputMenu     = menubar->addMenu("&Input");
+    QMenu* viewMenu      = menubar->addMenu("&View");
+    QMenu* cacheMenu     = menubar->addMenu("&Cache");
+    QMenu* windowMenu    = menubar->addMenu("&Window");
+    QMenu* helpMenu      = menubar->addMenu("&Help");
 
     setupFileMenu(fileMenu);
     setupEditMenu(editMenu);
     setupPlaybackMenu(playbackMenu);
+    setupRecordingMenu(recordingMenu);
     setupInputMenu(inputMenu);
     setupViewMenu(viewMenu);
     setupCacheMenu(cacheMenu);
@@ -481,6 +487,16 @@ namespace vh {
     menu->addAction("Back 100 ms",     [renderWidget](){ renderWidget->doAction(Action::eRewind_Small); });
     menu->addAction("Back 1 sec",      [renderWidget](){ renderWidget->doAction(Action::eRewind_Medium); });
     menu->addAction("Back 10 secs",    [renderWidget](){ renderWidget->doAction(Action::eRewind_Large); });
+  }
+
+
+  void AppWindow::setupRecordingMenu(QMenu* menu)
+  {
+    RenderWidget* renderWidget = _renderWidget;
+
+    menu->addAction("&Capture current frame...", [renderWidget](){ renderWidget->doAction(Action::eCaptureSingleFrame); });
+    menu->addSeparator();
+    menu->addAction("&Screenshot...",            [renderWidget](){ renderWidget->doAction(Action::eCaptureScreenshot); });
   }
 
 
@@ -884,6 +900,75 @@ namespace vh {
 
     QString id = recentDownloads[idx].id;
     _cache->fetchShaderToyByID(id, false);
+  }
+
+
+  void AppWindow::saveScreenshot(const QImage& img)
+  {
+    // Get the initial directory.
+    QSettings settings;
+    QString initialDir = settings.value(kLastScreenshotDir).toString();
+    if (initialDir.isEmpty()) {
+      initialDir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
+    }
+
+    // Generate the list of image format filters
+    QStringList filters;
+    QString anyFilter = QString::fromUtf8("All files (*)");
+    {
+      QList<QByteArray> mimeTypes = QImageWriter::supportedMimeTypes();
+      QMimeDatabase mimeDB;
+      for (auto it = mimeTypes.begin(); it != mimeTypes.end(); ++it) {
+        QMimeType mimeType = mimeDB.mimeTypeForName(*it);
+        QString filterString = mimeType.filterString();
+        if (filterString.isEmpty()) {
+          continue;
+        }
+        filters << filterString;
+      }
+
+      qSort(filters);
+
+      filters << anyFilter; // Added after sorting, so that it's always the last item in the list.
+    }
+
+    QFileDialog* fileDialog = new QFileDialog(this, "Save screenshot", initialDir);
+    fileDialog->setAcceptMode(QFileDialog::AcceptSave);
+    fileDialog->setFileMode(QFileDialog::AnyFile);
+    fileDialog->setNameFilters(filters);
+    fileDialog->selectNameFilter(anyFilter);
+
+    if (fileDialog->exec() != QFileDialog::Accepted) {
+      return;
+    }
+
+    settings.setValue(kLastScreenshotDir, fileDialog->directory().absolutePath());
+
+    // Filenames should always have exactly one element, due to the file
+    // dialog settings we specified.
+    QStringList filenames = fileDialog->selectedFiles();
+    if (filenames.size() != 1) {
+      return;
+    }
+
+//    QString defaultSuffix = suffixForFilenameFilter(saveDialog->selectedNameFilter());
+//    QString filename = addDefaultSuffixIfNecessary(filenames[0], defaultSuffix);
+    QString filename = filenames.front();
+    QFileInfo target(filename);
+    if (target.exists()) {
+      QMessageBox::StandardButton choice = QMessageBox::warning(this, tr("File exists"), QString::fromUtf8("The file %1 already exists. Replace it?").arg(filename), QMessageBox::Yes | QMessageBox::No);
+      if (choice != QMessageBox::Yes) {
+        return;
+      }
+    }
+
+    qDebug("Saving screenshot to %s", qPrintable(filename));
+    QImageWriter writer(filename);
+    bool savedOK = writer.write(img);
+
+    if (!savedOK) {
+      QMessageBox::critical(this, "Screenshot not saved", QString::fromUtf8("Unable to save screenshot to %1").arg(filename));
+    }
   }
 
 

@@ -68,6 +68,7 @@ namespace vh {
     void setupFileMenu(QMenu* menu);
     void setupEditMenu(QMenu* menu);
     void setupPlaybackMenu(QMenu* menu);
+    void setupRecordingMenu(QMenu* menu);
     void setupInputMenu(QMenu* menu);
     void setupViewMenu(QMenu* menu);
     void setupCacheMenu(QMenu* menu);
@@ -98,7 +99,9 @@ namespace vh {
     void loadRecentFile(int idx);
     void loadRecentDownload(int idx);
 
-  private:
+    void saveScreenshot(const QImage& img);
+
+    private:
     QList<QString> loadRecentFileList();
     void saveRecentFileList(const QList<QString>& recentFiles);
     void addRecentFile(const QString& filename);

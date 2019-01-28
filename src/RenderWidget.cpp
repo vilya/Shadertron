@@ -517,12 +517,6 @@ namespace vh  {
   }
 
 
-  void RenderWidget::reloadCurrentShaderToyDocument()
-  {
-    _forceReload = true;
-  }
-
-
   void RenderWidget::doAction(Action action)
   {
     switch (action) {
@@ -582,6 +576,18 @@ namespace vh  {
     case Action::eZoomImageOut_Fine:
       zoom(_mousePos, _displayScale * 0.95f);
       break;
+    case Action::eCaptureSingleFrame:
+      _capture = Capture::eSingleFrame;
+      if (!_playbackTimer.running()) {
+        update();
+      }
+      break;
+    case Action::eCaptureScreenshot:
+      _capture = Capture::eScreenshot;
+      if (!_playbackTimer.running()) {
+        update();
+      }
+      break;
     default:
       break;
     }
@@ -640,6 +646,19 @@ namespace vh  {
     // the duration of one frame.
     for (int i = 0; i < 256; i++) {
       _renderData.keyboardTexData[1][i] = 0;
+    }
+
+    switch (_capture) {
+    case Capture::eScreenshot:
+      screenshot();
+      _capture = Capture::eNothing;
+      break;
+    case Capture::eSingleFrame:
+      captureFrame();
+      _capture = Capture::eNothing;
+      break;
+    default:
+      break;
     }
 
     if (_playbackTimer.running()) {
@@ -865,6 +884,7 @@ namespace vh  {
     glGenVertexArrays(1, &_renderData.defaultVAO);
     glGenFramebuffers(1, &_renderData.defaultFBO);
     glGenFramebuffers(1, &_renderData.flipFBO);
+    glGenFramebuffers(1, &_renderData.grabFBO);
 
     _renderData.backBuffer = 0;
     _renderData.frontBuffer = 1;
@@ -1290,6 +1310,9 @@ namespace vh  {
 
     glDeleteFramebuffers(1, &_renderData.flipFBO);
     _renderData.flipFBO = 0;
+
+    glDeleteFramebuffers(1, &_renderData.grabFBO);
+    _renderData.grabFBO = 0;
 
     // Clear out the common source code.
     _renderData.commonSourceCode = QString();
@@ -1946,6 +1969,41 @@ namespace vh  {
   {
     return QPoint(int(widgetPos.x() * devicePixelRatioF()),
                   int(widgetPos.y() * devicePixelRatioF()));
+  }
+
+
+  void RenderWidget::reloadCurrentShaderToyDocument()
+  {
+    _forceReload = true;
+  }
+
+
+  void RenderWidget::captureFrame()
+  {
+    if (_currentDoc == nullptr) {
+      return;
+    }
+
+    int texIndex = _renderData.renderpasses[_displayPass].outputs[_renderData.frontBuffer];
+    QOpenGLTexture* texObj = _renderData.textures[texIndex].obj;
+
+    QImage img(texObj->width(), texObj->height(), QImage::Format_RGBA8888_Premultiplied);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.grabFBO);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
+    glReadPixels(0, 0, texObj->width(), texObj->height(), GL_RGBA, GL_UNSIGNED_BYTE, img.bits());
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    img = img.mirrored();
+
+    emit frameCaptured(img);
+  }
+
+
+  void RenderWidget::screenshot()
+  {
+    QImage img = grabFramebuffer();
+    emit frameCaptured(img);
   }
 
 

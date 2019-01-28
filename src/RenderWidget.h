@@ -58,6 +58,8 @@ namespace vh {
     eZoomImageIn_Fine,
     eZoomImageOut_Coarse,
     eZoomImageOut_Fine,
+    eCaptureSingleFrame,
+    eCaptureScreenshot,
   };
 
 
@@ -66,6 +68,13 @@ namespace vh {
     eSendToShader,
     ePanImage,
     eZoomImage,
+  };
+
+
+  enum class Capture {
+    eNothing,
+    eSingleFrame,
+    eScreenshot,
   };
 
 
@@ -190,6 +199,8 @@ namespace vh {
     void keyboardShaderInputChanged(bool newValue);
     void mouseShaderInputChanged(bool newValue);
 
+    void frameCaptured(const QImage& frame);
+
   public slots:
     void startPlayback();
     void stopPlayback();
@@ -257,6 +268,9 @@ namespace vh {
     float framebufferHeight() const;
     QPoint framebufferPos(const QPoint& widgetPos) const;
 
+    void screenshot();    //!< Captures at display resolution, includes all visible decorations (HUD, inputs/outputs, etc).
+    void captureFrame();  //!< Captures at render resolution, no decorations visible.
+
   private slots:
     void fileChanged(const QString& path);
     void videoError(QMediaPlayer::Error err, int vidIndex);
@@ -316,6 +330,8 @@ namespace vh {
     float _initialPanY = 0.0f;
 
     uint _hudFlags = kHUD_All; // A bit field. See the kHUD_<foo> constants above for what each bit means.
+
+    Capture _capture = Capture::eNothing;
   };
 
 } // namespace vh

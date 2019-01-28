@@ -141,6 +141,7 @@ namespace vh {
     GLuint defaultVAO   = 0;
     GLuint defaultFBO   = 0;
     GLuint flipFBO      = 0;
+    GLuint grabFBO      = 0;
 
     uint8_t backBuffer  = 0;
     uint8_t frontBuffer = 1;
