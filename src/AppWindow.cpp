@@ -597,7 +597,10 @@ namespace vh {
 
     menu->setEnabled(true);
     for (int i = 0; i < recentFiles.size(); i++) {
-      menu->addAction(QString("&%1 %2").arg(i).arg(recentFiles[i]), [this, i](){ this->loadRecentFile(i); });
+      QAction* action = menu->addAction(QString("&%1 %2").arg((i + 1) % 10).arg(recentFiles[i]), [this, i](){ this->loadRecentFile(i); });
+      if (i == 0) {
+        action->setShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_1));
+      }
     }
   }
 
@@ -614,8 +617,11 @@ namespace vh {
 
     menu->setEnabled(true);
     for (int i = 0; i < recentDownloads.size(); i++) {
-      menu->addAction(QString("&%1 %2 (id: %3)").arg(i).arg(recentDownloads[i].name).arg(recentDownloads[i].id),
-                      [this, i](){ this->loadRecentDownload(i); });
+      QAction* action = menu->addAction(QString("&%1 %2 (id: %3)").arg((i + 1) % 10).arg(recentDownloads[i].name).arg(recentDownloads[i].id),
+                                        [this, i](){ this->loadRecentDownload(i); });
+      if (i == 0) {
+        action->setShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_F1));
+      }
     }
   }
 
