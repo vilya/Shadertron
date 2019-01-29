@@ -51,7 +51,7 @@ ShaderToy Compatibility
   - [x] Buf A through Buf D
   - [x] Common
   - [x] Image
-  - [ ] Cube A
+  - [x] Cube A
   - [ ] Sound
 - [x] Input sources
   - [x] 2D texture
@@ -79,7 +79,7 @@ ShaderToy Integration
 - [ ] Search for shaders on ShaderToy:
   - [ ] Support built in sort types: name, love, popular, newest & hot
   - [ ] Support built in filter types: vr, soundoutput, soundinput, webcam, multipass, musicstream
-- [ ] Download and cache thumbnails for shaders.
+- [x] Download and cache thumbnails for shaders.
 - [ ] Display thumbnails for shaders in the search results.
 - [ ] Show download progress.
 

@@ -3,7 +3,6 @@ ShaderToy Compatibility TODO
 
 Shader types:
 - Audio
-- Cubemap
 - VR
 Input sources:
 - 3D texture
@@ -21,7 +20,7 @@ TODO: video input support
 -------------------------
 - Widgets to control playback for each video stream
 - Option to unmute/mute each video.
-- Add support for more pixel formats instead of forcing the video to ARGB32.
+- Add support for more pixel formats instead of forcing the video to ARGB32 or RGB32.
 
 
 TODO: downloading from ShaderToy
@@ -32,7 +31,7 @@ TODO: downloading from ShaderToy
   - Use paging to show results.
 - Download and cache thumbnails for shaders:
   - https://www.shadertoy.com/media/shaders/<shader-id>.jpg
-- Figure out how to tell when a cached file is out of date.
+- Figure out how to tell when a cached file is out of date without having to download the whole file.
 - Show download progress
 
 
