@@ -251,7 +251,9 @@ namespace vh {
     void renderEmpty();
     void renderHUD(QPainter& painter);
 
-    void createRenderPassTexture(Texture& tex);
+    bool inputIsRenderPass(const ShaderToyInput& input) const;
+
+    void createRenderPassTexture(Texture& tex, PassType passType);
     void resizeRenderPassTexture(Texture& tex);
     bool loadImageTexture(const QString& filename, bool flip, bool srgb, Texture& tex);
     bool loadCubemapTexture(const QString& filename, bool flip, bool srgb, Texture& tex);

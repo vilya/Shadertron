@@ -1,0 +1,66 @@
+{
+    "Shader": {
+        "ver": "0.1",
+        "info": {
+            "id": "",
+            "date": "1533113650",
+            "viewed": 427,
+            "name": "Test Cubemap",
+            "username": "Vil",
+            "description": "Test for using the Cube A render pass",
+            "likes": 0,
+            "published": 0,
+            "flags": 0,
+            "tags": [
+                "cubemap",
+                "maincubemap"
+            ],
+            "hasliked": 0
+        },
+        "renderpass": [
+            {
+                "inputs": [
+                    {
+                        "id": 41,
+                        "src": "/media/a//media/previz/cubemap00.png",
+                        "ctype": "cubemap",
+                        "channel": 0,
+                        "sampler": {
+                            "filter": "mipmap",
+                            "wrap": "clamp",
+                            "vflip": "true",
+                            "srgb": "false",
+                            "internal": "byte"
+                        },
+                        "published": 1
+                    }
+                ],
+                "outputs": [
+                    {
+                        "id": 37,
+                        "channel": 0
+                    }
+                ],
+                "code": "",
+                "filename": "TestCubemap-Image.frag",
+                "name": "Image",
+                "description": "",
+                "type": "image"
+            },
+            {
+                "inputs": [],
+                "outputs": [
+                    {
+                        "id": 41,
+                        "channel": 0
+                    }
+                ],
+                "code": "",
+                "filename": "TestCubemap-CubeA.frag",
+                "name": "Cube A",
+                "description": "",
+                "type": "cubemap"
+            }
+        ]
+    }
+}

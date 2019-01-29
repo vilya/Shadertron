@@ -19,13 +19,61 @@ namespace vh  {
   static constexpr double kMediumStepMS = 1000.0;
   static constexpr double kLargeStepMS = 10000.0;
 
-  static const QString kMainFunc_Image =
-      "void main() {\n"
-      "  vec2 fragCoord = gl_FragCoord.xy;\n"
-      "  vec4 fragColor;\n"
-      "  mainImage(fragColor, fragCoord);\n"
-      "  ShaderToolQt_oColor = fragColor;\n"
-      "}\n";
+//  static const QString kMainFunc_Image =
+//      "void main() {\n"
+//      "  vec2 fragCoord = gl_FragCoord.xy;\n"
+//      "  vec4 fragColor;\n"
+//      "  mainImage(fragColor, fragCoord);\n"
+//      "  ShaderToolQt_oColor = fragColor;\n"
+//      "}\n";
+
+  static constexpr GLenum kCubeFaces[6] = {
+    GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+    GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+    GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+    GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+    GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+    GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+  };
+
+  static constexpr float kCubemapRayDirs[6][3][3] = {
+    // Ray dirs for +x face
+    {
+      {  1.0,  1.0,  1.0 },
+      {  1.0,  1.0, -3.0 },
+      {  1.0, -3.0,  1.0 },
+    },
+    // Ray dirs for -x face
+    {
+      { -1.0,  1.0, -1.0 },
+      { -1.0,  1.0,  3.0 },
+      { -1.0, -3.0, -1.0 },
+    },
+    // Ray dirs for +y face
+    {
+      { -1.0,  1.0, -1.0 },
+      {  3.0,  1.0, -1.0 },
+      { -1.0,  1.0,  3.0 },
+    },
+    // Ray dirs for -y face
+    {
+      { -1.0, -1.0,  1.0 },
+      {  3.0, -1.0,  1.0 },
+      { -1.0, -1.0, -3.0 },
+    },
+    // Ray dirs for +z face
+    {
+      { -1.0,  1.0,  1.0 },
+      {  3.0,  1.0,  1.0 },
+      { -1.0, -3.0,  1.0 },
+    },
+    // Ray dirs for -z face
+    {
+      {  1.0,  1.0, -1.0 },
+      { -3.0,  1.0, -1.0 },
+      {  1.0, -3.0, -1.0 },
+    },
+  };
 
 
   //
@@ -902,7 +950,7 @@ namespace vh  {
       uchar blackPixel[3] = { 0, 0, 0 };
       QImage blackImage = QImage(blackPixel, 1, 1, QImage::Format_RGB888);
       tex.obj = new QOpenGLTexture(blackImage);
-      tex.isBuffer = false;
+      tex.isRenderSized = false;
       tex.playbackTime = 0.0f;
     }
 
@@ -925,7 +973,7 @@ namespace vh  {
       tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapNegativeZ, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
       tex.obj->setData(0, 0, 1, QOpenGLTexture::CubeMapPositiveZ, QOpenGLTexture::RGB, QOpenGLTexture::UInt8, whitePixel, &transferOptions);
       tex.obj->generateMipMaps();
-      tex.isBuffer = false;
+      tex.isRenderSized = false;
       tex.playbackTime = 0.0f;
     }
 
@@ -947,7 +995,7 @@ namespace vh  {
       }
 
       tex.obj->setData(QOpenGLTexture::Red, QOpenGLTexture::UInt8, reinterpret_cast<const void*>(_renderData.keyboardTexData));
-      tex.isBuffer = false;
+      tex.isRenderSized = false;
       tex.playbackTime = 0.0f;
     }
 
@@ -1016,7 +1064,7 @@ namespace vh  {
 
       for (int i = 0; i < 2; i++) {
         Texture& tex = _renderData.textures[_renderData.numTextures];
-        createRenderPassTexture(tex);
+        createRenderPassTexture(tex, passOut.type);
 
         passOut.outputs[i] = _renderData.numTextures;
 
@@ -1066,7 +1114,7 @@ namespace vh  {
         ShaderToyInput& input = _currentDoc->renderpasses[passIdx].inputs[inputIdx];
 
         // If this input refers to a renderpass.
-        if (input.ctype == kInputType_Buffer) {
+        if (inputIsRenderPass(input)) {
           int srcPassIndex = assetIDtoRenderpassIndex[input.id];
           const RenderPass& srcPass = _renderData.renderpasses[srcPassIndex];
           // We want to read from the output which has been rendered to most
@@ -1230,15 +1278,21 @@ namespace vh  {
 #else
       macros["GLSL_VERSION"]   =  "#version 450 core";
 #endif // SHADERTOOL_USE_GL41
+      macros["SHADER_TYPE"] = QString("#define SHADER_TYPE %1").arg(int(passOut.type));
       macros["SAMPLER_0_TYPE"] =  _renderData.textures[passOut.inputs[0][0]].samplerType(0);
       macros["SAMPLER_1_TYPE"] =  _renderData.textures[passOut.inputs[1][0]].samplerType(1);
       macros["SAMPLER_2_TYPE"] =  _renderData.textures[passOut.inputs[2][0]].samplerType(2);
       macros["SAMPLER_3_TYPE"] =  _renderData.textures[passOut.inputs[3][0]].samplerType(3);
       macros["COMMON_CODE"] = _renderData.commonSourceCode;
       macros["USER_CODE"] = passOut.sourceCode;
-      macros["MAIN"] = kMainFunc_Image;
 
-      QString vertShaderSource = preprocessShaderSource(":/glsl/fullscreen.vert", macros);
+      QString vertShaderSource;
+      if (passOut.type == PassType::eCubemap) {
+        vertShaderSource = preprocessShaderSource(":/glsl/cubemap.vert", macros);
+      }
+      else {
+        vertShaderSource = preprocessShaderSource(":/glsl/fullscreen.vert", macros);
+      }
       QString fragShaderSource = preprocessShaderSource(":/glsl/template.frag",   macros);
 
       passOut.program = new QOpenGLShaderProgram(this);
@@ -1259,6 +1313,8 @@ namespace vh  {
       passOut.iChannel3Loc          = passOut.program->uniformLocation("iChannel3");
       passOut.iDateLoc              = passOut.program->uniformLocation("iDate");
       passOut.iSampleRateLoc        = passOut.program->uniformLocation("iSampleRate");
+
+      passOut.iRayDirsLoc           = passOut.program->uniformLocation("iRayDirs");
 
       passOut.program->bind();
       passOut.program->setUniformValue(passOut.iChannel0Loc, 0);
@@ -1389,7 +1445,7 @@ namespace vh  {
       delete tex.obj;
       tex.obj = nullptr;
 
-      tex.isBuffer = false;
+      tex.isRenderSized = false;
       tex.playbackTime = 0.0;
     }
     _renderData.numTextures = 0;
@@ -1422,7 +1478,7 @@ namespace vh  {
       // Resize all the output textures if the window was resized.
       if (_resized) {
         for (int i = 0; i < _renderData.numTextures; i++) {
-          if (_renderData.textures[i].isBuffer) {
+          if (_renderData.textures[i].isRenderSized) {
             resizeRenderPassTexture(_renderData.textures[i]);
           }
         }
@@ -1508,7 +1564,6 @@ namespace vh  {
     glBindFramebuffer(GL_FRAMEBUFFER, _renderData.defaultFBO);
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-    glViewport(0, 0, renderWidth(), renderHeight());
     glClearColor(0.0, 1.0, 0.0, 1.0);
 
     // If we're on frame 0, clear all the output textures to make sure any
@@ -1527,9 +1582,6 @@ namespace vh  {
 
     for (int i = 0; i < _renderData.numRenderpasses; i++) {
       const RenderPass& pass = _renderData.renderpasses[i];
-
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _renderData.textures[pass.outputs[_renderData.backBuffer]].obj->textureId(), 0);
-      glClear(GL_COLOR_BUFFER_BIT);
 
       pass.program->bind();
 
@@ -1559,7 +1611,19 @@ namespace vh  {
       pass.program->setUniformValueArray(pass.iChannelResolutionLoc, reinterpret_cast<float*>(iChannelResolution), 4, 3);
       pass.program->setUniformValueArray(pass.iChannelTimeLoc, iChannelTime, 4, 1);
 
-      glDrawArrays(GL_TRIANGLES, 0, 3);
+      if (pass.type == PassType::eCubemap) {
+        glViewport(0, 0, kCubemapWidth, kCubemapHeight);
+        for (int face = 0; face < 6; face++) {
+          pass.program->setUniformValueArray(pass.iRayDirsLoc, reinterpret_cast<const float*>(kCubemapRayDirs[face]), 3, 3);
+          glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, kCubeFaces[face], _renderData.textures[pass.outputs[_renderData.backBuffer]].obj->textureId(), 0);
+          glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
+      }
+      else {
+        glViewport(0, 0, renderWidth(), renderHeight());
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _renderData.textures[pass.outputs[_renderData.backBuffer]].obj->textureId(), 0);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+      }
 
       for (int inputIdx = 0; inputIdx < kMaxInputs; inputIdx++) {
         int texIdx = pass.inputs[inputIdx][_renderData.frontBuffer];
@@ -1699,21 +1763,45 @@ namespace vh  {
   }
 
 
-  void RenderWidget::createRenderPassTexture(Texture& tex)
+  bool RenderWidget::inputIsRenderPass(const ShaderToyInput &input) const
   {
-    qDebug("Creating render pass texture with resolution %dx%d", renderWidth(), renderHeight());
+    return (input.id >= kOutputID_BufA && input.id <= kOutputID_BufD)
+        || input.id == kOutputID_CubeA
+        || input.id == kOutputID_Image
+        || input.id == kOutputID_Sound;
+  }
 
-    tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
-    tex.obj->setSize(renderWidth(), renderHeight());
-    tex.obj->setFormat(QOpenGLTexture::RGBA32F);
+
+  void RenderWidget::createRenderPassTexture(Texture& tex, PassType passType)
+  {
+    int w, h;
+    QOpenGLTexture::Target target;
+    QOpenGLTexture::TextureFormat format;
+    if (passType == PassType::eCubemap) {
+      w = kCubemapWidth;
+      h = kCubemapHeight;
+      target = QOpenGLTexture::TargetCubeMap;
+      format = QOpenGLTexture::RGBA16F;
+    }
+    else {
+      w = renderWidth();
+      h = renderHeight();
+      target = QOpenGLTexture::Target2D;
+      format = QOpenGLTexture::RGBA32F;
+    }
+
+    qDebug("Creating render pass %s with resolution %dx%d", (passType == PassType::eCubemap) ? "cubemap" : "texture", w, h);
+
+    tex.obj = new QOpenGLTexture(target);
+    tex.obj->setSize(w, h);
+    tex.obj->setFormat(format);
     tex.obj->setAutoMipMapGenerationEnabled(false);
-    tex.obj->setMagnificationFilter(QOpenGLTexture::Nearest);
-    tex.obj->setMinificationFilter(QOpenGLTexture::Linear);
+    tex.obj->setMagnificationFilter(QOpenGLTexture::Linear);
+    tex.obj->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
     tex.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
-    tex.obj->setMaximumLevelOfDetail(0);
     tex.obj->allocateStorage();
 
-    tex.isBuffer = true;
+    tex.isRenderSized = (passType == PassType::eImage || passType == PassType::eBuffer);
     tex.playbackTime = 0.0;
   }
 
@@ -1730,7 +1818,7 @@ namespace vh  {
     qDebug("Resizing texture from %dx%d to %dx%d", tex.obj->width(), tex.obj->height(), newW, newH);
 
     delete tex.obj;
-    createRenderPassTexture(tex);
+    createRenderPassTexture(tex, PassType::eBuffer);
   }
 
 
@@ -1769,7 +1857,7 @@ namespace vh  {
     }
     tex.obj->generateMipMaps();
 
-    tex.isBuffer = false;
+    tex.isRenderSized = false;
     tex.playbackTime = 0.0f;
 
     return true;
@@ -1845,7 +1933,7 @@ namespace vh  {
     }
     tex.obj->generateMipMaps();
 
-    tex.isBuffer = false;
+    tex.isRenderSized = false;
     tex.playbackTime = 0.0f;
 
     return true;
@@ -1892,7 +1980,7 @@ namespace vh  {
     tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
     tex.obj->setFormat(QOpenGLTexture::RGBA8_UNorm);
 
-    tex.isBuffer = false;
+    tex.isRenderSized = false;
     tex.playbackTime = 0.0f;
 
     return texIndex;

@@ -27,6 +27,9 @@ namespace vh {
   static constexpr int kMaxCameras      = 1;
   static constexpr int kMaxTextures     = kMaxRenderpasses * (2 + kMaxInputs) + (kMaxVideos * 2) + kNumSpecialTextures;
 
+  static constexpr int kCubemapWidth  = 1024;
+  static constexpr int kCubemapHeight = 1024;
+
 
   //
   // Enums
@@ -63,7 +66,7 @@ namespace vh {
 
   struct Texture {
     QOpenGLTexture* obj = nullptr;
-    bool isBuffer       = false;  // if true, this will be resized dynamically to match our output resolution.
+    bool isRenderSized  = false;  // if true, this will be resized dynamically to match our render resolution.
     float playbackTime  = 0.0f;   // for animated channels, this is the current time on the channel.
 
     QString samplerType(int samplerNum) const;
@@ -115,6 +118,8 @@ namespace vh {
     int iChannel3Loc          = -1;
     int iDateLoc              = -1;
     int iSampleRateLoc        = -1;
+
+    int iRayDirsLoc           = -1;
   };
 
 
