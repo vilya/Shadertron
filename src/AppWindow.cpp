@@ -3,6 +3,7 @@
 
 #include "AboutDialog.h"
 #include "FileCache.h"
+#include "LogWidget.h"
 #include "RenderWidget.h"
 #include "ShaderToy.h"
 #include "ShaderToyDownloadForm.h"
@@ -60,12 +61,23 @@ namespace vh {
 
 
   //
+  // Globals
+  //
+
+  AppWindow* gAppWindow = nullptr;
+
+
+  //
   // AppWindow public methods
   //
 
   AppWindow::AppWindow(QWidget* parent) :
     QMainWindow(parent)
   {
+    if (gAppWindow == nullptr) {
+      gAppWindow = this;
+    }
+
     QString title = QString("%2 %3")
                     .arg(QApplication::instance()->applicationName())
                     .arg(QApplication::instance()->applicationVersion());
@@ -85,6 +97,9 @@ namespace vh {
   AppWindow::~AppWindow()
   {
     delete _document;
+    if (gAppWindow == this) {
+      gAppWindow = nullptr;
+    }
   }
 
 
@@ -107,6 +122,14 @@ namespace vh {
 
     _renderWidget->setShaderToyDocument(_document);
     return true;
+  }
+
+
+  void AppWindow::handleLogMessage(QtMsgType type, const QMessageLogContext& context, const QString& message)
+  {
+    if (_logWidget != nullptr) {
+      _logWidget->addMessage(type, context, message);
+    }
   }
 
 
@@ -409,7 +432,7 @@ namespace vh {
     connect(_renderWidget, &RenderWidget::currentShaderToyDocumentChanged, this, &AppWindow::renderWidgetDocumentChanged);
     connect(_renderWidget, &RenderWidget::frameCaptured, this, &AppWindow::saveScreenshot);
 
-    _docTree = new QTreeWidget();
+    _docTree = new QTreeWidget(this);
     _docTreeDockable = new QDockWidget("Doc Tree", this);
     _docTreeDockable->setObjectName("docTreeDockable");
     _docTreeDockable->setAllowedAreas(Qt::AllDockWidgetAreas);
@@ -417,6 +440,15 @@ namespace vh {
     addDockWidget(Qt::RightDockWidgetArea, _docTreeDockable);
     _docTreeDockable->setVisible(true);
     _docTreeDockable->setFloating(false);
+
+    _logWidget = new LogWidget(this);
+    _logWidgetDockable = new QDockWidget("Log", this);
+    _logWidgetDockable->setObjectName("logWidgetDockable");
+    _logWidgetDockable->setAllowedAreas(Qt::AllDockWidgetAreas);
+    _logWidgetDockable->setWidget(_logWidget);
+    addDockWidget(Qt::BottomDockWidgetArea, _logWidgetDockable);
+    _logWidgetDockable->setVisible(true);
+    _logWidgetDockable->setFloating(false);
   }
 
 
@@ -565,6 +597,7 @@ namespace vh {
   void AppWindow::setupWindowMenu(QMenu* menu)
   {
     menu->addAction(_docTreeDockable->toggleViewAction());
+    menu->addAction(_logWidgetDockable->toggleViewAction());
     menu->addSeparator();
     QAction* saveWindowStateAction = menu->addAction("&Save window state on exit");
     QAction* removeWindowStateAction = menu->addAction("&Remove saved window state", this, &AppWindow::removeSavedWindowState);

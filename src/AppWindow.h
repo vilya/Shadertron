@@ -21,6 +21,7 @@ namespace vh {
   //
 
   class FileCache;
+  class LogWidget;
   class RenderWidget;
 
   struct ShaderToyDocument;
@@ -39,6 +40,8 @@ namespace vh {
     virtual ~AppWindow();
 
     bool openNamedFile(const QString& filename);
+
+    void handleLogMessage(QtMsgType type, const QMessageLogContext& context, const QString& message);
 
   public slots:
     void newFile();
@@ -127,6 +130,9 @@ namespace vh {
     QTreeWidget* _docTree = nullptr;
     QDockWidget* _docTreeDockable = nullptr;
 
+    LogWidget* _logWidget = nullptr;
+    QDockWidget* _logWidgetDockable = nullptr;
+
     ShaderToyDocument* _document = nullptr;
     QFileSystemWatcher* _watcher = nullptr;
 
@@ -136,6 +142,9 @@ namespace vh {
 
     bool _saveWindowState = true;
   };
+
+
+  extern AppWindow* gAppWindow;
 
 } // namespace vh
 

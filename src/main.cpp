@@ -11,7 +11,6 @@
 #include "ShaderToy.h"
 #include "RenderWidget.h"
 
-
 #ifdef _WIN32
 // If we're on a machine with both an integrated GPU and a discrete GPU,
 // these magic symbols tell the nvidia & amd drivers respectively to please
@@ -23,6 +22,21 @@ extern "C" {
 #endif
 
 using namespace vh;
+
+
+static QtMessageHandler gOldHandler = nullptr;
+
+
+void appWindowMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& message)
+{
+  if (gAppWindow != nullptr) {
+    gAppWindow->handleLogMessage(type, context, message);
+  }
+  if (gOldHandler != nullptr) {
+    gOldHandler(type, context, message);
+  }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -37,6 +51,8 @@ int main(int argc, char *argv[])
   format.setProfile(QSurfaceFormat::CoreProfile);
   QSurfaceFormat::setDefaultFormat(format);
 
+  gOldHandler = qInstallMessageHandler(appWindowMessageHandler);
+
   QApplication app(argc, argv);
   app.setApplicationName("ShaderTool");
   app.setApplicationVersion("0.1");
@@ -47,6 +63,7 @@ int main(int argc, char *argv[])
   app.setAttribute(Qt::AA_ShareOpenGLContexts);
 
   AppWindow mainWindow;
+  gAppWindow = &mainWindow;
   if (argc > 1) {
     QString filename = QString::fromLocal8Bit(argv[1]);
     mainWindow.openNamedFile(filename);
