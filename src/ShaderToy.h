@@ -34,6 +34,7 @@ namespace vh {
   static const QString kInputType_Texture   = "texture";
   static const QString kInputType_Video     = "video";
   static const QString kInputType_Webcam    = "webcam";
+  static const QString kInputType_Music     = "music";
 
   static const QString kSamplerFilterType_Nearest = "nearest";
   static const QString kSamplerFilterType_Linear  = "linear";
