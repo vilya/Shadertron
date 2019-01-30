@@ -42,6 +42,8 @@ Features
 - Playback controls, including fast forward and rewind
 - Pan and zoom the shader output
 - Choice of rendering resolutions, doesn't have to match the window size (very useful for slow shaders!)
+- Save screenshots
+- Save the output of intermediate renderpasses to an image file
 
 
 ShaderToy Compatibility
