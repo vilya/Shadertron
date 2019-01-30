@@ -613,7 +613,6 @@ namespace vh {
 
   void AppWindow::setupHelpMenu(QMenu* menu)
   {
-    menu->addAction("About &Qt...", QApplication::instance(), &QApplication::aboutQt);
     menu->addAction(QString("About %1...").arg(QApplication::instance()->applicationName()), this, &AppWindow::showAboutDialog);
   }
 
