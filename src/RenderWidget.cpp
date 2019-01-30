@@ -1580,8 +1580,16 @@ namespace vh  {
         for (int j = 0; j < 2; j++) {
           int texIndex = _renderData.renderpasses[i].outputs[j];
           QOpenGLTexture* texObj = _renderData.textures[texIndex].obj;
-          glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
-          glClear(GL_COLOR_BUFFER_BIT);
+          if (texObj->target() == QOpenGLTexture::TargetCubeMap) {
+            for (int face = 0; face < 6; face++) {
+              glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, kCubeFaces[face], texObj->textureId(), 0);
+              glClear(GL_COLOR_BUFFER_BIT);
+            }
+          }
+          else {
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+          }
         }
       }
       _clearTextures = false;
