@@ -401,6 +401,12 @@ namespace vh {
   {
     for (int passIdx = 0; passIdx < renderpasses.size(); passIdx++) {
       const ShaderToyRenderPass& pass = renderpasses[passIdx];
+
+      // Some older shaders don't have an output ID on the image pass.
+      if (pass.outputs.isEmpty() && pass.type == kRenderPassType_Image && outputID == kOutputID_Image) {
+        return passIdx;
+      }
+
       for (int i = 0; i < pass.outputs.size(); i++) {
         if (pass.outputs[i].id == outputID) {
           return passIdx;

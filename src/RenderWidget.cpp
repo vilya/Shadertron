@@ -1048,7 +1048,14 @@ namespace vh  {
       _renderData.numRenderpasses++;
 
       passOut.name = passIn.name;
-      passOut.outputID = passIn.outputs[0].id;
+
+      if (passIn.outputs.isEmpty()) {
+        passOut.outputID = (passIn.type == kRenderPassType_Image) ? kOutputID_Image : -1;
+      }
+      else {
+        passOut.outputID = passIn.outputs[0].id;
+      }
+
       if (passIn.type == kRenderPassType_Buffer) {
         passOut.type = PassType::eBuffer;
       }
@@ -1351,7 +1358,7 @@ namespace vh  {
     }
 
     // Display the "image" pass
-    _displayPass = _renderData.numRenderpasses - 1;
+    setDisplayPassByOutputID(kOutputID_Image);
   }
 
 
