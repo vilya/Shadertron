@@ -1,0 +1,52 @@
+{
+    "Shader": {
+        "info": {
+            "date": "1548809638",
+            "description": "Learning how to work with audio textures...",
+            "flags": 0,
+            "hasliked": 0,
+            "id": "XlSfzm",
+            "likes": 1,
+            "name": "My First Audio Processing Shader",
+            "published": 3,
+            "tags": [
+                "2d",
+                "audio"
+            ],
+            "username": "Vil",
+            "viewed": 23
+        },
+        "renderpass": [
+            {
+                "code": "#define PI       3.141592653589793\n#define HALF_PI  1.570796326794897\n\n#define NUM_SAMPLES 21\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\n{\n\tvec2 uv = fragCoord.xy / iResolution.xy - 0.5;\n    vec2 polar = vec2(atan(uv.y, uv.x) / (PI * 2.0) + 0.5, length(uv) * 2.0);\n\n    float eps = 1.0 / iChannelResolution[0].x;\n    float vol = 0.0;\n    for (int i = 0; i < NUM_SAMPLES; i++) {\n        float ofs = float(i - (NUM_SAMPLES / 2)) * eps;\n        vec2 samplePos = vec2(fract(polar.x + ofs), 0.25);\n        vol += texture(iChannel0, vec2(samplePos)).x;\n    }\n    vol = (vol / float(NUM_SAMPLES)) * 0.6 + 0.3;\n    \n    float vol2 = clamp(texture(iChannel0, vec2(uv.x + 0.5, 0.25)).x, 0.0, 1.0);\n\n    if (abs(vol - polar.y) < 0.05) {\n        fragColor = vec4(0.2, 0.25, vol, 1.0);\n    }\n    else if (abs(vol2 - uv.y - 0.5) < 0.01) {\n        fragColor = vec4(vol2 * 0.75 + 0.25, 0.0, 0.0, 1.0);\n    }\n    else {\n\t\tfragColor = vec4(0.0);\n    }\n}",
+                "description": "",
+                "filename": "",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "music",
+                        "id": 19,
+                        "published": 1,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "/media/a/a6a1cf7a09adfed8c362492c88c30d74fb3d2f4f7ba180ba34b98556660fada1.mp3"
+                    }
+                ],
+                "name": "Image",
+                "outputs": [
+                    {
+                        "channel": 0,
+                        "id": 37
+                    }
+                ],
+                "type": "image"
+            }
+        ],
+        "ver": "0.1"
+    }
+}

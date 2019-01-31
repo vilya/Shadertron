@@ -301,6 +301,12 @@ namespace vh  {
       _renderData.camera.obj->start();
     }
 
+    for (int i = 0; i < _renderData.numAudios; i++) {
+      Audio& audio = _renderData.audios[i];
+      audio.player->stop();
+      audio.player->play();
+    }
+
     _renderData.iTime = 0.0f;
     _renderData.iFrame = 0;
 
@@ -325,6 +331,11 @@ namespace vh  {
       _renderData.camera.obj->stop();
     }
 
+    for (int i = 0; i < _renderData.numAudios; i++) {
+      Audio& audio = _renderData.audios[i];
+      audio.player->pause();
+    }
+
     _playbackTimer.stop();
 
     update();
@@ -345,6 +356,11 @@ namespace vh  {
       _renderData.camera.obj->start();
     }
 
+    for (int i = 0; i < _renderData.numAudios; i++) {
+      Audio& audio = _renderData.audios[i];
+      audio.player->play();
+    }
+
     float prevTimeDelta = _renderData.iTime - _prevTime;
     _playbackTimer.resume();
     _prevTime = _playbackTimer.elapsedSecs() - prevTimeDelta;
@@ -363,6 +379,13 @@ namespace vh  {
       Video& vid = _renderData.videos[i];
       if (vid.player->isSeekable()) {
         vid.player->setPosition(vid.player->position() + qint64(amountMS));
+      }
+    }
+
+    for (int i = 0; i < _renderData.numAudios; i++) {
+      Audio& audio = _renderData.audios[i];
+      if (audio.player->isSeekable()) {
+        audio.player->setPosition(audio.player->position() + qint64(amountMS));
       }
     }
 
@@ -996,6 +1019,7 @@ namespace vh  {
     // for static assets & not render pass outputs, since they will actually
     // have TWO textures associated with them.
     QHash<int, int> assetIDtoVideoIndex;
+    QHash<int, int> assetIDtoAudioIndex;
     QHash<TextureReference, int> assetIDtoTextureIndex;
     QHash<int, int> assetIDtoRenderpassIndex;
 
@@ -1261,6 +1285,15 @@ namespace vh  {
           passOut.inputs[input.channel][0] = texIndex;
           passOut.inputs[input.channel][1] = texIndex;
           continue;
+        }
+
+        // If this is a music file that we haven't loaded yet...
+        if (input.ctype == kInputType_Music) {
+          int audIndex = _renderData.numAudios;
+          if (loadAudio(input.src, audIndex)) {
+            ++_renderData.numAudios;
+            assetIDtoAudioIndex[tr.id] = audIndex;
+          }
         }
 
         // TODO: other input types.
@@ -1978,6 +2011,28 @@ namespace vh  {
   }
 
 
+  bool RenderWidget::loadAudio(const QString& filename, int audIndex)
+  {
+    Audio& audio = _renderData.audios[audIndex];
+
+    QString adjustedFilename = filename;
+    if (_cache != nullptr && _cache->isCached(filename)) {
+      adjustedFilename = _cache->pathForCachedFile(adjustedFilename);
+    }
+
+    audio.player = new QMediaPlayer(this);
+
+    QMediaPlaylist* playlist = new QMediaPlaylist(audio.player);
+    playlist->addMedia(QUrl(adjustedFilename));
+    playlist->setPlaybackMode(QMediaPlaylist::Loop);
+    audio.player->setPlaylist(playlist);
+
+    connect(audio.player, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), [this, audIndex](QMediaPlayer::Error err){ this->audioError(err, audIndex); });
+
+    return true;
+  }
+
+
   int RenderWidget::allocVideoTexture()
   {
     int texIndex = _renderData.numTextures++;
@@ -2117,6 +2172,13 @@ namespace vh  {
   {
     Video& vid = _renderData.videos[vidIndex];
     qDebug("video %d error %d: %s", vidIndex, int(err), qPrintable(vid.player->errorString()));
+  }
+
+
+  void RenderWidget::audioError(QMediaPlayer::Error err, int audIndex)
+  {
+    Audio& audio = _renderData.audios[audIndex];
+    qDebug("audio %d error %d: %s", audIndex, int(err), qPrintable(audio.player->errorString()));
   }
 
 } // namespace vh

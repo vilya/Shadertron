@@ -259,6 +259,7 @@ namespace vh {
     bool loadCubemapTexture(const QString& filename, bool flip, bool srgb, Texture& tex);
 
     bool loadVideo(const QString& filename, bool flip, int vidIndex);
+    bool loadAudio(const QString& filename, int audIndex);
 
     int allocVideoTexture(); // Texture has no storage yet, because we don't know the width & height until after this is called.
     void resizeTextureForVideo(TextureVideoSurface* surface, QOpenGLTexture* texObj);
@@ -276,6 +277,7 @@ namespace vh {
   private slots:
     void fileChanged(const QString& path);
     void videoError(QMediaPlayer::Error err, int vidIndex);
+    void audioError(QMediaPlayer::Error err, int audIndex);
 
   private:
     Timer _runtimeTimer;

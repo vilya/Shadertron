@@ -24,6 +24,7 @@ namespace vh {
   static constexpr int kMaxInputs       = 4;
   static constexpr int kMaxRenderpasses = 5;
   static constexpr int kMaxVideos       = 4;
+  static constexpr int kMaxAudios       = 4;
   static constexpr int kMaxCameras      = 1;
   static constexpr int kMaxTextures     = kMaxRenderpasses * (2 + kMaxInputs) + (kMaxVideos * 2) + kNumSpecialTextures;
 
@@ -81,6 +82,11 @@ namespace vh {
   };
 
 
+  struct Audio {
+    QMediaPlayer* player = nullptr;
+  };
+
+
   struct Camera {
     QCamera* obj                 = nullptr;
     TextureVideoSurface* surface = nullptr;
@@ -134,9 +140,11 @@ namespace vh {
 
   struct RenderData {
     Video videos[kMaxVideos]                  = {};
+    Audio audios[kMaxAudios]                  = {};
     Texture textures[kMaxTextures]            = {}; // Element 0 will be a special "no texture" value.
     RenderPass renderpasses[kMaxRenderpasses] = {}; // In order: all of the intermediate buffers followed by the final output.
     int numVideos       = 0;
+    int numAudios       = 0;
     int numTextures     = 0;
     int numRenderpasses = 0;
 
