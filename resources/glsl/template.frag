@@ -1,5 +1,10 @@
 #macro GLSL_VERSION
 
+// Preprocessor line directives use the following source strings:
+// - 2 for common code.
+// - 1 for the user code for this shader
+// - 0 for the template code
+
 #define SHADER_TYPE_IMAGE   0
 #define SHADER_TYPE_BUFFER  1
 #define SHADER_TYPE_CUBEMAP 2
@@ -33,9 +38,14 @@ in vec3 fRayDir;
 
 layout(location=0) out vec4 Shadertron_oColor;
 
+#line 1 2
 #macro COMMON_CODE
+#line 43 0
 
+// Source string 1 is the user code for this shader
+#line 1 1
 #macro USER_CODE
+#line 48 0
 
 #if SHADER_TYPE == SHADER_TYPE_CUBEMAP
 
