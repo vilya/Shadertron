@@ -125,7 +125,12 @@ compile in Shadertron. I've hit these examples so far:
 - NeuralNetVideoSample had a 'precision mediump float;' declaration, which is
   valid in ESSL but not in GLSL.
 
-Other than patching the shader source code at load time, I'm not sure how to
-work around these sorts of issues. The simplest option for now is to just
-hand-edit any problematic shaders using Shadertron's output as a guide to what
-needs to be fixed.
+- CircularPuzzleInteractive has a ternary-if with assignments in the then and
+  else branches. Assignment in the `then` branch seems to to be handled fine, 
+  but assignment in the `else` branch seems to confuse the native GLSL 
+  compiler. Putting parentheses around this assignment fixes the issue.
+
+Other than parsing & automatically patching shader source code at load time,
+I'm not sure how to work around these sorts of issues. The simplest option for
+now is to just hand-edit any problematic shaders using Shadertron's output as
+a guide to what needs to be fixed.

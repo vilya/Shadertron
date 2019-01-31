@@ -72,7 +72,7 @@
                         "channel": 0
                     }
                 ],
-                "code": "// O.x = cur ring id    T[i,*].y = angle of ring #i\n// O.z = isTurning      O.a = handle offset\n\n#define mainImage(O,u)                                  \\\n    O = T(u);                                           \\\n    I(iMouse.xy); /* k = iMouse.z; */                   \\\n    O.z<=0. && k>0. ? O.x = c, O.a = U.y-O.y : c = O.x; \\\n    u.x-.5==c ? O.y = U.y-O.a : c;                      \\\n    O.z = k",
+                "code": "// O.x = cur ring id    T[i,*].y = angle of ring #i\n// O.z = isTurning      O.a = handle offset\n\n#define mainImage(O,u)                                  \\\n    O = T(u);                                           \\\n    I(iMouse.xy); /* k = iMouse.z; */                   \\\n    O.z<=0. && k>0. ? O.x = c, O.a = U.y-O.y : (c = O.x); \\\n    u.x-.5==c ? O.y = U.y-O.a : c;                      \\\n    O.z = k",
                 "name": "Buffer A",
                 "description": "",
                 "type": "buffer"
