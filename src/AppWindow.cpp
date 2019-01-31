@@ -337,6 +337,20 @@ namespace vh {
   }
 
 
+  void AppWindow::toggleFullscreen()
+  {
+    // TODO: make just the render widget full screen, not the entire app window.
+    // This caused big problems with all the OpenGL handles not being valid
+    // when I tried it earlier.
+    if (isFullScreen()) {
+      showNormal();
+    }
+    else {
+      showFullScreen();
+    }
+  }
+
+
   void AppWindow::deleteCache()
   {
     if (_cache == nullptr) {
@@ -438,7 +452,7 @@ namespace vh {
     _docTreeDockable->setAllowedAreas(Qt::AllDockWidgetAreas);
     _docTreeDockable->setWidget(_docTree);
     addDockWidget(Qt::RightDockWidgetArea, _docTreeDockable);
-    _docTreeDockable->setVisible(true);
+    _docTreeDockable->setVisible(false);
     _docTreeDockable->setFloating(false);
 
     _logWidget = new LogWidget(this);
@@ -447,7 +461,7 @@ namespace vh {
     _logWidgetDockable->setAllowedAreas(Qt::AllDockWidgetAreas);
     _logWidgetDockable->setWidget(_logWidget);
     addDockWidget(Qt::BottomDockWidgetArea, _logWidgetDockable);
-    _logWidgetDockable->setVisible(true);
+    _logWidgetDockable->setVisible(false);
     _logWidgetDockable->setFloating(false);
   }
 
@@ -596,11 +610,17 @@ namespace vh {
 
   void AppWindow::setupWindowMenu(QMenu* menu)
   {
+    QAction* fullscreen = menu->addAction("&FullScreen", this, &AppWindow::toggleFullscreen, QKeySequence(Qt::Key_F11));
+    menu->addSeparator();
     menu->addAction(_docTreeDockable->toggleViewAction());
     menu->addAction(_logWidgetDockable->toggleViewAction());
     menu->addSeparator();
     QAction* saveWindowStateAction = menu->addAction("&Save window state on exit");
     QAction* removeWindowStateAction = menu->addAction("&Remove saved window state", this, &AppWindow::removeSavedWindowState);
+
+    fullscreen->setCheckable(true);
+    fullscreen->setChecked(isFullScreen());
+    connect(_renderWidget, &RenderWidget::toggleFullscreenRequested, fullscreen, &QAction::trigger);
 
     saveWindowStateAction->setCheckable(true);
     saveWindowStateAction->setChecked(_saveWindowState);

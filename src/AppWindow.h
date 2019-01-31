@@ -54,6 +54,8 @@ namespace vh {
     void extractGLSL();
     void inlineGLSL();
 
+    void toggleFullscreen();
+
     void deleteCache();
 
     void restoreWindowState();
