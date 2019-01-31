@@ -367,7 +367,8 @@ namespace vh {
     }
     catch (const std::runtime_error& err) {
       qCritical("Unable to load %s: %s", qPrintable(_downloadedShaderFile), err.what());
-      QMessageBox::critical(parentForErrorDialogs, "Load failed", QString("Unable to load %1: %2").arg(_downloadedShaderFile).arg(err.what()));
+      QMessageBox::critical(parentForErrorDialogs, "Load failed", QString("Unable to load %1: %2").arg(_downloadedShaderFile).arg(err.what()));      
+      QFile::remove(_downloadedShaderFile);
       return;
     }
 
