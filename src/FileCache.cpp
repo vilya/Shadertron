@@ -25,6 +25,7 @@ namespace vh {
     QString::fromUtf8("/media/a/08b42b43ae9d3c0605da11d0eac86618ea888e62cdd9518ee8b9097488b31560.png"), // SDF font texture
     QString::fromUtf8("/media/a/0a40562379b63dfb89227e6d172f39fdce9022cba76623f1054a2c83d6c0ba5d.png"),
     QString::fromUtf8("/media/a/0c7bf5fe9462d5bffbd11126e82908e39be3ce56220d900f633d58fb432e56f5.png"),
+    QString::fromUtf8("/media/a/52d2a8f514c4fd2d9866587f4d7b2a5bfa1a11a0e772077d7682deb8b3b517e5.jpg"),
     QString::fromUtf8("/media/a/85a6d68622b36995ccb98a89bbb119edf167c914660e4450d313de049320005c.png"), // the bayer texture
     QString::fromUtf8("/media/a/95b90082f799f48677b4f206d856ad572f1d178c676269eac6347631d4447258.jpg"),
     QString::fromUtf8("/media/a/92d7758c402f0927011ca8d0a7e40251439fba3a1dac26f5b8b62026323501aa.jpg"),
@@ -32,7 +33,6 @@ namespace vh {
     QString::fromUtf8("/media/a/cd4c518bc6ef165c39d4405b347b51ba40f8d7a065ab0e8d2e4f422cbc1e8a43.jpg"),
     QString::fromUtf8("/media/a/e6e5631ce1237ae4c05b3563eda686400a401df4548d0f9fad40ecac1659c46c.jpg"),
     QString::fromUtf8("/media/a/f735bee5b64ef98879dc618b016ecf7939a5756040c2cde21ccb15e69a6e1cfb.png"),
-
     // Cubemaps
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785.png"),
     QString::fromUtf8("/media/a/0681c014f6c88c356cf9c0394ffe015acc94ec1474924855f45d22c3e70b5785_1.png"),
@@ -70,6 +70,7 @@ namespace vh {
 
     // Music
     QString::fromUtf8("/media/a/a6a1cf7a09adfed8c362492c88c30d74fb3d2f4f7ba180ba34b98556660fada1.mp3"),   // 8-bit Mentality
+    QString::fromUtf8("/media/a/d96b229eeb7a08d53adfcf1ff89e54c9ffeebed193d317d1a01cc8125c0f5cca.mp3"),   // not sure, used by shader wdBGDh
   };
 
 
