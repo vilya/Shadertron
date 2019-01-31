@@ -24,7 +24,7 @@ namespace vh {
     _shaderIDField      = new QLineEdit();
     _forceDownloadField = new QCheckBox();
 
-    QLabel* shaderIDLabel       = new QLabel("Shader ID");
+    QLabel* shaderIDLabel       = new QLabel("Shader ID or URL");
     QLabel* forceDownloadLabel  = new QLabel("Force download");
 
     QDialogButtonBox* buttons = new QDialogButtonBox(Qt::Horizontal);

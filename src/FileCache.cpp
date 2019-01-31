@@ -13,6 +13,8 @@ namespace vh {
   // Constants
   //
 
+  const QString kShaderToyViewURLPrefix("https://www.shadertoy.com/view/");
+
   static const QString kShaderToyShaderURL("https://www.shadertoy.com/api/v1/shaders/%1?key=%2");
   static const QString kShaderToyAssetURL("https://www.shadertoy.com/%1?key=%2");
 
@@ -170,8 +172,28 @@ namespace vh {
   // FileCache public slots
   //
 
-  void FileCache::fetchShaderToyByID(const QString& id, bool forceDownload)
+  bool FileCache::fetchShaderToyByIDorURL(const QString& idOrURL, bool forceDownload)
   {
+    QString id = idOrURL;
+
+    // If we've been given a URL, extract the ID from it. The only URLs that we
+    // accept are ShaderToy "view" URLs, i.e. ones that have the form
+    // `https://www.shadertoy.com/view/<shader-id>`
+    if (id.startsWith(kShaderToyViewURLPrefix)) {
+      id = id.mid(kShaderToyViewURLPrefix.size());
+    }
+
+    // Validate the id. All ShaderToy IDs are 6 characters long and consist of
+    // only digits and upper- or lower-case letters.
+    if (id.size() != 6) {
+      return false;
+    }
+    for (int i = 0; i < id.length(); i++) {
+      if (!id.at(i).isLetterOrNumber()) {
+        return false;
+      }
+    }
+
     if (_networkAccess == nullptr) {
       _networkAccess = new QNetworkAccessManager(this);
     }
@@ -181,13 +203,14 @@ namespace vh {
       qDebug("Using cached copy of shader with id %s", qPrintable(id));
       _downloadedShaderFile = pathForCachedFile(path);
       fetchAssetsForDownloadedShader();
-      return;
+      return true;
     }
 
     QString urlStr = kShaderToyShaderURL.arg(id).arg(kShaderToyAppKey);
     QNetworkReply* reply = _networkAccess->get(QNetworkRequest(QUrl(urlStr)));
     connect(reply, &QNetworkReply::finished, this, &FileCache::shaderDownloaded);
     connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &FileCache::shaderDownloadFailed);
+    return true;
   }
 
 

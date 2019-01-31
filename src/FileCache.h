@@ -27,7 +27,7 @@ namespace vh {
     bool isResource(const QString& path);
 
   public slots:
-    void fetchShaderToyByID(const QString& id, bool forceDownload);
+    bool fetchShaderToyByIDorURL(const QString& idOrURL, bool forceDownload);
     void fetchShaderToyStandardAssets();
     void deleteCache();
 

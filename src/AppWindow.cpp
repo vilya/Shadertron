@@ -201,23 +201,11 @@ namespace vh {
     bool forceDownload = downloadForm->forceDownload();
     delete downloadForm;
 
-    bool valid = shaderID.length() == 6;
-    if (valid) {
-      for (int i = 0; i < shaderID.length(); i++) {
-        if (!shaderID.at(i).isLetterOrNumber()) {
-          valid = false;
-          break;
-        }
-      }
-    }
-
-    if (!valid) {
+    bool validShaderIDorURL = _cache->fetchShaderToyByIDorURL(shaderID, forceDownload);
+    if (!validShaderIDorURL) {
       QMessageBox::critical(this, "Invalid shader ID",
-          "The shader ID you have entered is not valid");
-      return;
+          QString("%1 is not a valid ShaderToy shader").arg(shaderID));
     }
-
-    _cache->fetchShaderToyByID(shaderID, forceDownload);
   }
 
 
@@ -961,7 +949,7 @@ namespace vh {
     }
 
     QString id = recentDownloads[idx].id;
-    _cache->fetchShaderToyByID(id, false);
+    _cache->fetchShaderToyByIDorURL(id, false);
   }
 
 
