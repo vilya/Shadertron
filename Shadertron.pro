@@ -8,7 +8,7 @@ QT       += core gui network multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = ShaderTool
+TARGET = Shadertron
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use

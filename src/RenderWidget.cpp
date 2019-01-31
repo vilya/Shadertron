@@ -19,14 +19,6 @@ namespace vh  {
   static constexpr double kMediumStepMS = 1000.0;
   static constexpr double kLargeStepMS = 10000.0;
 
-//  static const QString kMainFunc_Image =
-//      "void main() {\n"
-//      "  vec2 fragCoord = gl_FragCoord.xy;\n"
-//      "  vec4 fragColor;\n"
-//      "  mainImage(fragColor, fragCoord);\n"
-//      "  ShaderToolQt_oColor = fragColor;\n"
-//      "}\n";
-
   static constexpr GLenum kCubeFaces[6] = {
     GL_TEXTURE_CUBE_MAP_POSITIVE_X,
     GL_TEXTURE_CUBE_MAP_NEGATIVE_X,

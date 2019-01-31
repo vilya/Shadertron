@@ -54,9 +54,9 @@ int main(int argc, char *argv[])
   gOldHandler = qInstallMessageHandler(appWindowMessageHandler);
 
   QApplication app(argc, argv);
-  app.setApplicationName("ShaderTool");
+  app.setApplicationName("Shadertron");
   app.setApplicationVersion("0.1");
-  app.setOrganizationName("The ShaderTool Developers");
+  app.setOrganizationName("The Shadertron Developers");
   app.setOrganizationDomain("shader.tool");
   app.setQuitOnLastWindowClosed(true);
   app.setAttribute(Qt::AA_UseDesktopOpenGL);

@@ -1,16 +1,17 @@
-Creative Coding Tools (a.k.a. what ShaderTool wants to be when it grows up...?)
+Creative Coding Tools (a.k.a. what Shadertron wants to be when it grows up...?)
 ===
 
-Name          | URL                                  | Commercial? | ShaderToy import?
-------------- | ------------------------------------ | ----------- | -----------------
-TouchDesigner | https://www.derivative.ca/           | Yes         | No
-vvvv          | https://vvvv.org/                    | ?           | Single pass only
-Vuo           | https://vuo.org/                     | Yes         | Single pass only
-Isadora       | https://troikatronix.com/            | Yes         | Copy 'n' paste, but with specific ShaderToy support. Single pass shaders only.
-Max/MSP       | https://cycling74.com/               | Yes         | No
-Pure Data     | https://puredata.info/               | No          | No
-Notch VFX     | https://www.notch.one/               | Yes         | Apparently not?
-KodeLife      | https://hexler.net/software/kodelife | Not sure*   | No
+Name          | URL                                       | Commercial? | ShaderToy import?
+------------- | ----------------------------------------- | ----------- | -----------------
+TouchDesigner | https://www.derivative.ca/                | Yes         | No
+vvvv          | https://vvvv.org/                         | ?           | Single pass only
+Vuo           | https://vuo.org/                          | Yes         | Single pass only
+Isadora       | https://troikatronix.com/                 | Yes         | Copy 'n' paste, but with specific ShaderToy support. Single pass shaders only.
+Max/MSP       | https://cycling74.com/                    | Yes         | No
+Pure Data     | https://puredata.info/                    | No          | No
+Notch VFX     | https://www.notch.one/                    | Yes         | Apparently not?
+KodeLife      | https://hexler.net/software/kodelife      | Not sure*   | No
+ShaderTool    | http://store.steampowered.com/app/314720/ | Yes         | No
 
 
 Notes
@@ -27,3 +28,6 @@ Notes
   preview stage.
 
 * KodeLife runs on phones and tablets as well as Windows, Mac and Linux.
+
+* Yes, there's another program called ShaderTool which is already available on
+  Steam. Bummer. :-( Time for a rename...

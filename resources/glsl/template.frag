@@ -31,7 +31,7 @@ uniform SAMPLER_3_TYPE iChannel3;
 in vec3 fRayDir;
 #endif
 
-layout(location=0) out vec4 ShaderToolQt_oColor;
+layout(location=0) out vec4 Shadertron_oColor;
 
 #macro COMMON_CODE
 
@@ -48,7 +48,7 @@ layout(location=0) out vec4 ShaderToolQt_oColor;
 
     mainCubemap(fragColor, fragCoord, rayOri, rayDir);
 
-    ShaderToolQt_oColor = fragColor;
+    Shadertron_oColor = fragColor;
   }
 
 #else
@@ -60,7 +60,7 @@ layout(location=0) out vec4 ShaderToolQt_oColor;
 
     mainImage(fragColor, fragCoord);
 
-    ShaderToolQt_oColor = fragColor;
+    Shadertron_oColor = fragColor;
   }
 
 #endif // (SHADER_TYPE == SHADER_TYPE_IMAGE) || (SHADER_TYPE == SHADER_TYPE_BUFFER)

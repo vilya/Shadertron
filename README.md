@@ -19,10 +19,10 @@ We also provide some useful extensions to ShaderToy's capabilities, such as:
 Screenshot
 ----------
 
-![iq's Surfer Boy shader, running in ShaderTool](doc/Screenshot-SurferBoy.png?raw=true)
+![iq's Surfer Boy shader, running in Shadertron](doc/Screenshot-SurferBoy.png?raw=true)
 
 This is iq's amazing [Surfer Boy shader](https://www.shadertoy.com/view/ldd3DX), 
-running in ShaderTool. The outputs from each of the render passes are shown
+running in Shadertron. The outputs from each of the render passes are shown
 along the right of the window and the HUD is showing on the left (both can be
 turned off, of course).
 
@@ -90,7 +90,7 @@ Video support
 -------------
 
 Some of ShaderToy's videos are in .ogv format & others are in .webm.
-ShaderTool uses whatever video codecs are installed on your system; you may
+Shadertron uses whatever video codecs are installed on your system; you may
 need to install additional codecs to be able to play back these formats.
 
 On Windows, for more information about codecs, including how to find out which
@@ -112,7 +112,7 @@ GLSL vs. ESSL incompatibilities
 
 There are some language- and driver-level incompatibilities between WebGL and
 native GL running locally which can cause valid ShaderToy shaders to fail to
-compile in ShaderTool. I've hit these examples so far:
+compile in Shadertron. I've hit these examples so far:
 
 - KifsOctahedron had arguments to `clamp` in the wrong order, leading to
   undefined behaviour. Intel & WebGL shader compilers accept this, the Nvidia
@@ -127,5 +127,5 @@ compile in ShaderTool. I've hit these examples so far:
 
 Other than patching the shader source code at load time, I'm not sure how to
 work around these sorts of issues. The simplest option for now is to just
-hand-edit any problematic shaders using ShaderTool's output as a guide to what
+hand-edit any problematic shaders using Shadertron's output as a guide to what
 needs to be fixed.
