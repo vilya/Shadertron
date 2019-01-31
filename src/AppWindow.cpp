@@ -428,6 +428,11 @@ namespace vh {
   void AppWindow::closeEvent(QCloseEvent* /*event*/)
   {
     // TODO: Check for changes that need saving before we exit.
+
+    // Make sure we'll never be starting up with a fullscreen window.
+    if (isFullScreen()) {
+      showNormal();
+    }
     saveWindowState();
   }
 
@@ -620,7 +625,6 @@ namespace vh {
 
     fullscreen->setCheckable(true);
     fullscreen->setChecked(isFullScreen());
-    connect(_renderWidget, &RenderWidget::toggleFullscreenRequested, fullscreen, &QAction::trigger);
 
     saveWindowStateAction->setCheckable(true);
     saveWindowStateAction->setChecked(_saveWindowState);
