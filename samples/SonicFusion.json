@@ -1,0 +1,52 @@
+{
+    "Shader": {
+        "info": {
+            "date": "",
+            "description": "Watch fullscreen with sound till the end! Use mouse to scrub time.",
+            "flags": 0,
+            "hasliked": 0,
+            "id": "",
+            "likes": 0,
+            "name": "Sonic Fusion",
+            "published": 0,
+            "tags": [
+                "torus",
+                "music"
+            ],
+            "username": "BigWIngs",
+            "viewed": 0
+        },
+        "renderpass": [
+            {
+                "code": "// Sonic Fusion by Martijn Steinrucken aka BigWings - 2019\r\n// Email:countfrolic@gmail.com Twitter:@The_ArtOfCode\r\n// License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.\r\n//\r\n// What you get when you play with the inside of a torus for too long.\r\n// Originally inspired by: https://turtletoy.net/turtle/90e6288a6b\r\n// \r\n// Turns out that if music is groovy enough, it can cause fusion! ;)\r\n// Use mouse to scrub time.\r\n//\r\n// Music: Daft Punk - Beyond (Nicolas Jaar Feat Dave Harrington Remix)\r\n// https://soundcloud.com/mamulashvili1/daft-punk-beyond-nicolas-jaar-feat-dave-harrington-remix\r\n\r\n#define MAX_STEPS 50.\r\n#define SURF_DIST .001\r\n#define SIN(x) (sin(x)*.5+.5)\r\n#define COS(x) (cos(x)*.5+.5)\r\n#define S(x) smoothstep(0.,1.,x)\r\n#define PI 3.1415\r\n#define HPI 1.5708\r\n\r\nfloat bigRadius = 1.;\r\nfloat smallRadius = .8;\r\n\r\nfloat Fade(float a, float b, float c, float d) {\r\n    float t = mod(iTime,315.); // iChannelTime[0];   // doesn't work on some systems ?\r\n\treturn smoothstep(a, b, t)*smoothstep(d, c, t);\r\n}\r\n\r\nvec3 R(vec2 uv, vec3 p, vec3 l, vec3 up, float z) {\r\n    vec3 f = normalize(l-p),\r\n        r = normalize(cross(up, f)),\r\n        u = cross(f, r),\r\n        c = p+f*z,\r\n        i = c + uv.x*r + uv.y*u,\r\n        d = normalize(i-p);\r\n    return d;\r\n}\r\n\r\nmat2 Rot(float a) {\r\n    float s = sin(a);\r\n    float c = cos(a);\r\n    return mat2(c, -s, s, c);\r\n}\r\n\r\n\r\nfloat GlowDist(vec3 p) {\r\n    float x = atan(p.x, p.z)+PI;\r\n    float fft = texture(iChannel0, fract(vec2(x/6.2831+.5)), 1./512.).x;\r\n    \r\n    p.y += (fft-.5)*.4;\r\n    \r\n    float s = 1.+sin(x*4.+iTime)*.05;\r\n    float circle = length(vec2(length(p.xz*s)-bigRadius, p.y));\r\n\tfloat d = (circle+smallRadius*.001);\r\n    return d;\r\n}\r\n\r\nfloat D(vec3 p) {\r\n    float circle = length(vec2(length(p.xz)-bigRadius, p.y));\r\n\tfloat d = -(circle-smallRadius);\r\n    return d;\r\n}\r\n\r\nvec3 N(vec3 p, float eps) {\r\n\tvec2 e = vec2(eps,0);\r\n    return normalize(\r\n        vec3(\r\n           D(p+e.xyy)-D(p-e.xyy),\r\n           D(p+e.yxy)-D(p-e.yxy),\r\n           D(p+e.yyx)-D(p-e.yyx)\r\n        )\r\n    );\r\n}\r\n\r\nvec2 TV(vec3 p) {\r\n    float y = atan(length(p.xz)-bigRadius, p.y);\r\n\tfloat x = atan(p.x, p.z);\r\n    return vec2(x, y); \r\n}\r\n                      \r\nvoid mainImage( out vec4 fragColor, in vec2 fragCoord )\r\n{\r\n    vec2 m = iMouse.xy/iResolution.xy;\r\n    vec2 UV = fragCoord/iResolution.xy;\r\n\tvec2 uv = (UV-.5);\r\n    uv.x *= iResolution.x/iResolution.y;\r\n    \r\n   \tfloat t = iTime*2.-m.x*100.;\t// can scrub 50 seconds with mouse\r\n    float t4 = t/4.;\r\n    float t8 = t/8.;\r\n    float t16 = t/16.;\r\n    float t32 = t/32.;\r\n    \r\n    float fft = texture( iChannel0, vec2(.7,0) ).x;\r\n    \r\n    smallRadius = mix(.125, .8, S(SIN(t8)));\r\n    \r\n    // screen twist\r\n    float d = 1.-dot(uv,uv);\r\n    float twist = Fade(0., 100., 200., 300.);\r\n    uv *= Rot(d*2.*twist*sin(t16)*(1.-COS(t32)));\r\n    \r\n    // torus cam setup\r\n    vec3 ro = vec3(0., sin(t8)*.25*smallRadius, -bigRadius-sin(t4)*smallRadius*.3);\r\n    float lookAngle = ((SIN(-t8)));\r\n    vec3 lookDir = vec3(0, 0, 1);\r\n    lookDir.xz *= Rot(lookAngle*HPI);\r\n    float fov =  mix(.5, .1+COS(t32), Fade(30.,60., 250., 300.));      \r\n    vec3 rd = R(uv*Rot(t*.1), ro, ro+lookDir, vec3(0,1,0), fov);\r\n    \r\n    // Ray march\r\n    float dO = 0.;\r\n    float minDistC = 5.;\r\n    for(float i=0.; i<MAX_STEPS; i++) {\r\n    \tvec3 p = ro + dO*rd;\r\n        float dS = D(p);\r\n        float dC = GlowDist(p);\r\n        \r\n        minDistC = min(minDistC, dC);\r\n        \r\n        dO += min(dS, dC);\r\n        if(dS<SURF_DIST) break;\r\n    }\r\n    \r\n    vec3 col = vec3(0);\r\n    \r\n    // get pos, normal and torus uvs\r\n    vec3 p = ro + dO*rd;\r\n \tvec3 n = N(p,.01);\r\n    vec2 tv = TV(p)/6.2831+.5;\r\n    \r\n    // Texture\r\n    tv.y += t*.05*Fade(143.5, 143.51, 220.,230.);\r\n    d = fract((tv.y+tv.x)*10.);\r\n    float outline = smoothstep(.3, .28, abs(d-.5));\r\n    float swirl = smoothstep(.25, .2, abs(d-.5));\r\n    float hatchUv = (tv.y-tv.x)*10.*3.1415;\r\n    float hatch = sin(hatchUv*20.+t4)*SIN(t4);\r\n    hatch += sin(hatchUv+t)*SIN(t8);\r\n    col += (outline-swirl*hatch)*.5;\r\n    \r\n    // vignette\r\n    col *= 1.-dot(uv,uv);\r\n    \r\n    // color inversion\r\n    float bw = 1.-clamp(sin(length(uv)*1.-t*.1)*3., 0., 1.);\r\n    col = mix(col, 1.-col, bw);\r\n    \r\n    // add more 3d-ness\r\n    float fresnel = -dot(n, rd);\r\n    fresnel *= fresnel;\r\n    col *= mix(1., fresnel*fresnel, SIN(t8*.5674));\r\n    \r\n    \r\n    // Add some color\r\n    vec3 c = cross(rd, n);\r\n    c.xy *= Rot(t);\r\n    c.zy *= Rot(t4);\r\n    c = c*.5+.5;\r\n    c = pow(c, vec3(1.+SIN(t4)*3.));\r\n    float tasteTheRainbow = Fade(82., 83., 100., 120.);\r\n    tasteTheRainbow += Fade(143.5, 144.5, 170., 200.);\r\n    tasteTheRainbow += Fade(205., 206., 230., 260.);\r\n    col = mix(col, col*c*3., tasteTheRainbow);\r\n    \r\n    // add lightning\r\n    float lightning = fft*(.1/(minDistC));\r\n    vec3 lightningCol = lightning*mix(vec3(1.,.1,.1), vec3(.1, .1, 1.), bw);\r\n    float fade = Fade(21., 25., 50., 70.);\r\n    fade += Fade(82., 83., 100., 120.);\r\n    fade += Fade(143.5, 144.5, 170., 200.);\r\n    fade += Fade(215., 216., 230., 260.);\r\n    \r\n    col += lightningCol * fade;\r\n    \r\n    col *= Fade(0., 10., 290., 315.);\r\n    \r\n    // preview window gets the party right away\r\n    if(iResolution.x<300.) {\r\n       col = col*c*3.+lightningCol;\r\n    }\r\n    \r\n    fragColor = vec4(col,1.0);\r\n}",
+                "description": "",
+                "filename": "SonicFusion-Image.frag",
+                "inputs": [
+                    {
+                        "channel": 0,
+                        "ctype": "music",
+                        "id": 19,
+                        "published": 1,
+                        "sampler": {
+                            "filter": "linear",
+                            "internal": "byte",
+                            "srgb": "false",
+                            "vflip": "true",
+                            "wrap": "clamp"
+                        },
+                        "src": "C:/Users/vilya/Music/iTunes/iTunes Media/Music/Daft Punk/TRON_ Legacy/21 Tron Legacy (End Titles).m4a"
+                    }
+                ],
+                "name": "Image",
+                "outputs": [
+                    {
+                        "channel": 0,
+                        "id": 37
+                    }
+                ],
+                "type": "image"
+            }
+        ],
+        "ver": "0.1"
+    }
+}
