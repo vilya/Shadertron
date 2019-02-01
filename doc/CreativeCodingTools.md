@@ -31,3 +31,13 @@ Notes
 
 * Yes, there's another program called ShaderTool which is already available on
   Steam. Bummer. :-( Time for a rename...
+
+
+Protocols
+---------
+
+Many of the tools above support common protocols or APIs:
+
+* [Spout](http://spout.zeal.co/) - Windows only framework for sharing video frames between applications.
+* [Syphon](http://syphon.v002.info/) - Mac only framework for sharing video frames between applications.
+* [Freeframe](http://freeframe.sourceforge.net/) - Older (2007-ish) cross-platform framework for video effects plugins and hosts.
