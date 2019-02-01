@@ -304,8 +304,8 @@ namespace vh {
 
     int _displayPass = -1; // Which render pass to display output from.
 
-    int _renderWidth            = 640;
-    int _renderHeight           = 360;
+    int _renderWidth            = 800;
+    int _renderHeight           = 450;
     float _renderScale          = 0.5f;
     float _renderHeightScale    = 0.5f;
     bool _useRelativeRenderSize = false;

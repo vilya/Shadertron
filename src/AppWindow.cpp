@@ -676,20 +676,31 @@ namespace vh {
 
     RenderWidget* renderWidget = _renderWidget;
 
+    QAction* defaultRenderSizeAction = nullptr;
     QList<QAction*> actions;
-    actions.push_back(menu->addAction("640x360 (Default ShaderToy Resolution)",  [renderWidget](){ renderWidget->setFixedRenderResolution(640, 360); }));
+    actions.push_back(menu->addAction("640x360",  [renderWidget](){ renderWidget->setFixedRenderResolution(640, 360); }));
+    actions.push_back(menu->addAction("800x450 (Default ShaderToy Resolution)",  [renderWidget](){ renderWidget->setFixedRenderResolution(800, 450); }));
+    defaultRenderSizeAction = actions.back();
     actions.push_back(menu->addAction("1280x720", [renderWidget](){ renderWidget->setFixedRenderResolution(1280, 720); }));
     actions.push_back(menu->addAction("1920x1080", [renderWidget](){ renderWidget->setFixedRenderResolution(1920, 1080); }));
     menu->addSeparator();
     actions.push_back(menu->addAction("0.5x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(0.5f); }));
+    actions.push_back(menu->addAction("0.67x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(0.67f); }));
+    actions.push_back(menu->addAction("0.75x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(0.75f); }));
     actions.push_back(menu->addAction("1.0x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(1.0f); }));
+    actions.push_back(menu->addAction("1.25x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(1.25f); }));
+    actions.push_back(menu->addAction("1.5x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(1.5f); }));
     actions.push_back(menu->addAction("2.0x window", [renderWidget](){ renderWidget->setRelativeRenderResolution(2.0f); }));
 
     for (QAction* action : actions) {
       group->addAction(action);
       action->setCheckable(true);
     }
-    actions.front()->setChecked(true);
+
+    if (defaultRenderSizeAction == nullptr) {
+      defaultRenderSizeAction = actions.front();
+    }
+    defaultRenderSizeAction->setChecked(true);
   }
 
 
