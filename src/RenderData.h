@@ -2,11 +2,13 @@
 #ifndef VH_RENDERDATA_H
 #define VH_RENDERDATA_H
 
+#include <QAudioProbe>
 #include <QCamera>
 #include <QMediaPlayer>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
 
+#include "TextureAudioSurface.h"
 #include "TextureVideoSurface.h"
 
 namespace vh {
@@ -82,17 +84,21 @@ namespace vh {
   };
 
 
-  struct Audio {
-    QMediaPlayer* player = nullptr;
-  };
-
-
   struct Camera {
     QCamera* obj                 = nullptr;
     TextureVideoSurface* surface = nullptr;
     int texOutput                = -1;      // Index of the texture that the un-flipped video will be written into.
     int flippedTexOutput         = -1;      // Index of the texture that the flipped video will be written into.
   };
+
+
+  struct Audio {
+    QMediaPlayer* player         = nullptr;
+    QAudioProbe* probe           = nullptr;
+    TextureAudioSurface* surface = nullptr;
+    int texOutput                = -1;
+  };
+
 
 
   struct RenderPass {

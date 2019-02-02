@@ -1290,10 +1290,15 @@ namespace vh  {
         // If this is a music file that we haven't loaded yet...
         if (input.ctype == kInputType_Music) {
           int audIndex = _renderData.numAudios;
+          int texIndex = kTexture_PlaceholderImage;
           if (loadAudio(input.src, audIndex)) {
             ++_renderData.numAudios;
             assetIDtoAudioIndex[tr.id] = audIndex;
+            texIndex = _renderData.audios[audIndex].texOutput;
           }
+          passOut.inputs[input.channel][0] = texIndex;
+          passOut.inputs[input.channel][1] = texIndex;
+          continue;
         }
 
         // TODO: other input types.
@@ -1471,6 +1476,21 @@ namespace vh  {
     }
     _renderData.numVideos = 0;
 
+    // Delete all audios.
+    for (int audIdx = 0; audIdx < _renderData.numAudios; audIdx++) {
+      Audio& audio = _renderData.audios[audIdx];
+      if (audio.player) {
+        audio.player->stop();
+      }
+      delete audio.player;
+      // audio.probe and audio.surface are both parented to audio.player, so get deleted automatically.
+      audio.player = nullptr;
+      audio.probe = nullptr;
+      audio.surface = nullptr;
+      audio.texOutput = -1;
+    }
+    _renderData.numAudios = 0;
+
     // Delete all textures.
     for (int texIdx = 0; texIdx < _renderData.numTextures; texIdx++) {
       Texture& tex = _renderData.textures[texIdx];
@@ -1579,6 +1599,21 @@ namespace vh  {
       if (videoWasFlipped) {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+      }
+
+      // Upload audio data for each active audio input to its corresponding texture.
+      for (int i = 0; i < _renderData.numAudios; i++) {
+        Audio& audio = _renderData.audios[i];
+        if (audio.surface == nullptr || !audio.surface->hasCurrentBuffer() || audio.texOutput < kNumSpecialTextures) {
+          continue;
+        }
+
+        qint64 playbackTimeUS = audio.player->position();
+        float playbackTime = float(playbackTimeUS) / 1000.0f;
+
+        QOpenGLTexture* texObj = _renderData.textures[audio.texOutput].obj;
+        audio.surface->copyToTexture(texObj, playbackTimeUS);
+        _renderData.textures[audio.texOutput].playbackTime = playbackTime;
       }
     }
   }
@@ -1993,7 +2028,7 @@ namespace vh  {
     vid.surface = new TextureVideoSurface(vid.player);
 
     vid.player->setVideoOutput(vid.surface);
-    vid.player->setMuted(true);
+//    vid.player->setMuted(true);
 
     QMediaPlaylist* playlist = new QMediaPlaylist(vid.player);
     playlist->addMedia(QUrl(adjustedFilename));
@@ -2021,6 +2056,8 @@ namespace vh  {
     }
 
     audio.player = new QMediaPlayer(this);
+    audio.probe = new QAudioProbe(this);
+    audio.surface = new TextureAudioSurface(this);
 
     QMediaPlaylist* playlist = new QMediaPlaylist(audio.player);
     playlist->addMedia(QUrl(adjustedFilename));
@@ -2028,6 +2065,15 @@ namespace vh  {
     audio.player->setPlaylist(playlist);
 
     connect(audio.player, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), [this, audIndex](QMediaPlayer::Error err){ this->audioError(err, audIndex); });
+
+    if (!audio.probe->setSource(audio.player)) {
+      qDebug("audio probe %d setSource() returned false", audIndex);
+    }
+
+    connect(audio.probe, &QAudioProbe::audioBufferProbed, audio.surface, &TextureAudioSurface::audioBufferReady);
+    connect(audio.probe, &QAudioProbe::flush, audio.surface, &TextureAudioSurface::audioFlushed);
+
+    audio.texOutput = allocAudioTexture();
 
     return true;
   }
@@ -2041,6 +2087,26 @@ namespace vh  {
 
     tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
     tex.obj->setFormat(QOpenGLTexture::RGBA8_UNorm);
+
+    tex.isRenderSized = false;
+    tex.playbackTime = 0.0f;
+
+    return texIndex;
+  }
+
+
+  int RenderWidget::allocAudioTexture()
+  {
+    int texIndex = _renderData.numTextures++;
+
+    Texture& tex = _renderData.textures[texIndex];
+    tex.obj = new QOpenGLTexture(QOpenGLTexture::Target2D);
+    tex.obj->setFormat(QOpenGLTexture::RG16_SNorm);
+    tex.obj->setSize(512, 2);
+    tex.obj->setMinMagFilters(QOpenGLTexture::Linear, QOpenGLTexture::Linear);
+    tex.obj->setWrapMode(QOpenGLTexture::ClampToEdge);
+    tex.obj->setAutoMipMapGenerationEnabled(false);
+    tex.obj->allocateStorage();
 
     tex.isRenderSized = false;
     tex.playbackTime = 0.0f;

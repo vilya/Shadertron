@@ -262,6 +262,7 @@ namespace vh {
     bool loadAudio(const QString& filename, int audIndex);
 
     int allocVideoTexture(); // Texture has no storage yet, because we don't know the width & height until after this is called.
+    int allocAudioTexture();
     void resizeTextureForVideo(TextureVideoSurface* surface, QOpenGLTexture* texObj);
     void flipTexture(QOpenGLTexture* texObj, QOpenGLTexture* flippedTexObj);
 

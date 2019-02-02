@@ -45,7 +45,8 @@ SOURCES += \
     src/TextureVideoSurface.cpp \
     src/ShaderToyDownloadForm.cpp \
     src/AboutDialog.cpp \
-    src/LogWidget.cpp
+    src/LogWidget.cpp \
+    src/TextureAudioSurface.cpp
 
 HEADERS += \
     src/RenderWidget.h \
@@ -58,7 +59,8 @@ HEADERS += \
     src/TextureVideoSurface.h \
     src/ShaderToyDownloadForm.h \
     src/AboutDialog.h \
-    src/LogWidget.h
+    src/LogWidget.h \
+    src/TextureAudioSurface.h
 
 FORMS +=
 
