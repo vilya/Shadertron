@@ -275,6 +275,8 @@ namespace vh {
     void screenshot();    //!< Captures at display resolution, includes all visible decorations (HUD, inputs/outputs, etc).
     void captureFrame();  //!< Captures at render resolution, no decorations visible.
 
+    void blitCubemapAsCross(QOpenGLTexture* src, int dstX, int dstY, int dstW, int dstH);
+
   private slots:
     void fileChanged(const QString& path);
     void videoError(QMediaPlayer::Error err, int vidIndex);

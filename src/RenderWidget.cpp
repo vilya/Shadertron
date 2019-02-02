@@ -1716,21 +1716,26 @@ namespace vh  {
     }
 
     int displayTexIdx = _renderData.renderpasses[_displayPass].outputs[_renderData.backBuffer];
-    QOpenGLTexture* texObj = _renderData.textures[displayTexIdx].obj;
-
-    int srcW = texObj->width();
-    int srcH = texObj->height();
     int dstX, dstY, dstW, dstH;
     displayRect(dstX, dstY, dstW, dstH);
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
-    if (_displayPass != _renderData.numRenderpasses - 1) {
-      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
-    }
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, defaultFramebufferObject());
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    glBlitFramebuffer(0, 0, srcW, srcH, dstX, dstY, dstX + dstW, dstY + dstH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+    QOpenGLTexture* texObj = _renderData.textures[displayTexIdx].obj;
+    if (texObj->target() == QOpenGLTexture::TargetCubeMap) {
+      blitCubemapAsCross(texObj, dstX, dstY, dstW, dstH);
+    }
+    else {
+      int srcW = texObj->width();
+      int srcH = texObj->height();
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), 0);
+      glBlitFramebuffer(0, 0, srcW, srcH, dstX, dstY, dstX + dstW, dstY + dstH, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
 
     glBindVertexArray(0);
 
@@ -1765,11 +1770,16 @@ namespace vh  {
       int y = framebufferHeight() - h;
       for (int i = 0; i < kMaxRenderpasses; i++) {
         const RenderPass& pass = _renderData.renderpasses[i];
-        if (pass.type == PassType::eBuffer || pass.type == PassType::eImage) {
+        if (pass.type == PassType::eBuffer || pass.type == PassType::eImage || pass.type == PassType::eCubemap) {
           QOpenGLTexture* texObj = _renderData.textures[pass.outputs[_renderData.frontBuffer]].obj;
           glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
-          glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), level);
-          glBlitFramebuffer(0, 0, rw, rh, x, y, x + w, y + h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+          if (texObj->target() == QOpenGLTexture::TargetCubeMap) {
+            blitCubemapAsCross(texObj, x, y, w, h);
+          }
+          else {
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), level);
+            glBlitFramebuffer(0, 0, rw, rh, x, y, x + w, y + h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+          }
           y -= h;
         }
       }
@@ -1782,8 +1792,13 @@ namespace vh  {
         int texIndex = pass.inputs[i][_renderData.frontBuffer];
         QOpenGLTexture* texObj = _renderData.textures[texIndex].obj;
         glBindFramebuffer(GL_READ_FRAMEBUFFER, _renderData.defaultFBO);
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), level);
-        glBlitFramebuffer(0, 0, rw, rh, x, y, x + w, y + h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        if (texObj->target() == QOpenGLTexture::TargetCubeMap) {
+          blitCubemapAsCross(texObj, x, y, w, h);
+        }
+        else {
+          glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texObj->textureId(), level);
+          glBlitFramebuffer(0, 0, rw, rh, x, y, x + w, y + h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+        }
         y -= h;
       }
     }
@@ -2220,6 +2235,44 @@ namespace vh  {
   {
     QImage img = grabFramebuffer();
     emit frameCaptured(img);
+  }
+
+
+  void RenderWidget::blitCubemapAsCross(QOpenGLTexture* src, int dstX, int dstY, int dstW, int dstH)
+  {
+    // Assumes that approproate FBOs are already bound to the
+    // GL_READ_FRAMEBUFFER and GL_DRAW_FRAMEBUFFER targets.
+    int srcW = src->width();
+    int srcH = src->height();
+
+    int col0 = dstX + 0;
+    int col1 = dstX + dstW / 4;
+    int col2 = dstX + dstW * 2 / 4;
+    int col3 = dstX + dstW * 3 / 4;
+    int col4 = dstX + dstW;
+
+    int row0 = dstY + 0;
+    int row1 = dstY + dstH / 3;
+    int row2 = dstY + dstH * 2 / 3;
+    int row3 = dstY + dstH;
+
+    int cornersByFace[6][4] = {
+      { col3, row2, col2, row1 }, // pos X
+      { col1, row2, col0, row1 }, // neg X
+      { col1, row2, col2, row3 }, // pos Y
+      { col1, row0, col2, row1 }, // neg Y
+      { col4, row2, col3, row1 }, // pos Z
+      { col2, row2, col1, row1 }, // neg Z
+    };
+
+    for (int face = 0; face < 6; face++) {
+      glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, kCubeFaces[face], src->textureId(), 0);
+      int dstX0 = cornersByFace[face][0];
+      int dstY0 = cornersByFace[face][1];
+      int dstX1 = cornersByFace[face][2];
+      int dstY1 = cornersByFace[face][3];
+      glBlitFramebuffer(0, 0, srcW, srcH, dstX0, dstY0, dstX1, dstY1, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
   }
 
 
