@@ -560,7 +560,7 @@ namespace vh {
     QMenu* viewRenderMenu = menu->addMenu("&Render");
     QMenu* viewZoomMenu   = menu->addMenu("&Zoom");
     menu->addSeparator();
-    QMenu* viewPassMenu   = menu->addMenu("&Pass");
+    _viewPassMenu   = menu->addMenu("&Pass");
     QAction* toggleInputsAction  = menu->addAction("Show &Inputs",  renderWidget, &RenderWidget::toggleInputs);
     QAction* toggleOutputsAction = menu->addAction("Show &Outputs", renderWidget, &RenderWidget::toggleOutputs);
     menu->addSeparator();
@@ -580,7 +580,7 @@ namespace vh {
 
     setupViewRenderMenu(viewRenderMenu);
     setupViewZoomMenu(viewZoomMenu);
-    setupViewPassMenu(viewPassMenu);
+    setupViewPassMenu(_viewPassMenu);
     setupViewHUDContentsMenu(viewHUDContentsMenu);
   }
 
@@ -728,7 +728,9 @@ namespace vh {
 
   void AppWindow::setupViewPassMenu(QMenu* menu)
   {
-    QActionGroup* group = new QActionGroup(menu);
+    delete _viewPassGroup;
+    menu->clear();
+    _viewPassGroup = new QActionGroup(this);
 
     RenderWidget* renderWidget = _renderWidget;
 
@@ -741,10 +743,19 @@ namespace vh {
     actions.push_back(menu->addAction("Buf &D", [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_BufD); }));
     menu->addSeparator();
     actions.push_back(menu->addAction("C&ube A", [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_CubeA); }));
+    actions.push_back(menu->addAction("&Sound",  [renderWidget](){ renderWidget->setDisplayPassByOutputID(kOutputID_Sound); }));
 
-    for (QAction* action : actions) {
-      group->addAction(action);
+    // This array must match the order that the menu items are added in.
+    const int passIDs[] = {
+      kOutputID_Image, kOutputID_BufA, kOutputID_BufB, kOutputID_BufC,
+      kOutputID_BufD, kOutputID_CubeA, kOutputID_Sound
+    };
+
+    for (int i = 0; i < actions.size(); i++) {
+      QAction* action = actions[i];
+      _viewPassGroup->addAction(action);
       action->setCheckable(true);
+      action->setEnabled(_document != nullptr && _document->findRenderPassByOutputID(passIDs[i]) != -1);
     }
     actions.front()->setChecked(true);
   }
@@ -889,6 +900,8 @@ namespace vh {
                       .arg(QApplication::instance()->applicationVersion());
       setWindowTitle(title);
     }
+
+    setupViewPassMenu(_viewPassMenu);
   }
 
 

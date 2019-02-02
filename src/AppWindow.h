@@ -2,6 +2,7 @@
 #ifndef VH_APPWINDOW_H
 #define VH_APPWINDOW_H
 
+#include <QActionGroup>
 #include <QDir>
 #include <QFileSystemWatcher>
 #include <QMainWindow>
@@ -127,6 +128,17 @@ namespace vh {
     QMenuBar* _menubar = nullptr;
     QMenu* _recentFilesMenu = nullptr;
     QMenu* _recentDownloadsMenu = nullptr;
+    QMenu* _viewPassMenu = nullptr;
+    QActionGroup* _viewPassGroup = nullptr;
+
+    QAction* _viewImageAction = nullptr;
+    QAction* _viewBufAAction = nullptr;
+    QAction* _viewBufBAction = nullptr;
+    QAction* _viewBufCAction = nullptr;
+    QAction* _viewBufDAction = nullptr;
+    QAction* _viewCubeAAction = nullptr;
+    QAction* _viewSoundAction = nullptr;
+
     RenderWidget* _renderWidget = nullptr;
 
     QTreeWidget* _docTree = nullptr;
