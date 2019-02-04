@@ -67,6 +67,9 @@ FORMS +=
 RESOURCES += \
     resources/resources.qrc
 
+macx {
+  QMAKE_INFO_PLIST = macos/Info.plist
+}
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
