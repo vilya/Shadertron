@@ -93,7 +93,7 @@ namespace vh {
 
     QOpenGLPixelTransferOptions options;
 
-    tex->setData(sourceFormat, sourceType, _texData, &options);
+    tex->setData(sourceFormat, sourceType, reinterpret_cast<const void*>(_texData), &options);
   }
 
 
