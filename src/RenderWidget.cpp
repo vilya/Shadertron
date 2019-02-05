@@ -2035,8 +2035,23 @@ namespace vh  {
     Video& vid = _renderData.videos[vidIndex];
 
     QString adjustedFilename = filename;
+    bool cached = false;
     if (_cache != nullptr && _cache->isCached(filename)) {
       adjustedFilename = _cache->pathForCachedFile(adjustedFilename);
+      cached = true;
+    }
+
+    QUrl url(adjustedFilename);
+    if (!cached && (url.isRelative() || url.scheme().length() <= 1)) {
+      QFileInfo info(adjustedFilename);
+      if (!info.exists()) {
+        qWarning("Video file %s does not exist", qPrintable(adjustedFilename));
+        return false;
+      }
+      else if (!info.isReadable()) {
+        qWarning("Video file %s is not readable", qPrintable(adjustedFilename));
+        return false;
+      }
     }
 
     vid.player = new QMediaPlayer(this);
@@ -2046,7 +2061,7 @@ namespace vh  {
 //    vid.player->setMuted(true);
 
     QMediaPlaylist* playlist = new QMediaPlaylist(vid.player);
-    playlist->addMedia(QUrl(adjustedFilename));
+    playlist->addMedia(url);
     playlist->setPlaybackMode(QMediaPlaylist::Loop);
     vid.player->setPlaylist(playlist);
 
@@ -2066,8 +2081,23 @@ namespace vh  {
     Audio& audio = _renderData.audios[audIndex];
 
     QString adjustedFilename = filename;
+    bool cached = false;
     if (_cache != nullptr && _cache->isCached(filename)) {
       adjustedFilename = _cache->pathForCachedFile(adjustedFilename);
+      cached = true;
+    }
+
+    QUrl url(adjustedFilename);
+    if (!cached && (url.isRelative() || url.scheme().length() <= 1)) {
+      QFileInfo info(adjustedFilename);
+      if (!info.exists()) {
+        qWarning("Audio file %s does not exist", qPrintable(adjustedFilename));
+        return false;
+      }
+      else if (!info.isReadable()) {
+        qWarning("Audio file %s is not readable", qPrintable(adjustedFilename));
+        return false;
+      }
     }
 
     audio.player = new QMediaPlayer(this);
@@ -2075,14 +2105,15 @@ namespace vh  {
     audio.surface = new TextureAudioSurface(this);
 
     QMediaPlaylist* playlist = new QMediaPlaylist(audio.player);
-    playlist->addMedia(QUrl(adjustedFilename));
+    playlist->addMedia(url);
     playlist->setPlaybackMode(QMediaPlaylist::Loop);
     audio.player->setPlaylist(playlist);
 
     connect(audio.player, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), [this, audIndex](QMediaPlayer::Error err){ this->audioError(err, audIndex); });
 
     if (!audio.probe->setSource(audio.player)) {
-      qDebug("audio probe %d setSource() returned false", audIndex);
+      qCritical("Audio probe %d setSource() returned false", audIndex);
+      return false;
     }
 
     connect(audio.probe, &QAudioProbe::audioBufferProbed, audio.surface, &TextureAudioSurface::audioBufferReady);
