@@ -253,22 +253,22 @@ namespace vh {
 
     QFileInfo fileInfo(refDir.absoluteFilePath(filename));
     if (fileInfo.exists() && !overwriteExisting) {
-      QString err = QString("cannot extract %1 to GLSL file %2, file already exists").arg(name).arg(filename);
-      throw std::runtime_error(qPrintable(err));
+      QString err = QString("Cannot extract %1 to GLSL file %2, file already exists").arg(name).arg(filename);
+      throw std::runtime_error(err.toStdString());
     }
 
 
     QFile file(refDir.absoluteFilePath(filename));
     if (!file.open(QIODevice::WriteOnly)) {
-      QString err = QString("unable to open GLSL file %1 for writing").arg(filename);
-      throw std::runtime_error(qPrintable(err));
+      QString err = QString("Unable to open GLSL file %1 for writing").arg(filename);
+      throw std::runtime_error(err.toStdString());
     }
 
     QByteArray contents = code.toLatin1();
     int bytesWritten = file.write(contents);
     if (bytesWritten < contents.length()) {
-      QString err = QString("failed while writing %1 to GLSL file %2").arg(name).arg(filename);
-      throw std::runtime_error(qPrintable(err));
+      QString err = QString("Failed while writing %1 to GLSL file %2").arg(name).arg(filename);
+      throw std::runtime_error(err.toStdString());
     }
 
     file.close();
@@ -459,7 +459,7 @@ namespace vh {
   {
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
-      throw std::runtime_error("failed to open ShaderToy file for reading");
+      throw std::runtime_error("Failed to open ShaderToy file for reading");
     }
 
     QJsonDocument jsonDoc = QJsonDocument::fromJson(file.readAll());
@@ -468,7 +468,7 @@ namespace vh {
     QJsonObject json = jsonDoc.object();
     if (json.contains("Error")) {
       QString err = QString("ShaderToy error: %1").arg(json["Error"].toString());
-      throw std::runtime_error(qPrintable(err));
+      throw std::runtime_error(err.toStdString());
     }
 
     ShaderToyDocument* document = new ShaderToyDocument();
@@ -477,7 +477,7 @@ namespace vh {
     document->refDir = fileInfo.absoluteDir();
     document->fromJSON(json["Shader"].toObject());
     if (!document->isValid()) {
-      throw std::runtime_error("file contains invalid data");
+      throw std::runtime_error("File contains invalid data");
     }
     document->loadExternalCode();
 
@@ -489,7 +489,7 @@ namespace vh {
   {
     QFile file(filename);
     if (!file.open(QIODevice::WriteOnly)) {
-      throw std::runtime_error("failed to open ShaderToy file for writing");
+      throw std::runtime_error("Failed to open ShaderToy file for writing");
     }
 
     QJsonObject json;
@@ -592,14 +592,14 @@ namespace vh {
     if (!document->src.isEmpty()) {
       QFileInfo info(document->src);
       watcher.addPath(info.absoluteFilePath());
-      qDebug("watching file %s", qPrintable(document->src));
+      qDebug("Watching file %s", qPrintable(document->src));
     }
 
     for (int i = 0; i < document->renderpasses.size(); i++) {
       const ShaderToyRenderPass& pass = document->renderpasses[i];
       if (!pass.filename.isEmpty()) {
         watcher.addPath(document->refDir.absoluteFilePath(pass.filename));
-        qDebug("watching file %s", qPrintable(pass.filename));
+        qDebug("Watching file %s", qPrintable(pass.filename));
       }
     }
   }
@@ -609,7 +609,7 @@ namespace vh {
   {
     QFile file(filename);
     if (!file.open(QIODevice::ReadOnly)) {
-      throw std::runtime_error("failed to open input JSON file for roundtripping");
+      throw std::runtime_error("Failed to open input JSON file for roundtripping");
     }
 
     QJsonDocument jsonDoc = QJsonDocument::fromJson(file.readAll());
@@ -617,7 +617,7 @@ namespace vh {
 
     QFile outFile(outFilename);
     if (!outFile.open(QIODevice::WriteOnly)) {
-      throw new std::runtime_error("failed to open output JSON file for roundtripping");
+      throw new std::runtime_error("Failed to open output JSON file for roundtripping");
     }
 
     outFile.write(jsonDoc.toJson());
