@@ -480,7 +480,9 @@ namespace vh {
     _recentFilesMenu     = menu->addMenu("Recent &files");
     _recentDownloadsMenu = menu->addMenu("Recent do&wnloads");
     menu->addSeparator();
-    menu->addAction("E&xit", this, &QMainWindow::close, QKeySequence(QKeySequence::Quit));
+    QAction* exitAction = menu->addAction("E&xit", this, &QMainWindow::close, QKeySequence(QKeySequence::Quit));
+
+    exitAction->setMenuRole(QAction::QuitRole);
 
     setupRecentFilesMenu(_recentFilesMenu);
     setupRecentDownloadsMenu(_recentDownloadsMenu);
@@ -584,7 +586,7 @@ namespace vh {
 
   void AppWindow::setupWindowMenu(QMenu* menu)
   {
-    QAction* fullscreen = menu->addAction("&FullScreen", this, &AppWindow::toggleFullscreen, QKeySequence(Qt::Key_F11));
+    QAction* fullscreen = menu->addAction("&Fullscreen", this, &AppWindow::toggleFullscreen, QKeySequence(Qt::Key_F11));
     menu->addSeparator();
     menu->addAction(_docTreeDockable->toggleViewAction());
     menu->addAction(_logWidgetDockable->toggleViewAction());
@@ -606,7 +608,8 @@ namespace vh {
 
   void AppWindow::setupHelpMenu(QMenu* menu)
   {
-    menu->addAction(QString("About %1...").arg(QApplication::instance()->applicationName()), this, &AppWindow::showAboutDialog);
+    QAction* about = menu->addAction(QString("About %1...").arg(QApplication::instance()->applicationName()), this, &AppWindow::showAboutDialog);
+    about->setMenuRole(QAction::AboutRole);
   }
 
 
