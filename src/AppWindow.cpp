@@ -4,6 +4,7 @@
 #include "AboutDialog.h"
 #include "FileCache.h"
 #include "LogWidget.h"
+#include "Preferences.h"
 #include "RenderWidget.h"
 #include "ShaderToy.h"
 #include "ShaderToyDownloadForm.h"
@@ -21,7 +22,6 @@
 #include <QMimeDatabase>
 #include <QRect>
 #include <QScreen>
-#include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
 
@@ -32,23 +32,6 @@ namespace vh {
   //
   // Constants
   //
-
-  // Keys for use with a QSettings object.
-  static const QString kDesktopWindowGeometry = "desktopWindowSize";
-  static const QString kDesktopWindowState = "desktopWindowState";
-  static const QString kDesktopWindowVersion = "desktopWindowVersion"; // Used to decide whether to restore saved window geometry & state or not.
-
-  static const QString kRecentFileX         = "recentFile%1";         // Use this with .arg(x), where x is an int from 0 up to kMaxRecentFiles-1.
-  static const QString kRecentDownloadIDX   = "recentDownloadID%1";   // Use this with .arg(x), where x is an int from 0 up to kMaxRecentDownloads-1.
-  static const QString kRecentDownloadNameX = "recentDownloadName%1"; // Use this with .arg(x), where x is an int from 0 up to kMaxRecentDownloads-1.
-
-  static const QString kLastOpenDir = "lastOpenDir";
-  static const QString kLastSaveDir = "lastSaveDir";
-  static const QString kLastScreenshotDir = "lastScreenshotDir";
-
-  static constexpr int kMaxRecentFiles     = 10;
-  static constexpr int kMaxRecentDownloads = 10;
-
 
   // Increment this when you make changes to the set of available windows and
   // dockable panels.
@@ -150,8 +133,8 @@ namespace vh {
   void AppWindow::openFile()
   {
     // Get the initial directory
-    QSettings settings;
-    QString initialDir = settings.value(kLastOpenDir).toString();
+    Preferences preferences;
+    QString initialDir = preferences.lastOpenDir();
     if (initialDir.isEmpty()) {
       initialDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
     }
@@ -178,7 +161,7 @@ namespace vh {
       return;
     }
 
-    settings.setValue(kLastOpenDir, fileDialog->directory().absolutePath());
+    preferences.setLastOpenDir(fileDialog->directory().absolutePath());
 
     if (!openNamedFile(filename)) {
       return;
@@ -358,17 +341,15 @@ namespace vh {
   {
     qDebug("Restoring window state");
 
-    QSettings settings;
-    int savedWindowStateVersion = settings.value(kDesktopWindowVersion, -1).toInt();
+    Preferences preferences;
+    int savedWindowStateVersion = preferences.desktopWindowVersion();
     bool shouldRestore = (savedWindowStateVersion == kDesktopUIVersion);
     bool restored = false;
     if (!shouldRestore) {
-      settings.remove(kDesktopWindowGeometry);
-      settings.remove(kDesktopWindowState);
-      settings.remove(kDesktopWindowVersion);
+      preferences.removeDesktopWindowData();
     }
     else {
-      restored = restoreGeometry(settings.value(kDesktopWindowGeometry).toByteArray());
+      restored = restoreGeometry(preferences.desktopWindowGeometry());
     }
 
     if (!restored) {
@@ -390,7 +371,7 @@ namespace vh {
         setGeometry(x, y, w, h);
       }
     }
-    restoreState(settings.value(kDesktopWindowState).toByteArray());
+    restoreState(preferences.desktopWindowState());
   }
 
 
@@ -633,7 +614,8 @@ namespace vh {
   {
     menu->clear();
 
-    QList<QString> recentFiles = loadRecentFileList();
+    Preferences preferences;
+    QList<QString> recentFiles = preferences.recentFileList();
     if (recentFiles.empty()) {
       menu->setEnabled(false);
       return;
@@ -653,7 +635,8 @@ namespace vh {
   {
     menu->clear();
 
-    QList<Download> recentDownloads = loadRecentDownloadList();
+    Preferences preferences;
+    QList<Download> recentDownloads = preferences.recentDownloadList();
     if (recentDownloads.empty()) {
       menu->setEnabled(false);
       return;
@@ -925,19 +908,15 @@ namespace vh {
     }
 
     qDebug("Saving window state");
-    QSettings settings;
-    settings.setValue(kDesktopWindowGeometry, saveGeometry());
-    settings.setValue(kDesktopWindowState, saveState());
-    settings.setValue(kDesktopWindowVersion, kDesktopUIVersion);
+    Preferences preferences;
+    preferences.saveDesktopWindowData(saveGeometry(), saveState(), kDesktopUIVersion);
   }
 
 
   void AppWindow::removeSavedWindowState()
   {
-    QSettings settings;
-    settings.remove(kDesktopWindowGeometry);
-    settings.remove(kDesktopWindowState);
-    settings.remove(kDesktopWindowVersion);
+    Preferences preferences;
+    preferences.removeDesktopWindowData();
   }
 
 
@@ -953,7 +932,8 @@ namespace vh {
 
   void AppWindow::loadRecentFile(int idx)
   {
-    QList<QString> recentFiles = loadRecentFileList();
+    Preferences preferences;
+    QList<QString> recentFiles = preferences.recentFileList();
     if (idx < 0 || idx > kMaxRecentFiles || idx > recentFiles.size()) {
       return;
     }
@@ -967,7 +947,8 @@ namespace vh {
 
   void AppWindow::loadRecentDownload(int idx)
   {
-    QList<Download> recentDownloads = loadRecentDownloadList();
+    Preferences preferences;
+    QList<Download> recentDownloads = preferences.recentDownloadList();
     if (idx < 0 || idx > kMaxRecentDownloads || idx > recentDownloads.size()) {
       return;
     }
@@ -980,11 +961,8 @@ namespace vh {
   void AppWindow::saveScreenshot(const QImage& img)
   {
     // Get the initial directory.
-    QSettings settings;
-    QString initialDir = settings.value(kLastScreenshotDir).toString();
-    if (initialDir.isEmpty()) {
-      initialDir = QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
-    }
+    Preferences preferences;
+    QString initialDir = preferences.lastScreenshotDir();
 
     // Generate the list of image format filters
     QStringList filters;
@@ -1016,7 +994,7 @@ namespace vh {
       return;
     }
 
-    settings.setValue(kLastScreenshotDir, fileDialog->directory().absolutePath());
+    preferences.setLastScreenshotDir(fileDialog->directory().absolutePath());
 
     // Filenames should always have exactly one element, due to the file
     // dialog settings we specified.
@@ -1050,37 +1028,10 @@ namespace vh {
   // AppWindow private methods
   //
 
-  QList<QString> AppWindow::loadRecentFileList()
-  {
-    QList<QString> recentFiles;
-
-    QSettings settings;
-    for (int i = 0; i < kMaxRecentFiles; i++) {
-      QString key = kRecentFileX.arg(i);
-      QString filename = settings.value(key).toString();
-      if (filename.isNull() || filename.isEmpty()) {
-        break;
-      }
-      recentFiles.push_back(filename);
-    }
-
-    return recentFiles;
-  }
-
-
-  void AppWindow::saveRecentFileList(const QList<QString>& recentFiles)
-  {
-    QSettings settings;
-    for (int i = 0, end = qMin(recentFiles.size(), kMaxRecentFiles); i < end; i++) {
-      QString key = kRecentFileX.arg(i);
-      settings.setValue(key, recentFiles[i]);
-    }
-  }
-
-
   void AppWindow::addRecentFile(const QString& filename)
   {
-    QList<QString> recentFiles = loadRecentFileList();
+    Preferences preferences;
+    QList<QString> recentFiles = preferences.recentFileList();
 
     if (!recentFiles.isEmpty() && recentFiles.front() == filename) {
       return;
@@ -1093,47 +1044,15 @@ namespace vh {
       recentFiles.pop_back();
     }
 
-    saveRecentFileList(recentFiles);
+    preferences.setRecentFileList(recentFiles);
     setupRecentFilesMenu(_recentFilesMenu);
-  }
-
-
-  QList<AppWindow::Download> AppWindow::loadRecentDownloadList()
-  {
-    QList<Download> recentDownloads;
-
-    QSettings settings;
-    for (int i = 0; i < kMaxRecentDownloads; i++) {
-      QString idKey   = kRecentDownloadIDX.arg(i);
-      QString nameKey = kRecentDownloadNameX.arg(i);
-      Download download;
-      download.id   = settings.value(idKey).toString();
-      download.name = settings.value(nameKey).toString();
-      if (download.id.isNull() || download.id.isEmpty() || download.name.isNull() || download.name.isEmpty()) {
-        break;
-      }
-      recentDownloads.push_back(download);
-    }
-
-    return recentDownloads;
-  }
-
-
-  void AppWindow::saveRecentDownloadsList(const QList<Download>& recentDownloads)
-  {
-    QSettings settings;
-    for (int i = 0, end = qMin(recentDownloads.size(), kMaxRecentDownloads); i < end; i++) {
-      QString idKey   = kRecentDownloadIDX.arg(i);
-      QString nameKey = kRecentDownloadNameX.arg(i);
-      settings.setValue(idKey,   recentDownloads[i].id);
-      settings.setValue(nameKey, recentDownloads[i].name);
-    }
   }
 
 
   void AppWindow::addRecentDownload(const QString& id, const QString& displayName)
   {
-    QList<Download> recentDownloads = loadRecentDownloadList();
+    Preferences preferences;
+    QList<Download> recentDownloads = preferences.recentDownloadList();
 
     Download download = { id, displayName };
 
@@ -1147,7 +1066,7 @@ namespace vh {
       recentDownloads.pop_back();
     }
 
-    saveRecentDownloadsList(recentDownloads);
+    preferences.setRecentDownloadList(recentDownloads);
     setupRecentDownloadsMenu(_recentDownloadsMenu);
   }
 

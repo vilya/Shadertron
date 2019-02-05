@@ -107,21 +107,8 @@ namespace vh {
 
     void saveScreenshot(const QImage& img);
 
-    private:
-    QList<QString> loadRecentFileList();
-    void saveRecentFileList(const QList<QString>& recentFiles);
+  private:
     void addRecentFile(const QString& filename);
-
-    struct Download {
-      QString id;
-      QString name;
-
-      bool operator == (const Download& other) const { return id == other.id; }
-      bool operator != (const Download& other) const { return id != other.id; }
-    };
-
-    QList<Download> loadRecentDownloadList();
-    void saveRecentDownloadsList(const QList<Download>& recentDownloads);
     void addRecentDownload(const QString& id, const QString& displayName);
 
   private:
