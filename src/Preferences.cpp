@@ -22,6 +22,8 @@ namespace vh {
   static const QString kLastSaveDir = "lastSaveDir";
   static const QString kLastScreenshotDir = "lastScreenshotDir";
 
+  static const QString kHUDFlags                  = "hudFlags";
+
 
   //
   // Preferences public methods
@@ -117,6 +119,12 @@ namespace vh {
   }
 
 
+  uint Preferences::hudFlags() const
+  {
+    return _settings.value(kHUDFlags, kHUD_All).toUInt();
+  }
+
+
   //
   // Preferences public slots
   //
@@ -192,5 +200,17 @@ namespace vh {
     _settings.remove(kDesktopWindowState);
     _settings.remove(kDesktopWindowVersion);
   }
+
+
+  void Preferences::setHUDFlags(uint hudFlags)
+  {
+    if (hudFlags == kHUD_All) {
+      _settings.remove(kHUDFlags);
+    }
+    else {
+      _settings.setValue(kHUDFlags, hudFlags);
+    }
+  }
+
 
 } // namespace vh

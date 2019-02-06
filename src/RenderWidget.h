@@ -4,6 +4,7 @@
 
 #include "FileCache.h"
 #include "FPSCounter.h"
+#include "Preferences.h"
 #include "RenderData.h"
 #include "ShaderToy.h"
 #include "TextureVideoSurface.h"
@@ -76,17 +77,6 @@ namespace vh {
     eSingleFrame,
     eScreenshot,
   };
-
-
-  static constexpr uint kHUD_FrameNum       = 1u << 0;
-  static constexpr uint kHUD_Time           = 1u << 1;
-  static constexpr uint kHUD_MillisPerFrame = 1u << 2;
-  static constexpr uint kHUD_FramesPerSec   = 1u << 3;
-  static constexpr uint kHUD_MousePos       = 1u << 4;
-  static constexpr uint kHUD_MouseDownPos   = 1u << 5;
-
-  static constexpr uint kHUD_All = kHUD_FrameNum | kHUD_Time | kHUD_MillisPerFrame |
-                                   kHUD_FramesPerSec | kHUD_MousePos | kHUD_MouseDownPos;
 
 
   //

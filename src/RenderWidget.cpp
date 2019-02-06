@@ -171,6 +171,9 @@ namespace vh  {
   {
     setFocusPolicy(Qt::ClickFocus);
 
+    Preferences prefs;
+    _hudFlags = prefs.hudFlags();
+
     _hudPen.setStyle(Qt::DashLine);
     _hudPen.setColor(Qt::red);
 
@@ -511,6 +514,9 @@ namespace vh  {
     }
 
     _hudFlags ^= flag;
+
+    Preferences prefs;
+    prefs.setHUDFlags(_hudFlags);
 
     if (!_playbackTimer.running()) {
       update();
