@@ -75,15 +75,16 @@ macx {
 }
 
 
-# Automatically run windeployqt after the build.
-# TODO: do the same for mac.
+# Automatically run windeployqt/macdeployqt after the build.
 win32 {
-  TEMPNAME = $${QMAKE_QMAKE}
-  QT_BIN_PATH = $$dirname(TEMPNAME)
-  BUILT_EXE = $${OUT_PWD}/$${TARGET}.exe
-
-  QMAKE_POST_LINK = $${QT_BIN_PATH}/windeployqt $${BUILT_EXE}
+  DEPLOY_TOOL = $$dirname(QMAKE_QMAKE)/windeployqt
+  DEPLOY_TARGET = $${OUT_PWD}/$${TARGET}.exe
 }
+macx {
+  DEPLOY_TOOL = $$dirname(QMAKE_QMAKE)/macdeployqt
+  DEPLOY_TARGET = $${OUT_PWD}/$${TARGET}.app
+}
+QMAKE_POST_LINK = $${DEPLOY_TOOL} $${DEPLOY_TARGET}
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
