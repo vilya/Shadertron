@@ -166,7 +166,7 @@ namespace vh  {
 
   RenderWidget::RenderWidget(QWidget* parent) :
     QOpenGLWidget(parent),
-    _hudFont("Consolas", 16, QFont::Bold),
+    _hudFont("Consolas", 12),
     _hudPen()
   {
     setFocusPolicy(Qt::ClickFocus);
@@ -175,9 +175,12 @@ namespace vh  {
     _hudFlags = prefs.hudFlags();
 
     _hudPen.setStyle(Qt::DashLine);
-    _hudPen.setColor(Qt::red);
+    _hudPen.setColor(Qt::lightGray);
 
-    _lineHeight = QFontMetrics(_hudFont).height();
+    QFontMetrics metrics(_hudFont);
+    _lineWidth = metrics.width(QString("Mouse Down -8888.88,-8888.88"));
+    _lineHeight = metrics.height();
+    _lineAscent = metrics.ascent();
 
     _keyPressBindings[KeyBinding{ Qt::Key_Escape, 0 }] = Action::eQuit;
     _keyPressBindings[KeyBinding{ Qt::Key_Tab,    0 }] = Action::eToggleHUD;
@@ -1827,11 +1830,33 @@ namespace vh  {
       return;
     }
 
+    int numLines = 0;
+    // Number of lines in the HUD is equal to the number of set bits in `_hudFlags`.
+    uint tmp = _hudFlags;
+    while (tmp) {
+      numLines += (tmp & 1u);
+      tmp >>= 1;
+    }
+
+    int marginW = 8;
+    int marginH = 8;
+    int w = _lineWidth + marginW * 2;
+    int h = _lineHeight * numLines + marginH * 2;
+    int x = 2;
+    int y = height() - h - 2;
+
+    QColor hudBG = QColor(Qt::gray).darker();
+    hudBG.setAlphaF(0.5f);
+
+    painter.setPen(Qt::lightGray);
+    painter.setBrush(hudBG);
+    painter.drawRoundedRect(x, y, w, h, qreal(marginW), qreal(marginH));
+
     painter.setFont(_hudFont);
     painter.setPen(_hudPen);
-
-    int x = 10;
-    int y = _lineHeight + 8;
+    painter.setBrush(Qt::NoBrush);
+    x += marginW;
+    y += marginH + _lineAscent;
     if (_hudFlags & kHUD_FrameNum) {
       painter.drawText(x, y, QString("Frame #%1").arg(_renderData.iFrame));
       y += _lineHeight;

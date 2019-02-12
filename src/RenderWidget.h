@@ -281,7 +281,9 @@ namespace vh {
     bool _showHUD = true;
     QFont _hudFont;
     QPen _hudPen;
+    int _lineWidth;
     int _lineHeight;
+    int _lineAscent;
 
     bool _showInputs = false;
     bool _showOutputs = false;
