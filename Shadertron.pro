@@ -48,7 +48,8 @@ SOURCES += \
     src/AboutDialog.cpp \
     src/LogWidget.cpp \
     src/TextureAudioSurface.cpp \
-    src/Preferences.cpp
+    src/Preferences.cpp \
+    src/PreferencesDialog.cpp
 
 HEADERS += \
     src/RenderWidget.h \
@@ -63,9 +64,11 @@ HEADERS += \
     src/AboutDialog.h \
     src/LogWidget.h \
     src/TextureAudioSurface.h \
-    src/Preferences.h
+    src/Preferences.h \
+    src/PreferencesDialog.h
 
-FORMS +=
+FORMS += \
+    src/PreferencesDialog.ui
 
 RESOURCES += \
     resources/resources.qrc

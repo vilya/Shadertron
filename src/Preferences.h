@@ -59,6 +59,8 @@ namespace vh {
     int desktopWindowVersion() const;
     QByteArray desktopWindowGeometry() const;
     QByteArray desktopWindowState() const;
+
+    bool reopenLastShaderOnStartup() const;
     uint hudFlags() const;
 
   public slots:
@@ -69,6 +71,8 @@ namespace vh {
     void setRecentDownloadList(const QList<Download>& recentDownloads);
     void saveDesktopWindowData(const QByteArray& geometry, const QByteArray& state, int version);
     void removeDesktopWindowData();
+
+    void setReopenLastShaderOnStartup(bool value);
     void setHUDFlags(uint flags);
 
   private:

@@ -5,6 +5,7 @@
 #include "FileCache.h"
 #include "LogWidget.h"
 #include "Preferences.h"
+#include "PreferencesDialog.h"
 #include "RenderWidget.h"
 #include "ShaderToy.h"
 #include "ShaderToyDownloadForm.h"
@@ -390,6 +391,13 @@ namespace vh {
   }
 
 
+  void AppWindow::showPreferencesDialog()
+  {
+    PreferencesDialog* prefsDialog = new PreferencesDialog(this);
+    prefsDialog->show();
+  }
+
+
   //
   // AppWindow protected methods
   //
@@ -493,6 +501,10 @@ namespace vh {
   {
     menu->addAction("&Extract GLSL", this, &AppWindow::extractGLSL);
     menu->addAction("&Inline GLSL",  this, &AppWindow::inlineGLSL);
+    menu->addSeparator();
+    QAction* prefsAction = menu->addAction("&Preferences...", this, &AppWindow::showPreferencesDialog);
+
+    prefsAction->setMenuRole(QAction::PreferencesRole);
   }
 
 

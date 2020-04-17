@@ -63,6 +63,7 @@ namespace vh {
     void resizeToRenderWidgetDisplayRect();
 
     void showAboutDialog();
+    void showPreferencesDialog();
 
   protected:
     virtual void closeEvent(QCloseEvent* event);

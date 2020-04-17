@@ -22,6 +22,7 @@ namespace vh {
   static const QString kLastSaveDir = "lastSaveDir";
   static const QString kLastScreenshotDir = "lastScreenshotDir";
 
+  static const QString kReopenLastShaderOnStartup = "reopenLastShaderOnStartup";
   static const QString kHUDFlags                  = "hudFlags";
 
 
@@ -125,6 +126,12 @@ namespace vh {
   }
 
 
+  bool Preferences::reopenLastShaderOnStartup() const
+  {
+    return _settings.value(kReopenLastShaderOnStartup, false).toBool();
+  }
+
+
   //
   // Preferences public slots
   //
@@ -212,5 +219,10 @@ namespace vh {
     }
   }
 
+
+  void Preferences::setReopenLastShaderOnStartup(bool value)
+  {
+    _settings.setValue(kReopenLastShaderOnStartup, value);
+  }
 
 } // namespace vh
